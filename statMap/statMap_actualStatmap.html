@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  {% block content %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <!--<meta http-equiv="refresh" content="300" >-->
+
+  <title>Stat-Maps</title>
+
+  <!-- Bootstrap core CSS -->
+  {% load static %}
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+  <style>
+
+  body::after {
+    content: "";
+    /* background-image: url("{% static 'raindrops.jpg' %}"); */
+    background-color: gray;
+    background-size: cover;
+    opacity: 0.6;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    z-index: -1;
+  }
+
+  #mainCanvas{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    border: 1px solid #000000;
+  }
+
+
+  </style>
+
+</head>
+<body>
+
+
+  <canvas id="mainCanvas">
+  Your browser does not support the HTML canvas tag - sorry!
+  </canvas>
+
+  <script>
+    // set the canvas width/height as a percent
+    var canvasWidth = 95; // percentage of the screen width
+    var canvasHeight = 95; // percentage of the screen height
+    // convert them to pixel sizes
+    canvasWidth = window.innerWidth * (canvasWidth/100.0);
+    canvasHeight = window.innerHeight * (canvasHeight/100.0);
+
+
+    var update = 10; // seconds
+    var interval = 12; // number of frames
+    var times = createTimeArray(interval); // create list of times
+    var currentIndex = 0;
+    var previousIndex = interval;
+    console.log(times);
+
+    var PIXEL_RATIO = (function () {
+        var ctx = document.getElementById("mainCanvas").getContext("2d"),
+            dpr = window.devicePixelRatio || 1,
+            bsr = ctx.webkitBackingStorePixelRatio ||
+                  ctx.mozBackingStorePixelRatio ||
+                  ctx.msBackingStorePixelRatio ||
+                  ctx.oBackingStorePixelRatio ||
+                  ctx.backingStorePixelRatio || 1;
+
+        return dpr / bsr;
+    })();
+
+    createHiDPICanvas = function(w, h, ratio) {
+        if (!ratio) { ratio = PIXEL_RATIO; }
+        var can = document.getElementById("mainCanvas");
+        can.width = w * ratio;
+        can.height = h * ratio;
+        can.style.width = w + "px";
+        can.style.height = h + "px";
+        can.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+        return can;
+    }
+
+    function draw(sat_img){
+      console.log("Drawing!");
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(sat_img,0,0,sat_img.width,sat_img.height,0,0,workingCanvas.width, workingCanvas.height);
+
+    }
+
+    //Create canvas with the device resolution.
+    var workingCanvas = createHiDPICanvas(canvasWidth,canvasHeight);
+    var ctx = workingCanvas.getContext("2d");
+    // initialize it with a background color
+    ctx.fillStyle = '#d0d0e6';
+    ctx.fillRect(0,0,workingCanvas.width, workingCanvas.height);
+
+    function getSatImages(times){
+      var sat_imgs = [];
+      var sat_img1 = new Image();
+      sat_img1.src = '/static/data/goes/splains/splains_composite_'+times[0]+'.png';
+      var sat_img2 = new Image();
+      sat_img2.src = '/static/data/goes/splains/splains_composite_'+times[1]+'.png';
+      var sat_img3 = new Image();
+      sat_img3.src = '/static/data/goes/splains/splains_composite_'+times[2]+'.png';
+      var sat_img4 = new Image();
+      sat_img4.src = '/static/data/goes/splains/splains_composite_'+times[3]+'.png';
+      var sat_img5 = new Image();
+      sat_img5.src = '/static/data/goes/splains/splains_composite_'+times[4]+'.png';
+      var sat_img6 = new Image();
+      sat_img6.src = '/static/data/goes/splains/splains_composite_'+times[5]+'.png';
+      var sat_img7 = new Image();
+      sat_img7.src = '/static/data/goes/splains/splains_composite_'+times[6]+'.png';
+      var sat_img8 = new Image();
+      sat_img8.src = '/static/data/goes/splains/splains_composite_'+times[7]+'.png';
+      var sat_img9 = new Image();
+      sat_img9.src = '/static/data/goes/splains/splains_composite_'+times[8]+'.png';
+      var sat_img10 = new Image();
+      sat_img10.src = '/static/data/goes/splains/splains_composite_'+times[9]+'.png';
+      var sat_img11 = new Image();
+      sat_img11.src = '/static/data/goes/splains/splains_composite_'+times[10]+'.png';
+      var sat_img12 = new Image();
+      sat_img12.src = '/static/data/goes/splains/splains_composite_'+times[11]+'.png';
+      sat_imgs.push(sat_img1,sat_img2,sat_img3,sat_img4,sat_img5,sat_img6,sat_img7,sat_img8,sat_img9,sat_img10,sat_img11,sat_img12);
+
+      sat_img1.addEventListener("load", function(){
+          draw(sat_imgs[0]);
+        });
+    }
+
+    getSatImages(times);
+///////////////////////////////// Time/Loop control //////////////////////////////////////////////
+    var play = false;
+    var loops = [];
+    document.addEventListener("keydown", (event) => {
+
+        if (event.keyCode == 37){
+          play = false;
+          try{
+            clearTimers(loops);
+          } catch {
+            console.log("No timers yet");
+          }
+          globalThis.previousIndex = currentIndex;
+          globalThis.currentIndex = currentIndex + 1;
+          if (currentIndex == times.length){
+             globalThis.currentIndex = 0;
+          } // end if
+          draw(at_imgs[currentIndex]);
+          console.log(times[currentIndex])
+        } // end if
+
+        else if (event.keyCode == 39) {
+          play = false;
+          try{
+            clearTimers(loops);
+          } catch {
+            console.log("No timers yet");
+          }
+          globalThis.previousIndex = currentIndex;
+          globalThis.currentIndex = currentIndex - 1;
+          if (currentIndex < 0){
+            globalThis.currentIndex = times.length-1;
+          } // end if
+          draw(at_imgs[currentIndex]);
+          console.log(times[currentIndex])
+        } // end else if
+
+        else if (event.keyCode == 32) {
+          //console.log("Space Bar was hit!");
+          play = !play;
+          if (play) {
+            var loop = setInterval(function() {
+              globalThis.previousIndex = currentIndex;
+              globalThis.currentIndex = currentIndex - 1;
+              if (currentIndex < 0){
+                globalThis.currentIndex = times.length-1;
+              } // end if
+              draw(at_imgs[currentIndex]);
+              console.log(times[currentIndex])
+            }, (500));
+            loops.push(loop);
+          }
+          else {
+            clearTimers(loops);
+          } // end else
+        } // end else if
+    }); // end event listener
+
+
+    setInterval(function(){
+      // clear the old:
+      globalThis.times = createTimeArray(interval);
+      getSatImages(times);
+    },(300*1000));
+
+  </script>
+  {% endblock %}
+</body>
+</html>

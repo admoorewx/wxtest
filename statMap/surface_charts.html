@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  {% block content %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <!--<meta http-equiv="refresh" content="300" >-->
+
+  <title>Surface Charts</title>
+
+  <!-- Bootstrap core CSS -->
+  {% load static %}
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+  <script type="text/javascript" src="{% static '/jscolor/jscolor.js' %}"></script>
+  <script type="text/javascript" src="{% static 'dom-to-image-master/src/dom-to-image.js' %}"></script>
+  <style>
+
+  body::after {
+    content: "";
+    /* background-image: url("{% static 'raindrops.jpg' %}"); */
+    background-color: gray;
+    background-size: cover;
+    opacity: 0.6;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    z-index: -1;
+  }
+
+  #menu_bar{
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    height: 50px;
+    width: 100vw;
+    background-color: gray;
+    /*background-color: rgba(242,242,242,0.95); */
+    border: 1px solid #000000;
+    display: table;
+
+  }
+
+  #mainCanvas{
+    position: absolute;
+    top: 60px;
+    left: 3vw;
+    width: 94vw;
+    height: 92vh;
+    border: 1px solid #000000;
+  }
+
+  #chart_menu{
+    top: 5px;
+    /* left: 10vw; */
+    width: 150px;
+    height: 40px;
+    /*font-weight: bold;*/
+    font-size: 20px;
+    cursor: pointer;
+    float: left;
+    margin-left: 10vw;
+    margin-top: 5px;
+  }
+
+  #draw_mode{
+    top: 5px;
+    height: 40px;
+    width: 150px;
+    /*font-weight: bold;*/
+    font-size: 20px;
+    cursor: pointer;
+    float: left;
+    margin-left: 15px;
+    margin-top: 5px;
+  }
+
+  #tool{
+    top: 5px;
+    height: 40px;
+    width: 100px;
+    /*font-weight: bold;*/
+    font-size: 20px;
+    cursor: pointer;
+    float: left;
+    margin-left: 15px;
+    margin-top: 5px;
+  }
+
+  #color{
+    top: 5px;
+    height: 40px;
+    width: 100px;
+    /*font-weight: bold;*/
+    font-size: 20px;
+    cursor: pointer;
+    float: left;
+    margin-left: 15px;
+    margin-top: 5px;
+  }
+
+  #clear{
+    top: 5px;
+    height: 40px;
+    width: 100px;
+    /*font-weight: bold;*/
+    font-size: 20px;
+    cursor: pointer;
+    float: left;
+    margin-left: 15px;
+    margin-top: 5px;
+  }
+
+
+  #print{
+    height: 40px;
+    width: 100px;
+    /*font-weight: bold;*/
+    font-size: 20px;
+    cursor: pointer;
+    float: left;
+    margin-left: 15px;
+    margin-top: 5px;
+  }
+
+  #download{
+    top: 5px;
+    height: 40px;
+    width: 110px;
+    font-size: 20px;
+    cursor: pointer;
+    float: left;
+    margin-left: 15px;
+    margin-top: 5px;
+  }
+
+  #sfc_chart{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    cursor: default;
+  }
+
+  #canvasCover{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255,255,255,0.1);
+    cursor: crosshair;
+  }
+
+  #circularcursor {
+    background-color: transparent;
+    border:2px solid black;
+    height:15px;
+    width:15px;
+    border-radius:50%;
+    -moz-border-radius:50%;
+    -webkit-border-radius:50%;
+    position: absolute;
+    z-index: 1;
+  }
+
+  </style>
+
+</head>
+<body>
+
+  <div id="menu_bar">
+    <form>
+      <select id="chart_menu" onChange="changeRegion(value)">
+        <option value="conus" selected>CONUS</option>
+        <option value="neast">Northeast</option>
+        <option value="midatl">Mid-Atlantic</option>
+        <option value="seast">Southeast</option>
+        <option value="midwest">Midwest</option>
+        <option value="nplains">N. Plains</option>
+        <option value="cplains">C. Plains</option>
+        <option value="splains">S. Plains</option>
+        <option value="nwest">Northwest</option>
+        <option value="swest">Southwest</option>
+      </select>
+    </form>
+
+    <form>
+      <select id="draw_mode" onChange="setDrawMode(value)">
+        <option value="False" selected>Drawing Off</option>
+        <option value="True">Drawing On</option>
+      </select>
+    </form>
+
+    <form>
+      <select id="tool" onChange="changeTool(value)">
+        <option value="finepoint">Fine Point Pen</option>
+        <option value="pen" selected>Pen</option>
+        <option value="marker">Marker</option>
+        <option value="brush">Brush</option>
+        <option value="eraser">Eraser</option>
+      </select>
+    </form>
+
+    <button id="color" data-jscolor="{onInput:'changeColor(this)', preset:'dark',value:'rgba(51,153,255,1.0)'}">Color</button>
+    <button id="clear" onclick="clearCanvas()">Clear</button>
+    <button id="print" onclick="printImage()">Print</button>
+    <button id="download" onclick="downloadImage()">Download</button>
+
+
+  </div>
+
+  <div id="mainCanvas">
+    <!-- <div id="circularcursor"></div> -->
+    <!-- <embed id="sfc_chart" src="" width="100%" height="100%" /> -->
+    <img id="sfc_chart" src="{% static '/sfc/conus/conus_basemosaic_202110261355.png' %}"/>
+    <canvas id="canvasCover"></canvas>
+  </div>
+  <!-- <img id="printer" src={% static '/media/icons/print.png' %} alt="save img" onClick="printImage()"> -->
+
+  <script>
+
+    var defaultRegion = "conus";
+    var update = 10; // seconds
+    var interval = 12; // number of frames
+    var times = createTimeArray(interval); // create list of times
+    var currentIndex = 0;
+    var previousIndex = interval;
+
+    function createTimeArray(intervals){
+      var times = [];
+      var time = dataTimeFormat(new Date(Math.floor( new Date() / 900000) * 900000));
+      //times.push(time); // add the initial time
+      for (i=1; i <= intervals; i++){
+        var time = new Date(Math.floor( new Date() / 900000) * 900000);
+        time.setMinutes(time.getMinutes() - (i*15));
+        timestring = dataTimeFormat(time);
+        times.push(timestring);
+      }
+      return times;
+    }
+
+    function changeImage(sat_img){
+      console.log("Changing Image!");
+      console.log(document.getElementById("sfc_chart"));
+      document.getElementById("sfc_chart").src = sat_img;
+    }
+
+
+    function getSatImages(region,times){
+      globalThis.sat_imgs = [];
+      var sat_img1 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[0]+'.png';
+      var sat_img2 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[1]+'.png';
+      var sat_img3 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[2]+'.png';
+      var sat_img4 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[3]+'.png';
+      var sat_img5 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[4]+'.png';
+      var sat_img6 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[5]+'.png';
+      var sat_img7 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[6]+'.png';
+      var sat_img8 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[7]+'.png';
+      var sat_img9 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[8]+'.png';
+      var sat_img10 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[9]+'.png';
+      var sat_img11 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[10]+'.png';
+      var sat_img12 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[11]+'.png';
+      sat_imgs.push(sat_img1,sat_img2,sat_img3,sat_img4,sat_img5,sat_img6,sat_img7,sat_img8,sat_img9,sat_img10,sat_img11,sat_img12);
+
+      // set the initial image
+      changeImage(sat_imgs[currentIndex]);
+    }
+
+
+    function changeRegion(region){
+      console.log("Getting image for "+region);
+      globalThis.defaultRegion = region;
+      getSatImages(defaultRegion,times);
+    }
+
+    // initialize
+    // changeRegion(defaultRegion);
+
+    function printImage(){
+      var target = document.getElementById("mainCanvas");
+      console.log(target.innerHTML);
+      var WinPrint = window.open('', '', 'letf=100,top=100,width=900,height=600');
+      WinPrint.document.write(target.innerHTML);
+      WinPrint.document.getElementById("sfc_chart").style.width = '1700px';
+      WinPrint.document.getElementById("sfc_chart").style.height = '1100px';
+      WinPrint.document.close();
+      WinPrint.focus();
+      WinPrint.print();
+      WinPrint.close();
+    }
+//////////////////////////////////// download image /////////////////////////////////////////////
+    function downloadImage(){
+      target = document.getElementById("mainCanvas");
+      domtoimage.toPng(target, { quality: 1.0 })
+        .then(function(dataurl){
+          var link = document.createElement('a');
+          link.download = 'sfc_chart.png';
+          link.href = dataurl;
+          link.click();
+        });
+
+    }
+///////////////////////////////// Canvas Cursor //////////////////////////////////////////////////////
+// const canvas = document.querySelector('#canvasCover');
+// canvas.onmousemove = function(e) {
+//   console.log(e.pageY, e.clientY, e.layerY,window.scrollY);
+//   $('#circularcursor').css({
+//     left: e.offsetX,
+//     top: e.offsetY,
+//   });
+// };
+///////////////////////////////// Drawing Functionality //////////////////////////////////////////////
+const canvas = document.querySelector('#canvasCover');
+const ctx = canvas.getContext('2d');
+let isDrawing = false;
+let drawMode = false;
+let lastX = 0;
+let lastY = 0;
+
+canvas.width = document.getElementById("sfc_chart").width;
+canvas.height = document.getElementById("sfc_chart").height;
+var strokeColor = '#000000';
+ctx.strokeStyle = strokeColor;
+ctx.lineJoin = 'round';
+ctx.lineCap = 'round';
+ctx.lineWidth = 5;
+
+
+function changeColor(color){
+  strokeColor = color;
+  ctx.strokeStyle = strokeColor;
+}
+
+function setDrawMode(value){
+  if (value.includes("True")){
+    drawMode = true;
+  } else {
+    drawMode = false;
+  }
+} // end function setDrawMode
+
+function draw(e) {
+  if (!isDrawing) return; // stop the fn from running when they are not moused down
+  ctx.beginPath();
+  // start from
+  ctx.moveTo(lastX, lastY);
+  // go to
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.stroke();
+  [lastX, lastY] = [e.offsetX, e.offsetY];
+} // end function draw
+
+canvas.addEventListener('mousedown', (e) => {
+  if (drawMode){
+    isDrawing = true;
+    [lastX, lastY] = [e.offsetX, e.offsetY];
+  }
+});
+canvas.addEventListener('mousemove', (e) => {
+  if (drawMode){
+    draw(e);
+  }
+});
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('mouseout', () => isDrawing = false);
+
+function clearCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+function changeTool(value){
+  if (value.includes("finepoint")){
+    ctx.strokeStyle = strokeColor;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineWidth = 2;
+  }
+  else if (value.includes("pen")){
+    ctx.strokeStyle = strokeColor;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineWidth = 5;
+  }
+  else if (value.includes("marker")){
+    ctx.strokeStyle = strokeColor;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineWidth = 15;
+  }
+  else if (value.includes("brush")){
+    ctx.strokeStyle = strokeColor;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineWidth = 30;
+  }
+  else {
+    ctx.lineWidth = 50;
+    ctx.globalCompositeOperation = 'destination-out';
+  }
+}
+
+///////////////////////////////// Time/Loop control //////////////////////////////////////////////
+
+  function fileExists(path){
+    var xhr = new XMLHttpRequest();
+    xhr.open('HEAD', path, false);
+    try{
+      xhr.send();
+      if (xhr.status == "404"){
+        return false;
+      } else{
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  } // end function
+
+
+  function incrImage(currentIndex,length){
+    missing = true;
+    while (missing){
+      console.log("Index: "+currentIndex.toString());
+      currentIndex = currentIndex + 1;
+      if (currentIndex >= times.length){
+        currentIndex = 0;
+      } // end check if length of list
+      if (fileExists(sat_imgs[currentIndex])){
+        missing = false;
+        globalThis.currentIndex = currentIndex;
+        changeImage(sat_imgs[currentIndex]);
+      }
+    } // end while
+  } // end function
+
+
+  function decrImage(currentIndex,length){
+    console.log("Index going in: "+currentIndex.toString());
+    missing = true;
+    while (missing){
+      currentIndex = currentIndex - 1;
+      if (currentIndex < 0){
+        currentIndex = length - 1;
+      } // end if
+      console.log("Index should have changed: "+currentIndex.toString());
+      if (fileExists(sat_imgs[currentIndex])){
+        missing = false;
+        console.log("Inserting index: "+currentIndex.toString());
+        globalThis.currentIndex = currentIndex;
+        changeImage(sat_imgs[currentIndex]);
+      }
+    }// end while
+  } // end function
+
+
+  var play = false;
+  var loops = [];
+  document.addEventListener("keydown", (event) => {
+    if (event.keyCode == 37){
+      play = false;
+      try{
+        clearTimers(loops);
+      } catch {
+        console.log("No timers yet");
+      }
+      console.log("Current index was: "+currentIndex.toString());
+      incrImage(currentIndex,times.length);
+      console.log("CurrentIndex is now: "+currentIndex.toString());
+    } // end if
+    else if (event.keyCode == 39) {
+      play = false;
+      try{
+        clearTimers(loops);
+      } catch {
+        console.log("No timers yet");
+      }
+  	  console.log("Current Index was: "+currentIndex.toString());
+  	  decrImage(currentIndex,times.length);
+  	  console.log("Current index is now: "+currentIndex.toString());
+    } // end else if
+    else if (event.keyCode == 32) {
+      //console.log("Space Bar was hit!");
+      play = !play;
+      if (play) {
+        var loop = setInterval(function() {
+          decrImage(currentIndex,times.length);
+          console.log(times[currentIndex])
+        }, (500));
+        loops.push(loop);
+      } else {
+        clearTimers(loops);
+      } // end else
+    } // end else if
+  }); // end event listener
+
+  setInterval(function(){
+    // clear the old:
+    globalThis.times = createTimeArray(interval);
+    getSatImages(defaultRegion,times);
+  },(300*1000));
+
+  </script>
+  {% endblock %}
+</body>
+</html>

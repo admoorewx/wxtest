@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>SPC Verification</title>
+    <script>
+        L_NO_TOUCH = false;
+        L_DISABLE_3D = false;
+    </script>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+    <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+    {% load static %}
+    <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+    <script type="text/javascript" src="{% static 'leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+    <script type="text/javascript" src="{% static 'shapefile-js/dist/shp.js' %}"></script>
+    <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    <style>
+      #container {
+        position: absolute;
+        height: 100.0%;
+        width: 100.0%;
+        top: 0px;
+        z-index: 0;
+      }
+      #map_holder {
+          position: absolute;
+          width: 100.0vw;
+          height: 100.0%;
+          left: 0.0%;
+          top: 0.0vh;
+      }
+    </style>
+
+</head>
+<body>
+{% block content %}
+
+  <div id="container">
+    <div class="folium-map" id="map_holder"></div>
+  </div>
+
+</body>
+<script>
+///////////////////////////////////////// MAP DEFINITION //////////////////////////////////////////////
+  var map = L.map(
+      "map_holder",
+      {
+          center: [40.0, -98.0],
+          crs: L.CRS.EPSG3857,
+          zoom: 5,
+          zoomControl: true,
+          cursor: true,
+          preferCanvas: true,
+          renderer: L.canvas(),
+          keyboard: false,
+          updateWhenIdle: true,
+          updateWhenZooming: false,
+      }
+  );
+  var drawCanvas = L.canvas();
+  /////////////// BASE LAYERS /////////////////
+  var dark = L.tileLayer(
+      "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+      {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var light = L.tileLayer(
+      "https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+      {"attribution": "Map tiles by \u003ca href=\"http://stamen.com\"\u003eStamen Design\u003c/a\u003e, under \u003ca href=\"http://creativecommons.org/licenses/by/3.0\"\u003eCC BY 3.0\u003c/a\u003e. Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var osm = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  ).addTo(map);
+
+  var esri_phyiscal = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
+  });
+
+  var world_imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  });
+
+  var esri_map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Specialty/DeLorme_World_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Copyright: &copy;2012 DeLorme',
+  	minZoom: 1,
+  	maxZoom: 11
+  });
+
+  /////////////// LAYER CONTROL ////////////////
+  var layer_control_1 = {
+      base_layers : {
+          "Dark" : dark,
+          "Light" : light,
+          "Open Street Map (default)" : osm,
+          "World Imagery": world_imagery,
+          "ESRI Map": esri_map,
+          "ESRI Physical": esri_phyiscal,
+      }, overlays : {
+      }
+  };
+  L.control.layers(layer_control_1.base_layers,
+                  layer_control_1.overlays,
+                  {"autoZIndex": true, "collapsed": true, "position": "topright"}
+                  ).addTo(map);
+
+  var mrms_url = "{% static '/sfc/mrms_base_refl_latest.png' %}";
+  var mesh_url = "{% static '/sfc/24h_mesh.png' %}";
+  var mesh_bounds = [[52,-128.0],[23,-65.0]];
+  var opacity = 0.7;
+  mesh = L.imageOverlay(mesh_url,mesh_bounds).setOpacity(opacity).addTo(map);
+  mrms = L.imageOverlay(mrms_url,mesh_bounds).setOpacity(opacity).addTo(map);
+
+  map.removeLayer(mrms);
+
+///////////////////////////////// Time/Loop control //////////////////////////////////////////////
+  document.addEventListener("keydown", (event) => {
+    if (event.keyCode == 37){
+      console.log("Key hit!");
+      if (map.hasLayer(mesh)){
+        map.removeLayer(mesh);
+        mrms.addTo(map);
+      } else {
+        map.removeLayer(mrms);
+        mesh.addTo(map);
+      }
+    } // end if
+  }); // end event listener
+
+
+</script>
+
+{% endblock %}

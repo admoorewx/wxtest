@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wx Map</title>
+
+    {% load static %}
+    <!-- JS Libraries -->
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.1/dist/leaflet.js" integrity="sha256-NDI0K41gVbWqfkkaHj15IzU7PtMoelkzyKp8TOaFQ3s=" crossorigin=""></script>
+    <script type="text/javascript" src="{% static '/javascript/Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+    <script type="text/javascript" src="{% static '/javascript/jscolor/jscolor.js' %}"></script>
+    <script src="{% static '/javascript/wxmap.js' %}"></script>
+    <script src="{% static '/javascript/mapping_functions.js' %}"></script>
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.1/dist/leaflet.css" integrity="sha256-sA+zWATbFveLLNqWO2gtiw3HL/lh1giY/Inf1BJ0z14=" crossorigin=""/>
+    <link rel="stylesheet" href="{% static '/css/wxmap.css' %}"/>
+</head>
+<body>
+{% block content %}
+<button id="menu_button" onclick="showToolbar()">Show Menu</button>
+<div id="legend_bar">
+  <img src="{% static '/media/legends/mrms_accum_bar.png' %}" />
+</div>
+<div id="nohrsc_depth_legend">
+  <img class="legend_block_image" src="{% static '/media/legends/nohrsc_depth_legend.jpg' %}" />
+</div>
+<div id="nohrsc_swe_legend">
+  <img class="legend_block_image" src="{% static '/media/legends/nohrsc_swe_legend.jpg' %}" />
+</div>
+<div id="qpf_legend">
+  <img class="legend_block_image" src="{% static '/media/legends/wpc_qpf_legend.jpg' %}" />
+</div>
+<div id="ffg_legend">
+  <img class="legend_block_image" src="{% static '/media/legends/rfc_ffg_legend.jpg' %}" />
+</div>
+<div id="soilsat_legend">
+  <img class="legend_block_image" src="{% static '/media/legends/soil_saturation_legend.jpg' %}" />
+</div>
+<div id="left_menu">
+  <div id="sat_menu">
+    <h5 id="sat_menu_label"  onclick="display_sat_menu_options()">Satellite &#9650;</h5>
+    <div id="g16_conus_menu">
+      <h3 id="g16conus_menu_label"  onclick="display_g16conus_menu_options()">GOES-16 CONUS &#9650;</h3>
+      <div id="g16conus_options">
+        <a class='g16conus_menu_option' id="goes_conus_ch01" onclick="display_goes('conus',1)">Ch 1 - Vsibile (blue)</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch02" onclick="display_goes('conus',2)">Ch 2 - Visible (red)</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch03" onclick="display_goes('conus',3)">Ch 3 - Veggie (Near IR)</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch04" onclick="display_goes('conus',4)">Ch 4 - Cirrus (Near IR)</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch05" onclick="display_goes('conus',5)">Ch 5 - Snow/Ice (Near IR)</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch06" onclick="display_goes('conus',6)">Ch 6 - Particle Size (Near IR)</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch07" onclick="display_goes('conus',7)">Ch 7 - Shortwave IR</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch08" onclick="display_goes('conus',8)">Ch 8 - Upper-level W. V.</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch09" onclick="display_goes('conus',9)">Ch 9 - Mid-level W. V.</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch10" onclick="display_goes('conus',10)">Ch 10 - Low-level W. V.</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch11" onclick="display_goes('conus',11)">Ch 11 - Cloud Top Phase</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch12" onclick="display_goes('conus',12)">Ch 12 - Ozone</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch13" onclick="display_goes('conus',13)">Ch 13 - "Clean" LWIR</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch14" onclick="display_goes('conus',14)">Ch 14 - Longwave IR</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch15" onclick="display_goes('conus',15)">Ch 15 - "Dirty" LWIR</a>
+        <a class='g16conus_menu_option' id="goes_conus_ch16" onclick="display_goes('conus',16)">Ch 16 - CO2 (LWIR)</a>
+      </div>
+    </div>
+    <div id="g16_meso1_menu">
+      <h3 id="g16meso1_menu_label"  onclick="display_g16meso1_menu_options()">GOES-16 Mesosector 1 &#9650;</h3>
+      <div id="g16meso1_options">
+        <a class='g16meso1_menu_option' id="goes_meso1_ch01" onclick="display_goes('meso1',1)">Ch 1 - Vsibile (blue)</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch02" onclick="display_goes('meso1',2)">Ch 2 - Visible (red)</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch03" onclick="display_goes('meso1',3)">Ch 3 - Veggie (Near IR)</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch04" onclick="display_goes('meso1',4)">Ch 4 - Cirrus (Near IR)</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch05" onclick="display_goes('meso1',5)">Ch 5 - Snow/Ice (Near IR)</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch06" onclick="display_goes('meso1',6)">Ch 6 - Particle Size (Near IR)</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch07" onclick="display_goes('meso1',7)">Ch 7 - Shortwave IR</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch08" onclick="display_goes('meso1',8)">Ch 8 - Upper-level W. V.</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch09" onclick="display_goes('meso1',9)">Ch 9 - Mid-level W. V.</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch10" onclick="display_goes('meso1',10)">Ch 10 - Low-level W. V.</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch11" onclick="display_goes('meso1',11)">Ch 11 - Cloud Top Phase</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch12" onclick="display_goes('meso1',12)">Ch 12 - Ozone</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch13" onclick="display_goes('meso1',13)">Ch 13 - "Clean" LWIR</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch14" onclick="display_goes('meso1',14)">Ch 14 - Longwave IR</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch15" onclick="display_goes('meso1',15)">Ch 15 - "Dirty" LWIR</a>
+        <a class='g16meso1_menu_option' id="goes_meso1_ch16" onclick="display_goes('meso1',16)">Ch 16 - CO2 (LWIR)</a>
+      </div>
+    </div>
+    <div id="g16_meso2_menu">
+      <h3 id="g16meso2_menu_label"  onclick="display_g16meso2_menu_options()">GOES-16 Mesosector 2 &#9650;</h3>
+      <div id="g16meso2_options">
+        <a class='g16meso2_menu_option' id="goes_meso2_ch01" onclick="display_goes('meso2',1)">Ch 1 - Vsibile (blue)</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch02" onclick="display_goes('meso2',2)">Ch 2 - Visible (red)</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch03" onclick="display_goes('meso2',3)">Ch 3 - Veggie (Near IR)</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch04" onclick="display_goes('meso2',4)">Ch 4 - Cirrus (Near IR)</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch05" onclick="display_goes('meso2',5)">Ch 5 - Snow/Ice (Near IR)</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch06" onclick="display_goes('meso2',6)">Ch 6 - Particle Size (Near IR)</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch07" onclick="display_goes('meso2',7)">Ch 7 - Shortwave IR</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch08" onclick="display_goes('meso2',8)">Ch 8 - Upper-level W. V.</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch09" onclick="display_goes('meso2',9)">Ch 9 - Mid-level W. V.</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch10" onclick="display_goes('meso2',10)">Ch 10 - Low-level W. V.</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch11" onclick="display_goes('meso2',11)">Ch 11 - Cloud Top Phase</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch12" onclick="display_goes('meso2',12)">Ch 12 - Ozone</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch13" onclick="display_goes('meso2',13)">Ch 13 - "Clean" LWIR</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch14" onclick="display_goes('meso2',14)">Ch 14 - Longwave IR</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch15" onclick="display_goes('meso2',15)">Ch 15 - "Dirty" LWIR</a>
+        <a class='g16meso2_menu_option' id="goes_meso2_ch16" onclick="display_goes('meso2',16)">Ch 16 - CO2 (LWIR)</a>
+      </div>
+    </div>
+  </div>
+  <div id="radar_menu">
+    <h5 id="radar_menu_label"  onclick="display_radar_menu_options()">Radar &#9650;</h5>
+    <div id="radar_options">
+      <a class='radar_menu_option' id="iem_radar" onclick="display_iem()">IEM Composite (loop)</a>
+      <a class='radar_menu_option' id="iem_radar_static" onclick="display_iem_static()">IEM Composite (static)</a>
+      <a class='radar_menu_option' id="mrms_radar" onclick="display_mrms()">MRMS Base Reflectivity</a>
+      <a class='radar_menu_option' id="mrms_accum_1h" onclick="display_mrms_accum(1)">MRMS 1-h Precip Accum.</a>
+      <a class='radar_menu_option' id="mrms_accum_24h" onclick="display_mrms_accum(24)">MRMS 24-h Precip Accum.</a>
+      <a class='radar_menu_option' id="mrms_accum_48h" onclick="display_mrms_accum(48)">MRMS 48-h Precip Accum.</a>
+      <a class='radar_menu_option' id="mrms_accum_72h" onclick="display_mrms_accum(72)">MRMS 72-h Precip Accum.</a>
+      <a class='radar_menu_option' id="wsr88d_refl" onclick="display_88d('ref')">WSR-88D Reflectivity</a>
+      <a class='radar_menu_option' id="wsr88d_vel" onclick="display_88d('vel')">WSR-88D S.R. Velocity</a>
+    </div>
+  </div>
+  <div id="obs_menu">
+    <h5 id="obs_menu_label"  onclick="display_obs_menu_options()">Observations &#9650;</h5>
+    <div id="obs_options">
+      <a class='obs_menu_option' id="sfcobs" onclick="request_obs('sfcobs')">Station Plot</a>
+      <a class='obs_menu_option' id="tempobs" onclick="request_obs('tempobs')">Temperature (F)</a>
+      <a class='obs_menu_option' id="heatindobs" onclick="request_obs('heatindobs')">Heat Index (F)</a>
+      <a class='obs_menu_option' id="windchillobs" onclick="request_obs('windchillobs')">Wind Chill (F)</a>
+      <a class='obs_menu_option' id="dewpobs" onclick="request_obs('dewpobs')">Dewpoint (F)</a>
+      <a class='obs_menu_option' id="dewdepobs" onclick="request_obs('dewdepobs')">Dewpoint Depression (F)</a>
+      <a class='obs_menu_option' id="windobs" onclick="request_obs('windobs')">Wind (knots)</a>
+      <a class='obs_menu_option' id="mslpobs" onclick="request_obs('mslpobs')">MSLP (mb)</a>
+      <a class='obs_menu_option' id="pchangeobs" onclick="request_obs('pchangeobs')">3 hr Pressure Change (mb)</a>
+      <a class='obs_menu_option' id="altobs" onclick="request_obs('altobs')">Alt. Setting (in)</a>
+      <a class='obs_menu_option' id="visbobs" onclick="request_obs('visbobs')">Visibility (mi)</a>
+      <a class='obs_menu_option' id="flightobs" onclick="request_obs('flightobs')">Flight Category</a>
+      <a class='obs_menu_option' id="fireobs" onclick="request_obs('fireobs')">Fire Weather</a>
+      <a class='obs_menu_option' id="fosbobs" onclick="request_obs('fosbobs')">Fosberg Index</a>
+      <a class='obs_menu_option' id="riverobs" onclick="request_usgs_gauges()">USGS River Guages</a>
+    </div>
+  </div>
+  <div id="alerts_menu">
+    <h5 id="alerts_menu_label"  onclick="display_alerts_menu_options()">NWS Alerts &#9650;</h5>
+    <div id="alerts_options">
+      <a class='alerts_menu_option' id="warnings" onclick="display_warnings()">Convective Warnings</a>
+      <!-- <a class='alerts_menu_option' id="watches" onclick="get_watches()">Convective Watches</a> -->
+      <a class='alerts_menu_option' id="hazards" onclick="display_hazards()">All NWS Hazards</a>
+    </div>
+  </div>
+  <div id="ncep_menu">
+    <h5 id="ncep_menu_label"  onclick="display_ncep_menu_options()">NCEP Products &#9650;</h5>
+    <div id="ncep_options">
+      <a class='ncep_menu_option' id="d1cat" onclick="display_spc('d1cat')">SPC Day 1 Categorical</a>
+      <a class='ncep_menu_option' id="d1tor" onclick="display_spc('d1tor')">SPC Day 1 Tornado Probability</a>
+      <a class='ncep_menu_option' id="d1hail" onclick="display_spc('d1hail')">SPC Day 1 Hail Probability</a>
+      <a class='ncep_menu_option' id="d1wind" onclick="display_spc('d1wind')">SPC Day 1 Wind Probability</a>
+      <a class='ncep_menu_option' id="d2cat" onclick="display_spc('d2cat')">SPC Day 2 Categorical</a>
+      <a class='ncep_menu_option' id="d2tor" onclick="display_spc('d2tor')">SPC Day 2 Tornado Probability</a>
+      <a class='ncep_menu_option' id="d2hail" onclick="display_spc('d2hail')">SPC Day 2 Hail Probability</a>
+      <a class='ncep_menu_option' id="d2wind" onclick="display_spc('d2wind')">SPC Day 2 Wind Probability</a>
+      <a class='ncep_menu_option' id="d3cat" onclick="display_spc('d3cat')">SPC Day 3 Categorical</a>
+      <a class='ncep_menu_option' id="d1fire" onclick="display_spc_fire('d1fire')">SPC Day 1 Fire Outlook</a>
+      <a class='ncep_menu_option' id="d2fire" onclick="display_spc_fire('d2fire')">SPC Day 2 Fire Outlook</a>
+      <a class='ncep_menu_option' id="nhctropic" onclick="display_nhc_summary()">NHC Tropical Summary</a>
+      <a class='ncep_menu_option' id="d1ero" onclick="display_ero('d1ero')">WPC Day 1 ERO</a>
+      <a class='ncep_menu_option' id="d2ero" onclick="display_ero('d2ero')">WPC Day 2 ERO</a>
+      <a class='ncep_menu_option' id="d3ero" onclick="display_ero('d3ero')">WPC Day 3 ERO</a>
+      <a class='ncep_menu_option' id="d1qpf" onclick="display_qpf('d1qpf')">WPC Day 1 QPF</a>
+      <a class='ncep_menu_option' id="d2qpf" onclick="display_qpf('d2qpf')">WPC Day 2 QPF</a>
+      <a class='ncep_menu_option' id="d3qpf" onclick="display_qpf('d3qpf')">WPC Day 3 QPF</a>
+      <a class='ncep_menu_option' id="d45qpf" onclick="display_qpf('d45qpf')">WPC Days 4-5 QPF</a>
+      <a class='ncep_menu_option' id="d67qpf" onclick="display_qpf('d67qpf')">WPC Days 6-7 QPF</a>
+      <a class='ncep_menu_option' id="1hffg" onclick="display_ffg('1hffg')">RFC 1-hr Flash Flood Guidance</a>
+      <a class='ncep_menu_option' id="3hffg" onclick="display_ffg('3hffg')">RFC 3-hr Flash Flood Guidance</a>
+      <a class='ncep_menu_option' id="6hffg" onclick="display_ffg('6hffg')">RFC 6-hr Flash Flood Guidance</a>
+      <a class='ncep_menu_option' id="soil_sat" onclick="display_soil_sat()">NWC Soil Saturation</a>
+      <a class='ncep_menu_option' id="d1wssi" onclick="display_wssi('d1wssi')">WPC Day 1 WSSI</a>
+      <a class='ncep_menu_option' id="d2wssi" onclick="display_wssi('d2wssi')">WPC Day 2 WSSI</a>
+      <a class='ncep_menu_option' id="d3wssi" onclick="display_wssi('d3wssi')">WPC Day 3 WSSI</a>
+      <a class='ncep_menu_option' id="nohrsc_depth" onclick="display_nohrsc('depth')">NOHRSC Snow Depth</a>
+      <a class='ncep_menu_option' id="nohrsc_swe" onclick="display_nohrsc('swe')">NOHRSC S.W.E.</a>
+    </div>
+  </div>
+  <div id="report_menu">
+    <h5 id="report_menu_label"  onclick="display_report_menu_options()">Reports &#9650;</h5>
+    <div id="report_options">
+      <a class='report_menu_option' id='lsr' onclick='retrieve_lsr()'>24-h Local Storm Reports</a>
+      <a class='report_menu_option' id='svr_mping' onclick='get_mping("svr")'>Convective MPING</a>
+      <a class='report_menu_option' id='winter_mping' onclick='get_mping("winter")'>Winter MPING</a>
+    </div>
+  </div>
+  <div id="settings_menu">
+    <h5 id="settings_menu_label"  onclick="display_settings_menu_options()">Settings &#9650;</h5>
+    <div id="settings_options">
+      <a class='settings_menu_option'>State Color</a>
+      <button id="colorPickerState" data-jscolor="{onInput:'changeStateColor(this)', preset:'dark',value:'rgba(64,64,64,1.0)'}"></button>
+      <a class='settings_menu_option'>County Color</a>
+      <button id="colorPickerCounty" data-jscolor="{onInput:'changeCountyColor(this)', preset:'dark',value:'rgba(64,64,64,1.0)'}"></button>
+      <a class='settings_menu_option'>CWA Color</a>
+      <button id="colorPickerCWA" data-jscolor="{onInput:'changeCWAColor(this)', preset:'dark',value:'rgba(29,21,255,1.0)'}"></button>
+      <a class='settings_menu_option'>Wind Barb Color</a>
+      <button id="colorPickerWind" data-jscolor="{onInput:'changeWindColor(this)', preset:'dark',value:'rgba(0,0,0,1.0)'}"></button>
+      <span id="ob_density_value" class='settings_menu_option'>Sfc. Obs Density: 3</span>
+      <input type="range" min="1" max="5" value="3" step="1" class="slider" id="sfc_ob_density_range" onchange="updateObsDensity(this.value)">
+      <p style='font-size: 18px;'>*Note: Loading more obs may slow the application. Allow for up to 30 seconds for changes to take affect.*</p>
+    </div>
+  </div>
+</div>
+<div id="mapholder"></div>
+<script>
+/// Variable Initialization ///
+var showMenu = false;
+var show_sat_menu = false;
+var show_g16conus_menu = false;
+var show_g16meso1_menu = false;
+var show_g16meso2_menu = false;
+var show_radar_menu = false;
+var show_obs_menu = false;
+var show_alerts_menu = false;
+var show_ncep_menu = false;
+var show_report_menu = false;
+var show_settings_menu = false;
+// layer display initialization
+// Radar
+var iem_displayed = false;
+var iem_static_displayed = false;
+var mrms_displayed = false;
+var mrms_accum_displayed = false;
+var mrms_accum_period = 0;
+var wsr88d_refl_displayed = false;
+var wsr88d_vel_displayed = false;
+var wsr88d_list = [];
+// GOES
+var goes_displayed = false;
+var goes_channel = 0;
+var goes_sector = 'none';
+// Surface obs
+var filter = 3;
+var obs_type = 'none';
+var surface_station_list = [];
+var wind_barb_color = 'rgba(0,0,0,1.0)';
+var river_gauges_diplsayed = false;
+// warnings/hazards
+var warning_list = [];
+var warnings_displayed = false;
+var hazards_displayed = false;
+// ncep layers
+var spc_displayed= false;
+var spc_displayed_type = 'none';
+var spc_fire_disaplyed = false;
+var spc_fire_displayed_type = 'none';
+var nohrsc_displayed = false;
+var nohrsc_displayed_type = 'none';
+var nhc_displayed = false;
+var ero_displayed = false;
+var ero_displayed_type = 'none';
+var qpf_displayed = false;
+var qpf_displayed_type = 'none';
+var ffg_displayed = false;
+var ffg_displayed_type = 'none';
+var wssi_displayed = false;
+var wssi_displayed_type = 'none';
+var soil_sat_displayed = false;
+// reports
+var lsr_displayed = false;
+var winter_mping_displayed = false;
+var svr_mping_displayed = false;
+// other settings
+var state_color = 'rgba(64,64,64,1.0)';
+var county_color = 'rgba(64,64,64,1.0)';
+var cwa_color = 'rgba(29,21,255,1.0)';
+////////////////////////////////////////////////////////////////////////////////
+//---------- Check for Mobile ---------------------------
+window.onload = function(){
+  var viewport_width = window.innerWidth;
+  if (viewport_width <= 1080){
+    console.log("Mobile detected");
+    $('#menu_button').css('height', '70px');
+    $('#menu_button').css('width', '180px');
+    $('#menu_button').css('font-size', '24px');
+    $('#menu_button').css('left', '-60px');
+  }
+}
+////////////////////////////////////////////////////////////////////////////////
+//// Lat/Lon Handler ////
+L.CursorHandler = L.Handler.extend({
+    addHooks: function () {
+        this._map.on('mousemove', this._update, this);
+    },
+    _update: function (e) {
+      document.getElementById('latlontext').innerHTML = e.latlng.lat.toFixed(4).toString()+", "+e.latlng.lng.toFixed(4).toString();
+    }
+});
+L.Map.addInitHook('addHandler', 'cursor', L.CursorHandler);
+//// MAP DECLARATION ////
+var map = L.map(
+    "mapholder",
+    {
+        center: [40.0, -100.0],
+        crs: L.CRS.EPSG3857,
+        zoom: 5,
+        zoomControl: true,
+        cursor: true,
+        preferCanvas: true,
+        renderer: L.canvas(),
+        keyboard: false,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+    }
+);
+
+///////////////  BASE LAYERS /////////////////
+var white_map = L.tileLayer(
+    "https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+    {"attribution": "Map tiles by \u003ca href=\"http://stamen.com\"\u003eStamen Design\u003c/a\u003e, under \u003ca href=\"http://creativecommons.org/licenses/by/3.0\"\u003eCC BY 3.0\u003c/a\u003e. Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+);
+
+var black_map = L.tileLayer(
+    "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+    {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+);
+
+
+var esri_phyiscal = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
+  maxZoom: 8
+});
+
+var world_imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+});
+
+var osm = L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+).addTo(map);
+
+/// Leaflet marker groups delcaration ///
+var obsCanvas = L.canvas(); // for surface observations
+var wsr88d_location_markers = new L.featureGroup();
+var surface_stations = new L.featureGroup().addTo(map);
+var current_warnings = new L.geoJSON();
+var lsr_markers = new L.featureGroup().addTo(map);
+var winter_mping_markers = new L.featureGroup().addTo(map);
+var svr_mping_markers = new L.featureGroup().addTo(map);
+var state_boundary = new L.geoJson().addTo(map);
+var district_boundary = new L.geoJson();
+var cwa_boundary = new L.geoJson();
+//////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////// BOUNDARY CONTROL //////////////////////////////////////////////
+var county_style = {
+    "color":county_color,
+    "fillColor":"none",
+    "fillOpacity":0.0,
+    "opacity":0.4,
+    "weight": 0.5,
+}
+var state_style = {
+    "color": state_color,
+    "fillColor":"none",
+    "fillOpacity":0.0,
+    "opacity":0.9,
+    "weight": 1.2,
+}
+
+var cwa_style = {
+    "color":cwa_color,
+    "fillColor":"none",
+    "fillOpacity":0.0,
+    "opacity":0.9,
+    "weight": 0.7,
+}
+
+$.ajax({
+dataType: "json",
+url: "{% static '/geo/boundaries/uscounties.json' %}",
+success: function(data) {
+    $(data.features).each(function(key, data) {
+        district_boundary.addData(data).setStyle(county_style);
+        //district_boundary.setStyle(county_style);
+    });
+}
+}).error(function() {});
+
+$.ajax({
+dataType: "json",
+url: "{% static '/geo/boundaries/usstates.json' %}",
+success: function(data) {
+    $(data.features).each(function(key, data) {
+        state_boundary.addData(data);
+        state_boundary.setStyle(state_style);
+    });
+}
+}).error(function() {});
+
+$.ajax({
+dataType: "json",
+url: "{% static '/geo/boundaries/cwa/cwa.geojson' %}",
+success: function(data) {
+    $(data.features).each(function(key, data) {
+        cwa_boundary.addData(data);
+        cwa_boundary.setStyle(cwa_style);
+    });
+}
+}).error(function() {});
+/////////////// LAYER CONTROL ////////////////
+var layer_control = {
+    base_layers : {
+        "Dark" : black_map,
+        "Light" : white_map,
+        "Open Street Map (default)" : osm,
+        "World Imagery": world_imagery,
+        "ESRI Physical": esri_phyiscal,
+    },
+    overlays :  {
+      "State Borders":state_boundary,
+      "County Borders":district_boundary,
+      "CWA Boundaries": cwa_boundary,
+    },
+};
+L.control.layers(
+    layer_control.base_layers,
+    layer_control.overlays,
+    {"autoZIndex": true, "collapsed": true, "position": "topright"}
+).addTo(map);
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function display_layer_loop(url,layer){
+  var radar_layers = generateLayers(url,layer);
+  const transitionTime = 500; // ms
+  const opacity = 0.75
+  var index = 0;
+  // add layers to map
+  radar_layers.forEach(layer =>{
+    layer.tileLayer.setOpacity(0);
+    layer.tileLayer.addTo(map);
+  });
+  setInterval(function(){
+    let past_index = index - 1;
+    if (past_index < 0){
+      past_index = radar_layers.length - 1;
+    }
+    // hide previous layer
+    radar_layers[past_index].tileLayer.setOpacity(0);
+    // show current layer
+    radar_layers[index].tileLayer.setOpacity(opacity);
+    // increment
+    index++;
+    if (index >= radar_layers.length){
+      index = 0;
+    }
+  },transitionTime);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function remove_layer_loop(url){
+  map.eachLayer(function(maplayer){
+    console.log(maplayer._url,url);
+    if (maplayer._url == url){
+      map.removeLayer(maplayer);
+    }
+  })
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function display_layer(layer){
+  layer.addTo(map);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function display_88d_markers(type){
+  var url = "{% static '/geo/wsr88d_locations.json' %}";
+  $.ajax({
+  dataType: "json",
+  url: url,
+  success: function(data) {
+      $.each(data, function(key,info){
+        let name = info[0];
+        let lat = info[1];
+        let lon = info[2];
+        let elevation = info[3];
+        var marker = new L.circleMarker([lat, lon], { radius: 9, color: "white", weight: 2, opacity: 1.0, fillColor: "black", fillOpacity: 0.4, zorder: 200}); //opacity may be set to zero
+        marker.on('click',function(){
+            console.log(`Selected site: ${key}, ${name}, ${type}`);
+            display_88d_data(key,type);
+        });
+        marker.addTo(wsr88d_location_markers);
+        // hover text
+        text = `ID: ${key} <br>\
+                Name: ${name}<br>\
+                Elevation: ${elevation} ft`;
+        var textmarker = new L.marker([lat, lon], { opacity: 0.0 });
+        textmarker.bindTooltip(
+            `<div>
+                 ${text}
+            </div>`,
+            {direction:'up', permanent: false, offset:[0,0]}
+        );
+        textmarker.addTo(wsr88d_location_markers);
+      });
+  }
+  }).fail(function() {
+    console.log("Error updating locations.");
+  });
+  wsr88d_location_markers.addTo(map);
+} // end display_88d_markers
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function remove_88d_markers(){
+  wsr88d_location_markers.clearLayers();
+  wsr88d_location_markers.remove();
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function addWindBarb(latitude,longitude,wspd,dir,color){
+  if (wspd < 5.0){
+    var windbarb = new L.circleMarker([latitude,longitude], {radius:5, weight: 1.0, opacity: 1.0, color: color, fillColor: "none", fillOpacity: 0.0});
+  } else {
+    var icon = L.WindBarb.icon({lat: latitude, deg: dir, speed: wspd, pointRadius: 0, strokeWidth: 2, strokeLength: 18, barbSpaceing: 4, barbHeight: 10, fillColor: 'gray', barbColor: color});
+    var windbarb = L.marker([latitude,longitude], {icon: icon});
+  }
+  windbarb.addTo(surface_stations);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function addMETARText(latitude,longitude,text){
+  var textmarker = new L.marker([latitude, longitude], { opacity: 0.0 });
+  textmarker.bindTooltip(
+      `<div>
+           ${text}
+      </div>`,
+      {direction:'auto', permanent: false, offset:[0,20]}
+  );
+  textmarker.addTo(surface_stations);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function addSingleValue(lat,lon,value,value_color){
+  var singleMarker = L.marker([lat,lon],{
+    icon: L.divIcon({
+      className: 'text-label',
+      html: `<p style="color:${value_color}; margin-bottom:0;">${value}</p>`,
+      iconSize: [20,50]
+    })
+  });
+  singleMarker.addTo(surface_stations);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function addFireValue(lat,lon,value,value_color){
+  var singleMarker = L.marker([lat,lon],{
+    icon: L.divIcon({
+      className: 'fire-text-label',
+      html: `<p style="color:${value_color}; margin-bottom:0;">${value}</p>`,
+      iconSize: [20,50]
+    })
+  });
+  singleMarker.addTo(surface_stations);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function addStationValues(lat,lon,temp,temp_color,dewp,dewp_color){
+  var doubleMarker = L.marker([lat,lon],{
+    icon: L.divIcon({
+      className: 'station-text-label',
+      html: `<p style="color:${temp_color}; margin-bottom:0;">${temp}</p><p style="color:${dewp_color}; margin-top:0;">${dewp}</p>`,
+      iconSize: [40,40] // [18,40]
+    })
+  });
+  doubleMarker.addTo(surface_stations);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function clearSurfaceObs(){
+  surface_stations.clearLayers();
+  //surface_stations.remove();
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function addCircleMarker(lat,lon,circle_color){
+  var marker = new L.circleMarker([lat, lon], { radius: 7, color: "black", weight: 2, opacity: 1.0, fillColor: circle_color, fillOpacity: 0.75 }); //opacity may be set to zero
+  marker.addTo(surface_stations);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Get the initial surface observation data
+var variables = 'air_temp,dew_point_temperature,wind_speed,wind_direction,metar,sea_level_pressure,pressure_tendency,pressure_change_code,altimeter,visibility,ceiling';
+mesowest_obs(variables,filter);
+// establish a timer that will refresh the obs every XX minutes
+const SURFACE_OB_REFRESH_RATE = 600; // seconds - set to 10 minutes
+setInterval(function(){
+  mesowest_obs(variables,filter);
+  console.log(`Requesting fresh obs of type ${obs_type}`);
+  setTimeout(function(){
+    request_obs(obs_type,true)
+  },30000); // set to wait 30 seconds for new obs to load in after the mesowest_obs call.
+  console.log(`Just refreshed.`);
+},(SURFACE_OB_REFRESH_RATE*1000));
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////// Handle obs on map zoom ////////////////////
+map.on('zoomend', function(obs_type){
+  if (obs_type != "none"){
+    surface_stations.eachLayer(function(layer){
+      let isVisible = map.getBounds().contains(layer.getLatLng());
+      if (isVisible){
+        map.addLayer(layer);
+      } // end if
+      else {
+        map.removeLayer(layer);
+      } // end else
+    }); // end for each layer in surface_stations
+  } // end if
+}) // end map.on(zoom)
+//////////////// Handle obs on map pan ////////////////////
+map.on('dragend', function(obs_type){
+  if (obs_type != "none"){
+    surface_stations.eachLayer(function(layer){
+      let isVisible = map.getBounds().contains(layer.getLatLng());
+      if (isVisible){
+        map.addLayer(layer);
+      } // end if
+      else {
+        map.removeLayer(layer);
+      } // end else
+    }); // end for each layer in surface_stations
+  } // end if
+}) // end map.on(pan)
+///////////////////////////// NWS WARNINGS /////////////////////////////////////
+function display_current_warnings(){
+  current_warnings.addTo(map);
+}
+////////////////////////////////////////////////////////////////////////////////
+function hide_current_warnings(){
+  current_warnings.remove();
+}
+////////////////////////////////////////////////////////////////////////////////
+function cleanse_warnings(geojson_layer){
+  // Convert the expiration time to epoch time
+  // then convert current time to epoch time, if the warning has expired,
+  // clear it from the geoJSON layer.
+  geojson_layer.eachLayer(function(layer){
+    let expire_time = layer.feature.properties.expires;
+    let expire_datetime = datetime_to_epoch(expire_time);
+    let current_datetime = new Date().getTime();
+    if (expire_datetime < current_datetime){
+      //console.log(expire_datetime,current_datetime);
+      geojson_layer.removeLayer(layer);
+    }
+  });
+} // end function
+////////////////////////////////////////////////////////////////////////////////
+const WARNING_REFRESH_RATE = 5 // seconds - time to check for new warnings.
+warning_list = nws_alerts(warning_list,false);
+setInterval(function() {
+  warning_list = nws_alerts(warning_list,true);
+  cleanse_warnings(current_warnings);
+}, WARNING_REFRESH_RATE*1000);
+////////////////////////////////////////////////////////////////////////////////
+function plotLSR(report){
+  var lat = report.properties.lat;
+  var lon = report.properties.lon;
+  var city = report.properties.city;
+  var county = report.properties.county;
+  var type = report.properties.typetext;
+  var color = colorLSR(type);
+  var mag = report.properties.magnitude;
+  var source = report.properties.source;
+  var time = report.properties.valid;
+  var unit = report.properties.unit;
+  var state = report.properties.st;
+  try {
+    var remark = formatRemark(report.properties.remark);
+  } catch {
+    var remark = "";
+  }
+  if (unit == undefined){
+    unit = "";
+  }
+  var text = `EVENT: ${type}<br /> \
+              MAG: ${mag} ${unit}<br /> \
+              TIME: ${time}<br /> \
+              LOCATION: ${city}, ${state}<br /> \
+              SOURCE: ${source}<br /> \
+              REMARK: ${remark}`
+  var lsrmarker = new L.circleMarker([lat, lon], {radius: 7.0, weight: 0.75, opacity: 1.0, color: "black", fillColor: color, fillOpacity: 1.0});
+  lsrmarker.addTo(lsr_markers);
+  // have to create a different marker because circleMarker is too buggy
+  var lsrText = new L.marker([lat, lon], { radius: 7.0, opacity: 0.0 });
+  lsrText.bindTooltip(
+      `<div class="lsr_tag">
+        ${text}
+      </div>`,
+      {direction:'auto', permanent: false, offset: [1,25]}
+  );
+  lsrText.addTo(lsr_markers);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function clearLSRs(){
+  lsr_markers.clearLayers();
+  //surface_stations.remove();
+}
+////////////////////////////////////////////////////////////////////////////////
+function get_mping(type){
+  if (type == "winter"){
+    if (!winter_mping_displayed){
+      // turn on winter mping
+      winter_mping_displayed = true;
+      $(`#winter_mping`).css({"color": "rgb(70,196,91)"});
+      mping_ajax_call("{% static '/data/mping_winter.json' %}",winter_mping_markers);
+    } else {
+      // turn off winter mping
+      winter_mping_displayed = false;
+      $(`#winter_mping`).css({"color": "white"});
+      winter_mping_markers.clearLayers();
+    }
+  } else if (type == "svr"){
+    if (!svr_mping_displayed){
+      // turn on svr mping
+      svr_mping_displayed = true;
+      $(`#svr_mping`).css({"color": "rgb(70,196,91)"});
+      // do the hail reports first, then repeat for wind
+      mping_ajax_call("{% static '/data/mping_hail.json' %}",svr_mping_markers);
+      mping_ajax_call("{% static '/data/mping_wind.json' %}",svr_mping_markers);
+    } else {
+      // turn off svr mping
+      svr_mping_displayed = false;
+      $(`#svr_mping`).css({"color": "white"});
+      svr_mping_markers.clearLayers();
+    }
+  } else {
+    console.log("Unknown MPING type request.");
+  }
+}
+////////////////////////////////////////////////////////////////////////////////
+function add_mping(data,mping_markers){
+  let latitude = data.geom.coordinates[1];
+  let longitude = data.geom.coordinates[0];
+  console.log(data);
+  if (data.description.indexOf("Snow") >= 0) {
+    color = "#FFFFFF";
+  }
+  else if (data.description.indexOf("Ice") >= 0) {
+    color = "#FC57F6";
+  }
+  else if (data.description.indexOf("Freezing") >= 0) {
+    color = "#FC57F6";
+  } else if (data.description.indexOf("Hail") >= 0){
+    color = "#0B811F";
+  } else if (data.category == "Wind Damage"){
+    color = "#2828F7";
+  } else {
+    color = "#57BAFC";
+  }
+  var mpingmarker = new L.circleMarker([latitude, longitude], {radius: 5, weight: 0.75, opacity: 0.75, color: "black", fillColor: color, fillOpacity: 0.75,});
+  mpingmarker.addTo(mping_markers);
+  // have to create a different marker because circleMarker is too buggy
+  let text = data.description + " @ " + data.obtime.substring(0,10) +" " + data.obtime.substring(11,16)+" UTC"
+  var mpingText = new L.marker([latitude, longitude], { opacity: 0.0 });
+  mpingText.bindTooltip(
+      `<div>
+           ${text}
+      </div>`,
+      {direction:'center', permanent: false, offset:[0,0]}
+  );
+  mpingText.addTo(mping_markers);
+} // end function add_mping
+////////////////////////////////////////////////////////////////////////////////
+// time stamp text
+L.Control.textbox = L.Control.extend({
+  onAdd: function(map) {
+    var text = L.DomUtil.create('div');
+    text.id = "info text";
+    latlontext = "<a id='latlontext' style='color: white; font-weight:bold; text-shadow: 1px 2px 1px black; font-size:15px;'></a><br/>";
+    basetime = "<p id='timestamp' style='color: white; font-weight:bold; text-shadow: 1px 2px 1px black; font-size:15px;'></p>";
+    text.innerHTML = latlontext+basetime;
+    return text;
+  },
+  onRemove: function(map) {
+    // nothing?
+  }
+});
+L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+L.control.textbox({position: 'bottomleft'}).addTo(map);
+
+function currentTime() {
+  time = new Date();
+  if (time.getSeconds() < 10) {
+    seconds = "0"+time.getSeconds().toString();
+  } else {
+    seconds = time.getSeconds().toString();
+  }
+  result = formatTime(time);
+  result = result.substring(0,(result.length-3))+seconds+"Z";
+
+  obj = document.getElementById('timestamp');
+  obj.innerHTML = result;
+}
+
+setInterval(function(){
+  currentTime();
+},1000);
+////////////////////////////////////////////////////////////////////////////////
+
+
+</script>
+{% endblock %}
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Wx Watcher Home</title>
+
+  <!-- load static  -->
+  {% load static %}
+  <!-- Bootstrap core CSS -->
+  <link href="{% static '/javascript/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <!-- Non-Template sytles and JS links -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet-src.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script type="text/javascript" src="{% static '/javascript/mapping_functions.js' %}"></script>
+
+
+  <style>
+    body{
+      background-image: url("{% static '/media/gustfront.jpg' %}");
+      background-size: cover;
+      background-repeat:repeat;
+      background-attachment:fixed;
+      overflow-y:scroll;
+    }
+
+    #clock{
+      position: absolute;
+      top: 70px;
+      left: 20%;
+      /* font-size: 25px; */
+      color: white;
+    }
+
+    #TwitterFeed{
+      position: absolute;
+      right: 20vw;
+      top: 100px;
+      height: 2750px;
+      width: 20vw;
+    }
+
+    #outlook_container{
+      position:absolute;
+      top: 100px;
+      left: 20vw;
+      width: 38vw;
+    }
+
+    #wwa{
+      position: relative;
+      top: 0px;
+      height: 450px;
+    }
+
+    #radar{
+      position: relative;
+      top: 10px;
+      height: 450px;
+    }
+
+    #spc_svr{
+      position: relative;
+      top: 20px;
+      height: 450px;
+    }
+
+    #spc_fire{
+      position: relative;
+      top: 30px;
+      height: 450px;
+    }
+
+    #wpc_ero{
+      position: relative;
+      top: 40px;
+      height: 450px;
+    }
+
+    #wpc_winter{
+      position: relative;
+      top: 50px;
+      height: 450px;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">Weather Watcher Tools:</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/map/standard_map" target="_blank" rel="noopener noreferrer">Wx Map</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/map/wim/" target="_blank" rel="noopener noreferrer">W.I.M.</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/map/cim/" target="_blank" rel="noopener noreferrer">C.I.M.</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/textProd/text" target="_blank" rel="noopener noreferrer">Text Products</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/climo/plot" target="_blank" rel="noopener noreferrer">Climo</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/plot/submit/" target="_blank" rel="noopener noreferrer">Meteograms</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/blsn/table/" target="_blank" rel="noopener noreferrer">Blowing Snow Table</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/map/outlook/" target="_blank" rel="noopener noreferrer">Outlook Practice</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="map/surface_charts" target="_blank" rel="noopener noreferrer">Surface Charts</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+  <section>
+
+    <p id="clock">Current Time:</p>
+    <div id="outlook_container">
+
+      <div id=wwa>
+        <a id="wwalink" href="https://www.weather.gov"> <img id="wwaImage" style="height: 100%; width: 100%;" src="https://forecast.weather.gov/wwamap/png/US.png"></a>
+      </div>
+
+      <div id=radar>
+        <a id="radarlink" href="https://radar.weather.gov/ridge/lite/CONUS-LARGE_loop.gif"> <img id="radarImage" style="height: 100%; width: 100%;" src="https://radar.weather.gov/ridge/lite/CONUS-LARGE_loop.gif"></a>
+      </div>
+
+      <div id=spc_svr>
+        <a id="spcsvrlink" href="https://www.spc.noaa.gov/products/outlook/day1otlk.html";> <img id="spcsvrImage" style="height: 100%; width: 100%;" src="https://www.spc.noaa.gov/products/outlook/day1otlk.gif"></a>
+      </div>
+
+      <div id=spc_fire>
+        <a id="spcfirelink" href="https://www.spc.noaa.gov/products/fire_wx/fwdy1.html";> <img id="spcfireImage" style="height: 100%; width: 100%;" src="https://www.spc.noaa.gov/products/fire_wx/day1otlk_fire.gif"></a>
+      </div>
+
+      <div id=wpc_ero>
+        <a id="wpcerolink" href="https://www.wpc.ncep.noaa.gov/qpf/ero.php?opt=curr&day=1";> <img id="wpceroImage" style="height: 100%; width: 100%;" src="https://www.wpc.ncep.noaa.gov/qpf/94ewbg.gif?"></a>
+      </div>
+
+      <div id=wpc_winter>
+        <a id="wpcwinterlink" href="https://www.wpc.ncep.noaa.gov/pwpf/wwd_accum_probs.php?fpd=24&ptype=snow&amt=1&day=1&ftype=probabilities"> <img id="wpcwinterImage" style="height: 100%; width: 100%;" src="https://www.wpc.ncep.noaa.gov/wwd/day1_psnow_gt_04_conus.gif"></a>
+      </div>
+
+    </div>
+
+    <div id="TwitterFeed">
+      <a class="twitter-timeline" data-height="100%" href="https://twitter.com/WxWatching/lists/1461715336202489881?ref_src=twsrc%5Etfw">A Twitter List by WxWatching</a> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    </div>
+
+
+  </section>
+
+  <script>
+
+  //---------- Check for Mobile ---------------------------
+  window.onload = function(){
+    var viewport_width = window.innerWidth;
+    if (viewport_width <= 1080){
+      console.log("Mobile detected");
+      $('#clock').css('left', '5vw');
+      $('#outlook_container').css('left', '5vw');
+      $('#outlook_container').css('top', '100px');
+      $('#outlook_container').css('width', '90vw');
+      $('#outlook_container').css('overflow', 'auto');
+      $('#TwitterFeed').css('left', '5vw');
+      $('#TwitterFeed').css('top', '2810px');
+      $('#TwitterFeed').css('width', '90vw');
+      $('#TwitterFeed').css('height', '700px');
+    }
+  }
+
+  function currentTime() {
+    time = new Date();
+    if (time.getSeconds() < 10) {
+      seconds = "0"+time.getSeconds().toString();
+    } else {
+      seconds = time.getSeconds().toString();
+    }
+    result = formatTime(time);
+    result = result.substring(0,(result.length-3))+seconds+" UTC";
+    validTime = radarTime();
+
+    obj = document.getElementById('clock');
+    obj.innerHTML = "Current Time: "+result;
+  }
+  setInterval(function(){
+    currentTime();
+  },1000);
+
+
+  </script>
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="{% static '/javascript/vendor/jquery/jquery.min.js' %}"></script>
+  <script src="{% static '/javascript/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  {% block content %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <!--<meta http-equiv="refresh" content="300" >-->
+
+  <title>Stock Sent</title>
+
+  <!-- Bootstrap core CSS -->
+  {% load static %}
+  <link href="{% static '/javascript/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <style>
+
+  body::after {
+    content: "";
+    /* background-image: url("{% static 'raindrops.jpg' %}"); */
+    background-color: gray;
+    background-size: cover;
+    opacity: 0.6;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    z-index: -1;
+  }
+
+  /* Style the tab */
+ .tab {
+   overflow: hidden;
+   border: 1px solid #ccc;
+   background-color: #f1f1f1;
+ }
+
+ /* Style the buttons that are used to open the tab content */
+ .tab button {
+   background-color: inherit;
+   float: left;
+   border: none;
+   outline: none;
+   cursor: pointer;
+   padding: 14px 16px;
+   transition: 0.3s;
+ }
+
+ /* Change background color of buttons on hover */
+ .tab button:hover {
+   background-color: #ddd;
+ }
+
+ /* Create an active/current tablink class */
+ .tab button.active {
+   background-color: #ccc;
+ }
+
+ /* Style the tab content */
+ .tabcontent {
+   display: none;
+   height: 900vh;
+   /* padding: 6px 12px; */
+   background-color: #ccc;
+   border: 1px solid #ccc;
+   border-top: none;
+ }
+
+ .row {
+   display: flex;
+   flex-wrap: wrap;
+   padding: 0 4px;
+ }
+
+ /* Create four equal columns that sits next to each other */
+ .column {
+   flex: 25%;
+   max-width: 25%;
+   padding: 0 4px;
+ }
+
+ .column img {
+   transition:transform 0.25s ease;
+   margin-top: 8px;
+   vertical-align: middle;
+   width: 100%;
+ }
+
+ .column img:hover {
+   -webkit-transform:scale(2.0);
+   transform:scale(2.0);
+ }
+ /* Responsive layout - makes a two column-layout instead of four columns */
+ @media screen and (max-width: 800px) {
+   .column {
+     flex: 50%;
+     max-width: 50%;
+   }
+ }
+
+ /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+ @media screen and (max-width: 600px) {
+   .column {
+     flex: 100%;
+     max-width: 100%;
+   }
+ }
+
+ .imageHolder {
+   position: relative;
+   width: 90%;
+   left: 5%;
+ }
+
+
+
+  </style>
+
+</head>
+<body>
+
+
+    <!-- Tab links -->
+   <div class="tab">
+     <button class="tablinks" onclick="openTab(event, 'Prices')">Prices</button>
+     <button class="tablinks" onclick="openTab(event, 'Reddit')">Reddit</button>
+     <button class="tablinks" onclick="openTab(event, 'News')">News</button>
+   </div>
+
+   <!-- Tab content -->
+   <div id="Prices" class="tabcontent">
+     <h3>Prices and Trends</h3>
+     <p>Latest stock prices and trends over the past two weeks.</p>
+     <div class=imageHolder>
+       <div class="row">
+         <div class="column">
+           <img src="{% static '/stonk_images/price_AAPL.png' %}">
+           <img src="{% static '/stonk_images/price_AMD.png' %}">
+           <img src="{% static '/stonk_images/price_AMP.png' %}">
+           <img src="{% static '/stonk_images/price_AMZN.png' %}">
+           <img src="{% static '/stonk_images/price_ATVI.png' %}">
+           <img src="{% static '/stonk_images/price_BA.png' %}">
+           <img src="{% static '/stonk_images/price_BAC.png' %}">
+           <img src="{% static '/stonk_images/price_BBY.png' %}">
+           <img src="{% static '/stonk_images/price_BTC.png' %}">
+           <img src="{% static '/stonk_images/price_C.png' %}">
+           <img src="{% static '/stonk_images/price_CLOV.png' %}">
+           <img src="{% static '/stonk_images/price_CMCSA.png' %}">
+           <img src="{% static '/stonk_images/price_CMG.png' %}">
+           <img src="{% static '/stonk_images/price_COF.png' %}">
+           <img src="{% static '/stonk_images/price_DAl.png' %}">
+           <img src="{% static '/stonk_images/price_DIS.png' %}">
+           <img src="{% static '/stonk_images/price_TSLA.png' %}">
+           <img src="{% static '/stonk_images/price_TSN.png' %}">
+         </div><!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/price_DISCA.png' %}">
+           <img src="{% static '/stonk_images/price_DOGE.png' %}">
+           <img src="{% static '/stonk_images/price_DOW.png' %}">
+           <img src="{% static '/stonk_images/price_EA.png' %}">
+           <img src="{% static '/stonk_images/price_ETH.png' %}">
+           <img src="{% static '/stonk_images/price_EXPE.png' %}">
+           <img src="{% static '/stonk_images/price_F.png' %}">
+           <img src="{% static '/stonk_images/price_FB.png' %}">
+           <img src="{% static '/stonk_images/price_GD.png' %}">
+           <img src="{% static '/stonk_images/price_GE.png' %}">
+           <img src="{% static '/stonk_images/price_GM.png' %}">
+           <img src="{% static '/stonk_images/price_GME.png' %}">
+           <img src="{% static '/stonk_images/price_GOLD.png' %}">
+           <img src="{% static '/stonk_images/price_GOOG.png' %}">
+           <img src="{% static '/stonk_images/price_GOOGL.png' %}">
+           <img src="{% static '/stonk_images/price_GS.png' %}">
+           <img src="{% static '/stonk_images/price_TWTR.png' %}">
+           <img src="{% static '/stonk_images/price_UA.png' %}">
+         </div><!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/price_HD.png' %}">
+           <img src="{% static '/stonk_images/price_HPQ.png' %}">
+           <img src="{% static '/stonk_images/price_IBM.png' %}">
+           <img src="{% static '/stonk_images/price_INTC.png' %}">
+           <img src="{% static '/stonk_images/price_JBHT.png' %}">
+           <img src="{% static '/stonk_images/price_JNJ.png' %}">
+           <img src="{% static '/stonk_images/price_KO.png' %}">
+           <img src="{% static '/stonk_images/price_KR.png' %}">
+           <img src="{% static '/stonk_images/price_LMT.png' %}">
+           <img src="{% static '/stonk_images/price_LOW.png' %}">
+           <img src="{% static '/stonk_images/price_LOV.png' %}">
+           <img src="{% static '/stonk_images/price_MAR.png' %}">
+           <img src="{% static '/stonk_images/price_MCD.png' %}">
+           <img src="{% static '/stonk_images/price_MNST.png' %}">
+           <img src="{% static '/stonk_images/price_MS.png' %}">
+           <img src="{% static '/stonk_images/price_MSFT.png' %}">
+           <img src="{% static '/stonk_images/price_WMT.png' %}">
+         </div> <!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/price_NFLX.png' %}">
+           <img src="{% static '/stonk_images/price_NKE.png' %}">
+           <img src="{% static '/stonk_images/price_NOC.png' %}">
+           <img src="{% static '/stonk_images/price_NOK.png' %}">
+           <img src="{% static '/stonk_images/price_NVDA.png' %}">
+           <img src="{% static '/stonk_images/price_ORCL.png' %}">
+           <img src="{% static '/stonk_images/price_PEP.png' %}">
+           <img src="{% static '/stonk_images/price_PG.png' %}">
+           <img src="{% static '/stonk_images/price_PLTR.png' %}">
+           <img src="{% static '/stonk_images/price_PWR.png' %}">
+           <img src="{% static '/stonk_images/price_SBUX.png' %}">
+           <img src="{% static '/stonk_images/price_SCHW.png' %}">
+           <img src="{% static '/stonk_images/price_SILVER.png' %}">
+           <img src="{% static '/stonk_images/price_T.png' %}">
+           <img src="{% static '/stonk_images/price_TGT.png' %}">
+           <img src="{% static '/stonk_images/price_XRP.png' %}">
+         </div> <!-- End Column -->
+       </div> <!-- End Row -->
+     </div> <!-- End imageHolder -->
+   </div> <!-- End Prices -->
+
+   <div id="Reddit" class="tabcontent">
+     <h3>Reddit Mentions</h3>
+     <p>What are the people discussing? A look at mention frequency on Reddit's /wallstreetbets sub-reddit.</p>
+     <div class=imageHolder>
+       <div class="row">
+         <div class="column">
+           <img src="{% static '/stonk_images/reddit_AAPL.png' %}">
+           <img src="{% static '/stonk_images/reddit_AMD.png' %}">
+           <img src="{% static '/stonk_images/reddit_AMP.png' %}">
+           <img src="{% static '/stonk_images/reddit_AMZN.png' %}">
+           <img src="{% static '/stonk_images/reddit_ATVI.png' %}">
+           <img src="{% static '/stonk_images/reddit_BA.png' %}">
+           <img src="{% static '/stonk_images/reddit_BAC.png' %}">
+           <img src="{% static '/stonk_images/reddit_BBY.png' %}">
+           <img src="{% static '/stonk_images/reddit_BTC.png' %}">
+           <img src="{% static '/stonk_images/reddit_C.png' %}">
+           <img src="{% static '/stonk_images/reddit_CLOV.png' %}">
+           <img src="{% static '/stonk_images/reddit_CMCSA.png' %}">
+           <img src="{% static '/stonk_images/reddit_CMG.png' %}">
+           <img src="{% static '/stonk_images/reddit_COF.png' %}">
+           <img src="{% static '/stonk_images/reddit_DAl.png' %}">
+           <img src="{% static '/stonk_images/reddit_DIS.png' %}">
+           <img src="{% static '/stonk_images/reddit_TSLA.png' %}">
+           <img src="{% static '/stonk_images/reddit_TSN.png' %}">
+         </div><!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/reddit_DISCA.png' %}">
+           <img src="{% static '/stonk_images/reddit_DOGE.png' %}">
+           <img src="{% static '/stonk_images/reddit_DOW.png' %}">
+           <img src="{% static '/stonk_images/reddit_EA.png' %}">
+           <img src="{% static '/stonk_images/reddit_ETH.png' %}">
+           <img src="{% static '/stonk_images/reddit_EXPE.png' %}">
+           <img src="{% static '/stonk_images/reddit_F.png' %}">
+           <img src="{% static '/stonk_images/reddit_FB.png' %}">
+           <img src="{% static '/stonk_images/reddit_GD.png' %}">
+           <img src="{% static '/stonk_images/reddit_GE.png' %}">
+           <img src="{% static '/stonk_images/reddit_GM.png' %}">
+           <img src="{% static '/stonk_images/reddit_GME.png' %}">
+           <img src="{% static '/stonk_images/reddit_GOLD.png' %}">
+           <img src="{% static '/stonk_images/reddit_GOOG.png' %}">
+           <img src="{% static '/stonk_images/reddit_GOOGL.png' %}">
+           <img src="{% static '/stonk_images/reddit_GS.png' %}">
+           <img src="{% static '/stonk_images/reddit_TWTR.png' %}">
+           <img src="{% static '/stonk_images/reddit_UA.png' %}">
+         </div><!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/reddit_HD.png' %}">
+           <img src="{% static '/stonk_images/reddit_HPQ.png' %}">
+           <img src="{% static '/stonk_images/reddit_IBM.png' %}">
+           <img src="{% static '/stonk_images/reddit_INTC.png' %}">
+           <img src="{% static '/stonk_images/reddit_JBHT.png' %}">
+           <img src="{% static '/stonk_images/reddit_JNJ.png' %}">
+           <img src="{% static '/stonk_images/reddit_KO.png' %}">
+           <img src="{% static '/stonk_images/reddit_KR.png' %}">
+           <img src="{% static '/stonk_images/reddit_LMT.png' %}">
+           <img src="{% static '/stonk_images/reddit_LOW.png' %}">
+           <img src="{% static '/stonk_images/reddit_LOV.png' %}">
+           <img src="{% static '/stonk_images/reddit_MAR.png' %}">
+           <img src="{% static '/stonk_images/reddit_MCD.png' %}">
+           <img src="{% static '/stonk_images/reddit_MNST.png' %}">
+           <img src="{% static '/stonk_images/reddit_MS.png' %}">
+           <img src="{% static '/stonk_images/reddit_MSFT.png' %}">
+           <img src="{% static '/stonk_images/reddit_WMT.png' %}">
+         </div> <!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/reddit_NFLX.png' %}">
+           <img src="{% static '/stonk_images/reddit_NKE.png' %}">
+           <img src="{% static '/stonk_images/reddit_NOC.png' %}">
+           <img src="{% static '/stonk_images/reddit_NOK.png' %}">
+           <img src="{% static '/stonk_images/reddit_NVDA.png' %}">
+           <img src="{% static '/stonk_images/reddit_ORCL.png' %}">
+           <img src="{% static '/stonk_images/reddit_PEP.png' %}">
+           <img src="{% static '/stonk_images/reddit_PG.png' %}">
+           <img src="{% static '/stonk_images/reddit_PLTR.png' %}">
+           <img src="{% static '/stonk_images/reddit_PWR.png' %}">
+           <img src="{% static '/stonk_images/reddit_SBUX.png' %}">
+           <img src="{% static '/stonk_images/reddit_SCHW.png' %}">
+           <img src="{% static '/stonk_images/reddit_SILVER.png' %}">
+           <img src="{% static '/stonk_images/reddit_T.png' %}">
+           <img src="{% static '/stonk_images/reddit_TGT.png' %}">
+           <img src="{% static '/stonk_images/reddit_XRP.png' %}">
+         </div> <!-- End Column -->
+       </div> <!-- End Row -->
+     </div> <!-- End imageHolder -->
+   </div> <!-- End Reddit -->
+
+   <div id="News" class="tabcontent">
+     <h3>News Mentions</h3>
+     <p>What's making the news? A look at the frequency of each stock's news mentions.</p>
+     <div class=imageHolder>
+       <div class="row">
+         <div class="column">
+           <img src="{% static '/stonk_images/news_AAPL.png' %}">
+           <img src="{% static '/stonk_images/news_AMD.png' %}">
+           <img src="{% static '/stonk_images/news_AMP.png' %}">
+           <img src="{% static '/stonk_images/news_AMZN.png' %}">
+           <img src="{% static '/stonk_images/news_ATVI.png' %}">
+           <img src="{% static '/stonk_images/news_BA.png' %}">
+           <img src="{% static '/stonk_images/news_BAC.png' %}">
+           <img src="{% static '/stonk_images/news_BBY.png' %}">
+           <img src="{% static '/stonk_images/news_BTC.png' %}">
+           <img src="{% static '/stonk_images/news_C.png' %}">
+           <img src="{% static '/stonk_images/news_CLOV.png' %}">
+           <img src="{% static '/stonk_images/news_CMCSA.png' %}">
+           <img src="{% static '/stonk_images/news_CMG.png' %}">
+           <img src="{% static '/stonk_images/news_COF.png' %}">
+           <img src="{% static '/stonk_images/news_DAl.png' %}">
+           <img src="{% static '/stonk_images/news_DIS.png' %}">
+           <img src="{% static '/stonk_images/news_TSLA.png' %}">
+           <img src="{% static '/stonk_images/news_TSN.png' %}">
+         </div><!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/news_DISCA.png' %}">
+           <img src="{% static '/stonk_images/news_DOGE.png' %}">
+           <img src="{% static '/stonk_images/news_DOW.png' %}">
+           <img src="{% static '/stonk_images/news_EA.png' %}">
+           <img src="{% static '/stonk_images/news_ETH.png' %}">
+           <img src="{% static '/stonk_images/news_EXPE.png' %}">
+           <img src="{% static '/stonk_images/news_F.png' %}">
+           <img src="{% static '/stonk_images/news_FB.png' %}">
+           <img src="{% static '/stonk_images/news_GD.png' %}">
+           <img src="{% static '/stonk_images/news_GE.png' %}">
+           <img src="{% static '/stonk_images/news_GM.png' %}">
+           <img src="{% static '/stonk_images/news_GME.png' %}">
+           <img src="{% static '/stonk_images/news_GOLD.png' %}">
+           <img src="{% static '/stonk_images/news_GOOG.png' %}">
+           <img src="{% static '/stonk_images/news_GOOGL.png' %}">
+           <img src="{% static '/stonk_images/news_GS.png' %}">
+           <img src="{% static '/stonk_images/news_TWTR.png' %}">
+           <img src="{% static '/stonk_images/news_UA.png' %}">
+         </div><!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/news_HD.png' %}">
+           <img src="{% static '/stonk_images/news_HPQ.png' %}">
+           <img src="{% static '/stonk_images/news_IBM.png' %}">
+           <img src="{% static '/stonk_images/news_INTC.png' %}">
+           <img src="{% static '/stonk_images/news_JBHT.png' %}">
+           <img src="{% static '/stonk_images/news_JNJ.png' %}">
+           <img src="{% static '/stonk_images/news_KO.png' %}">
+           <img src="{% static '/stonk_images/news_KR.png' %}">
+           <img src="{% static '/stonk_images/news_LMT.png' %}">
+           <img src="{% static '/stonk_images/news_LOW.png' %}">
+           <img src="{% static '/stonk_images/news_LOV.png' %}">
+           <img src="{% static '/stonk_images/news_MAR.png' %}">
+           <img src="{% static '/stonk_images/news_MCD.png' %}">
+           <img src="{% static '/stonk_images/news_MNST.png' %}">
+           <img src="{% static '/stonk_images/news_MS.png' %}">
+           <img src="{% static '/stonk_images/news_MSFT.png' %}">
+           <img src="{% static '/stonk_images/news_WMT.png' %}">
+         </div> <!-- End Column -->
+         <div class="column">
+           <img src="{% static '/stonk_images/news_NFLX.png' %}">
+           <img src="{% static '/stonk_images/news_NKE.png' %}">
+           <img src="{% static '/stonk_images/news_NOC.png' %}">
+           <img src="{% static '/stonk_images/news_NOK.png' %}">
+           <img src="{% static '/stonk_images/news_NVDA.png' %}">
+           <img src="{% static '/stonk_images/news_ORCL.png' %}">
+           <img src="{% static '/stonk_images/news_PEP.png' %}">
+           <img src="{% static '/stonk_images/news_PG.png' %}">
+           <img src="{% static '/stonk_images/news_PLTR.png' %}">
+           <img src="{% static '/stonk_images/news_PWR.png' %}">
+           <img src="{% static '/stonk_images/news_SBUX.png' %}">
+           <img src="{% static '/stonk_images/news_SCHW.png' %}">
+           <img src="{% static '/stonk_images/news_SILVER.png' %}">
+           <img src="{% static '/stonk_images/news_T.png' %}">
+           <img src="{% static '/stonk_images/news_TGT.png' %}">
+           <img src="{% static '/stonk_images/news_XRP.png' %}">
+         </div> <!-- End Column -->
+       </div> <!-- End Row -->
+     </div> <!-- End imageHolder -->
+   </div><!-- End News -->
+
+  <script>
+
+    function openTab(evt, tabName) {
+      // Declare all variables
+      var i, tabcontent, tablinks;
+
+      // Get all elements with class="tabcontent" and hide them
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+
+      // Get all elements with class="tablinks" and remove the class "active"
+      tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.className += " active";
+    }
+
+  </script>
+  {% endblock %}
+</body>
+</html>

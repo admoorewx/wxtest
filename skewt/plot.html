@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  {% block content %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <!--<meta http-equiv="refresh" content="300" >-->
+
+  <title>Skew-T</title>
+
+  <!-- Bootstrap core CSS -->
+  {% load static %}
+  <!-- Non-Template sytles and JS links -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"/>
+    <!-- local scripts -->
+  <link href="{% static '/javascript/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <script type="text/javascript" src="{% static '/javascript/plotly-2.4.2.min.js' %}"></script>
+  <script type="text/javascript" src="{% static '/javascript/skewt.js' %}"></script>
+  <!-- non-local scripts -->
+  <!-- <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script> -->
+  <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet-src.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+  <script type="text/javascript" src="{% static '/javascript/Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+
+  <link rel="stylesheet" href="{% static '/css/skewt.css' %}">
+
+</head>
+
+<body>
+
+  <div id="container">
+    <button id="select_sounding_button" onclick="displaySoundingMap()">Select Sounding</button>
+    <h4 id="title">No Sounding Selected</h4>
+    <div id="mapholder"></div>
+    <div id="plotHolder"></div>
+    <div id="windstaff"></div>
+    <div id="hodograph">
+    </div>
+    <div id="plot2">
+      <table style="width:100%">
+        <tr>
+          <th>Thermodynamics</th>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Surface</td>
+          <td>Mixed</td>
+          <td>Most-Unstable</td>
+        </tr>
+        <tr>
+          <td>CAPE</td>
+          <td id="sbcape"> J/kg</td>
+          <td id="mlcape"> J/kg</td>
+          <td id="mucape"> J/kg</td>
+        </tr>
+        <tr>
+          <td>CIN</td>
+          <td id="sbcin"> J/kg</td>
+          <td id="mlcin"> J/kg</td>
+          <td id="mucin"> J/kg</td>
+        </tr>
+      </table>
+      <table style="width:100%">
+        <tr>
+          <td>0-3 km Lapse Rate</td>
+          <td id="lr03">K/km</td>
+        </tr>
+        <tr>
+          <td>700-500 mb Lapse Rate</td>
+          <td id="lr75"> K/km</td>
+        </tr>
+        <tr>
+          <td>Dewpoint Depression</td>
+          <td id="ddpres"> F</td>
+        </tr>
+        <tr>
+          <td>Lowest 100 mb Mean Mixing Ratio</td>
+          <td id="meanmix"> g/kg</td>
+        </tr>
+        <tr>
+          <td>Precipitable Water</td>
+          <td id="pwat"> in.</td>
+        </tr>
+      </table>
+      <br />
+      <table style="width:100%">
+        <tr>
+          <th>Kinematics</th>
+        </tr>
+        <tr>
+          <td></td>
+          <td>0-1 km</td>
+          <td>0-3 km</td>
+          <td>0-6 km</td>
+          <td>Eff. Layer</td>
+        </tr>
+        <tr>
+          <td>Bulk Shear</td>
+          <td id="bs01">knots</td>
+          <td id="bs03"> knots</td>
+          <td id="bs06"> knots</td>
+          <td id="bseff"> knots</td>
+        </tr>
+        <tr>
+          <td>SRH</td>
+          <td id="srh01"> m2/s2</td>
+          <td id="srh03"> m2/s2</td>
+          <td>--</td>
+          <td id="srheff"> m2/s2</td>
+        </tr>
+      </table>
+      <br />
+      <table style="width:100%">
+        <tr>
+          <th>Derived</th>
+        </tr>
+        <tr>
+          <td style="width:15%">SCP</td>
+          <td style="width:15%">STP</td>
+          <td>WMP</td>
+        </tr>
+        <tr>
+          <td id="scp" style="width:15%"></td>
+          <td id="stp" style="width:15%"></td>
+          <td id="wmp"></td>
+        </tr>
+      </table>
+      <br />
+      <table style="width:100%">
+        <tr>
+          <th style="width:25%">Son of SARS</th>
+        </tr>
+        <tr>
+          <td>Rating:</td>
+          <td style="width:15%">No Tor</td>
+          <td>0</td>
+          <td>1</td>
+          <td>2</td>
+          <td>3</td>
+          <td>4</td>
+          <td>5</td>
+        </tr>
+        <tr>
+          <td>Prob:</td>
+          <td id="sosnotor">%</td>
+          <td id="sos0">%</td>
+          <td id="sos1">%</td>
+          <td id="sos2">%</td>
+          <td id="sos3">%</td>
+          <td id="sos4">%</td>
+          <td id="sos5">%</td>
+        </tr>
+      </table>
+    </div>
+    <div id="textarea">
+
+    </div>
+
+  </div> <!-- end of contianer div -->
+
+  <script>
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    // sounding selection map
+    var map = L.map(
+        "mapholder",
+        {
+            center: [40.0, -100.0],
+            crs: L.CRS.EPSG3857,
+            zoom: 5,
+            zoomControl: true,
+            cursor: true,
+            preferCanvas: true,
+            renderer: L.canvas(),
+            keyboard: false,
+            updateWhenIdle: true,
+            updateWhenZooming: false,
+        }
+    );
+    var osm = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+    ).addTo(map);
+    var location_markers = new L.featureGroup();
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    function add_markers(){
+      var url = "{% static '/data/soundings/sounding_locations.json' %}";
+      location_markers.clearLayers();
+      map.removeLayer(location_markers);
+      $.ajax({
+      dataType: "json",
+      url: url,
+      success: function(data) {
+          $.each(data, function(key,info){
+            let lat = info[0];
+            let lon = info[1];
+            var marker = new L.circleMarker([lat, lon], { radius: 9, color: "black", weight: 2, opacity: 1.0, fillColor: "blue", fillOpacity: 0.4 }); //opacity may be set to zero
+            marker.on('click',function(){
+                console.log(`Selected site: ${key}`);
+                displaySoundingMap();
+                plot_sounding_from_json(key);
+                // document.getElementById("currentOffice").innerHTML = "Current Office: "+key;
+                // markerClicked();
+            });
+            marker.addTo(location_markers);
+          });
+      }
+      }).fail(function() {
+        console.log("Error updating locations.");
+      });
+      location_markers.addTo(map);
+    } // end add_markers
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    function displaySoundingMap(){
+      var mapcontainer = document.getElementById("mapholder");
+      if (mapcontainer.style.display == "flex"){
+        mapcontainer.style.display = "none";
+      } else {
+        mapcontainer.style.display = "flex";
+        map.invalidateSize();
+      } // end else
+    } // end function
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    function plot_sounding_from_json(station){
+      if (station == null){
+         plotSkewt(station);
+      } else {
+        var url = `/static/data/soundings/observed_soundings/${station}.json`;
+        //var url = "{% static '/soundings/observed_soundings/DDC.json' %}";
+        $.getJSON(url, function(data){
+          //console.log(data);
+          plotSkewt(data);
+          add_sounding_text(data);
+          wind_staff(data);
+          let type = "Observed";
+          let name = data.id;
+          let date = data.datetime;
+          update_title(name,date,type);
+        }) // end getJSON
+        .fail(function(){ alert(`Sounding not available for ${station}.`)});
+      } // end else
+    } // end read sounding
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    plot_sounding_from_json(null);
+    add_markers();
+  </script>
+  <!-- vendor/bootstrap/js/bootstrap.bundle.min.js -->
+  <script src="{% static '/javascript/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  {% block content %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <!--<meta http-equiv="refresh" content="300" >-->
+
+  <title>Stat-Maps</title>
+
+  <!-- Bootstrap core CSS -->
+  {% load static %}
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+  <style>
+
+  body::after {
+    content: "";
+    background-image: url("{% static 'raindrops.jpg' %}");
+    background-size: cover;
+    opacity: 0.6;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    z-index: -1;
+  }
+
+  #mainCanvas{
+    position: absolute;
+    top: 10vh;
+    left: 15vw;
+    border: 1px solid #000000;
+  }
+
+  #toolbar {
+    z-index: 10;
+    position: absolute;
+    width: 50vw;
+    height: 50px;
+    left: 15vw;
+    top: 4vh;
+    background-color:rgba(80,78,78,0.9);
+    text-align: center;
+    border-color: black;
+    border-width: 2px;
+    border-style: solid;
+    min-width: 500px;
+    overflow: hidden;
+  }
+
+  #menu_button{
+    position: relative;
+    z-index: 10;
+    left:50px;
+    top:12px;
+    height:50px;
+    width: 75px;
+    color: white;
+    background-color: rgba(80,78,78,0.9);
+  }
+
+  .menu_option{
+    height: 100.0%;
+    width: 100.0%;
+    border-color: black;
+    border-width: 0px;
+    border-style: solid;
+  }
+
+  /* ---- Map Button ---- */
+  #mapmenu{
+    display: inline-block;
+    position: absolute;
+    height: 100.0%;
+    width: 10.0%;
+    left: 6.0%;
+  }
+  #map_button{
+    background: url({% static 'icons/worldwide.png' %}) no-repeat top;
+    background-color: transparent;
+    background-size: 100.0% 100.0%;
+  }
+
+  .mapcontent{
+    position: fixed;
+    display: none;
+    z-index: 11;
+    width:200px;
+    height:150px;
+  }
+
+  .mapcontent a {
+    color: white;
+    display: block;
+    background-color: rgba(80,78,78,0.9);
+    cursor: pointer;
+  }
+
+  .mapcontent a:hover {color: white; background-color: gray;}
+  #mapmenu:hover .mapcontent {display: block;}
+  #mapmenu:hover #map_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+
+
+  </style>
+
+</head>
+<body>
+
+
+  <div class="toolBar" id="toolbar">
+
+    <div id="mapmenu">
+      <button type="button" class="menu_option" id="map_button"></button>
+      <div class="mapcontent">
+        <!-- <a onclick="changeMapView('NORTHAM')">North America</a> -->
+        <!-- <a onclick="changeMapView('conus', 'dark')">CONUS (dark)</a>
+        <a onclick="changeMapView('conus', 'basic')">CONUS (light)</a>
+        <a onclick="changeMapView('conus', 'topography')">CONUS (topo)</a> -->
+        <a>----------------------</a>
+        <a onclick="changeMapView('splains', 'dark')">Southern Plains (dark)</a>
+        <a onclick="changeMapView('splains', 'light')">Southern Plains (light)</a>
+        <a onclick="changeMapView('splains', 'topography')">Southern Plains (topo)</a>
+      </div> <!-- end map content div -->
+    </div> <!-- end map menu div -->
+
+  </div> <!-- end toolbar div -->
+
+
+  <canvas id="mainCanvas">
+  Your browser does not support the HTML canvas tag - sorry!
+  </canvas>
+
+  <script>
+    // set the canvas width/height as a percent
+    var canvasWidth = 70; // percentage of the screen width
+    var canvasHeight = 88; // percentage of the screen height
+    // convert them to pixel sizes
+    canvasWidth = window.innerWidth * (canvasWidth/100.0);
+    canvasHeight = window.innerHeight * (canvasHeight/100.0);
+
+
+    var update = 10; // seconds
+    var interval = 12; // number of frames
+    //var times = createTimeArray(interval); // create list of times
+    var currentIndex = 0;
+    var previousIndex = interval;
+    times = ['202105031125', '202105031130']
+    console.log(times);
+
+    var PIXEL_RATIO = (function () {
+        var ctx = document.getElementById("mainCanvas").getContext("2d"),
+            dpr = window.devicePixelRatio || 1,
+            bsr = ctx.webkitBackingStorePixelRatio ||
+                  ctx.mozBackingStorePixelRatio ||
+                  ctx.msBackingStorePixelRatio ||
+                  ctx.oBackingStorePixelRatio ||
+                  ctx.backingStorePixelRatio || 1;
+
+        return dpr / bsr;
+    })();
+
+    createHiDPICanvas = function(w, h, ratio) {
+        if (!ratio) { ratio = PIXEL_RATIO; }
+        var can = document.getElementById("mainCanvas");
+        can.width = w * ratio;
+        can.height = h * ratio;
+        can.style.width = w + "px";
+        can.style.height = h + "px";
+        can.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+        return can;
+    }
+
+    function draw(background_map,sat_img,sfc_obs_img){
+      console.log("Drawing!");
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(background_map,0,0,background_map.width,background_map.height,0,0,workingCanvas.width, workingCanvas.height);
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      console.log(sat_img);
+      ctx.drawImage(sat_img,0,0,sat_img.width,sat_img.height,0,0,workingCanvas.width, workingCanvas.height);
+      ctx.restore();
+      ctx.drawImage(sfc_obs_img,0,0,sfc_obs_img.width,sfc_obs_img.height,0,0,workingCanvas.width, workingCanvas.height);
+
+    }
+
+
+    // function changeMapView(region,type) {
+    //   url = region+"_"+type+".png";
+    //   ctx.clearRect(0, 0, workingCanvas.width, workingCanvas.height);
+    //   // and in the initial background image
+    //   var background_map = new Image();
+    //   background_map.src = "{% static 'goes/splains_dark.png' %}";
+    //   background_map.addEventListener("load", function(){
+    //     console.log("loaded");
+    //     draw();
+    //   });
+    // }
+
+
+    //Create canvas with the device resolution.
+    var workingCanvas = createHiDPICanvas(canvasWidth,canvasHeight);
+    var ctx = workingCanvas.getContext("2d");
+    // initialize it with a background color
+    ctx.fillStyle = '#d0d0e6';
+    ctx.fillRect(0,0,workingCanvas.width, workingCanvas.height);
+
+    // add in the initial background image
+    var background_ready = false;
+    var background_map = new Image();
+    background_map.src = "{% static 'goes/splains_dark.png' %}";
+    background_map.addEventListener("load", function(){
+      background_ready = true;
+    });
+
+    var obs_ready = false;
+    var sfc_obs_img = new Image();
+    sfc_obs_img.src = "{% static 'goes/sfc_splains_202105151633.png' %}";
+    sfc_obs_img.addEventListener("load", function(){
+      obs_ready = true;
+    });
+
+    var sat_imgs = [];
+    var sat_img1 = new Image();
+    sat_img1.src = "{% static 'goes/G16_conus_Ch13_202105031125.png' %}";
+    var sat_img2 = new Image();
+    sat_img2.src = "{% static 'goes/G16_conus_Ch13_202105031130.png' %}";
+    sat_imgs.push(sat_img1,sat_img2);
+
+    sat_img1.addEventListener("load", function(){
+      if (obs_ready && background_ready) {
+        draw(background_map,sat_imgs[currentIndex],sfc_obs_img);
+      }
+      else {
+        setTimeout(function(){
+          draw(background_map,sat_imgs[currentIndex],sfc_obs_img);
+        }, 2000); // wait 2 seconds before drawing the initial images
+      }
+    });
+
+
+///////////////////////////////// Time/Loop control //////////////////////////////////////////////
+    var play = false;
+    var loops = [];
+    document.addEventListener("keydown", (event) => {
+
+        if (event.keyCode == 37){
+          play = false;
+          try{
+            clearTimers(loops);
+          } catch {
+            console.log("No timers yet");
+          }
+          globalThis.previousIndex = currentIndex;
+          globalThis.currentIndex = currentIndex + 1;
+          if (currentIndex == times.length){
+             globalThis.currentIndex = 0;
+          } // end if
+          draw(background_map,sat_imgs[currentIndex],sfc_obs_img);
+          console.log(times[currentIndex])
+        } // end if
+
+        else if (event.keyCode == 39) {
+          play = false;
+          try{
+            clearTimers(loops);
+          } catch {
+            console.log("No timers yet");
+          }
+          globalThis.previousIndex = currentIndex;
+          globalThis.currentIndex = currentIndex - 1;
+          if (currentIndex < 0){
+            globalThis.currentIndex = times.length-1;
+          } // end if
+          draw(background_map,sat_imgs[currentIndex],sfc_obs_img);
+          console.log(times[currentIndex])
+        } // end else if
+
+        else if (event.keyCode == 32) {
+          //console.log("Space Bar was hit!");
+          play = !play;
+          if (play) {
+            var loop = setInterval(function() {
+              globalThis.previousIndex = currentIndex;
+              globalThis.currentIndex = currentIndex - 1;
+              if (currentIndex < 0){
+                globalThis.currentIndex = times.length-1;
+              } // end if
+              draw(background_map,sat_imgs[currentIndex],sfc_obs_img);
+              console.log(times[currentIndex])
+            }, (500));
+            loops.push(loop);
+          }
+          else {
+            clearTimers(loops);
+          } // end else
+        } // end else if
+    }); // end event listener
+
+
+
+
+  </script>
+  {% endblock %}
+</body>
+</html>

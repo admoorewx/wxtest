@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Convective Impacts Map</title>
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+    <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+    {% load static %}
+    <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+    <script type="text/javascript" src="{% static 'leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+    <script type="text/javascript" src="{% static 'shapefile-js/dist/shp.js' %}"></script>
+    <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+    <script type="text/javascript" src="{% static 'cim.js' %}"></script>
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <meta name="viewport" content="width=device-width,
+        initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+
+        #container {
+          position: absolute;
+          height: 100.0%;
+          width: 100.0%;
+          top: 0px;
+          z-index: 0;
+        }
+        #map_holder {
+            position: absolute;
+            width: 100.0vw;
+            height: 100.0%;
+            left: 0.0%;
+            top: 0.0vh;
+        }
+        #layerOps {
+          position: absolute;
+          width: 10.0vw;
+          height: 48.0vh;
+          left: 0.0%;
+          top: 4.0vh;
+          background-color:red;
+        }
+
+
+        .text-label {
+            position: absolute;
+            width:0px;
+            height:0px;
+            background-color: rgba(0,0,0,0.0);
+            border-color: rgba(0,0,0,0.0);
+            border: 0px;
+            font-size:12px;
+            font-weight: bold;
+            text-shadow: 0 0 4px Black;
+            box-shadow: none;
+        }
+        .leaflet-tooltip-top:before,
+        .leaflet-tooltip-bottom:before,
+        .leaflet-tooltip-left:before,
+        .leaflet-tooltip-right:before {
+          background-color: rgba(0,0,0,0.0);
+          border:none;
+          box-shadow:none;
+        }
+    </style>
+
+</head>
+<body>
+{% block content %}
+
+  <div id="container">
+    <div class="folium-map" id="map_holder"></div>
+  </div>
+
+</body>
+<script>
+
+///////////////////////////////// Sat, Rad, GLM, sfc obs, Time settings //////////////////////////////////////////////
+  var times = createTimeArray(1); // create list of times
+
+///////////////////////////////// MOUSE LAT/LON FUNCTIONS //////////////////////////////////////////////
+
+  L.CursorHandler = L.Handler.extend({
+      addHooks: function () {
+          this._map.on('mousemove', this._update, this);
+      },
+      _update: function (e) {
+        document.getElementById('label').innerHTML = e.latlng.lat.toFixed(4).toString()+", "+e.latlng.lng.toFixed(4).toString();
+      }
+  });
+  L.Map.addInitHook('addHandler', 'cursor', L.CursorHandler);
+
+
+/////////////////////////////////////// BOUNDARY CONTROL //////////////////////////////////////////////
+  var county_style = {
+      "color":"#F7F3F3",
+      "fillColor":"none",
+      "fillOpacity":0.0,
+      "opacity":0.4,
+      "weight": 0.5,
+  }
+  var state_style = {
+      "color":"#F7F3F3",
+      "fillColor":"none",
+      "fillOpacity":0.0,
+      "opacity":0.9,
+      "weight": 0.9,
+  }
+
+
+  var district_boundary = new L.geoJson();
+  $.ajax({
+  dataType: "json",
+  url: "{% static '/geo/boundaries/uscounties.json' %}",
+  success: function(data) {
+      $(data.features).each(function(key, data) {
+          district_boundary.addData(data).setStyle(county_style);
+          //district_boundary.setStyle(county_style);
+      });
+  }
+  }).error(function() {});
+
+  var state_boundary = new L.geoJson();
+  $.ajax({
+  dataType: "json",
+  url: "{% static '/geo/boundaries/usstates.json' %}",
+  success: function(data) {
+      $(data.features).each(function(key, data) {
+          state_boundary.addData(data);
+          state_boundary.setStyle(state_style);
+      });
+  }
+  }).error(function() {});
+
+
+///////////////////////////////////////// MAP DEFINITION //////////////////////////////////////////////
+  var map = L.map(
+      "map_holder",
+      {
+          center: [40.0, -100.0],
+          crs: L.CRS.EPSG3857,
+          zoom: 5,
+          zoomControl: true,
+          cursor: true,
+          preferCanvas: true,
+          renderer: L.canvas(),
+          keyboard: false,
+          updateWhenIdle: true,
+          updateWhenZooming: false,
+      }
+  );
+
+  var obsCanvas = L.canvas(); // for surface observations
+  /////////////// BASE LAYERS /////////////////
+  var dark = L.tileLayer(
+      "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+      {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  ).addTo(map);
+
+  var iem_conus_base_refl = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
+      {"attribution": "", "format": "image/png", "layers": "nexrad-n0q", "opacity": 0.25, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1", "interactive": true}
+  ).addTo(map);
+
+  var light = L.tileLayer(
+      "https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+      {"attribution": "Map tiles by \u003ca href=\"http://stamen.com\"\u003eStamen Design\u003c/a\u003e, under \u003ca href=\"http://creativecommons.org/licenses/by/3.0\"\u003eCC BY 3.0\u003c/a\u003e. Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var osm = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var esri_phyiscal = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
+  });
+
+  var world_imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  });
+
+  var esri_map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Specialty/DeLorme_World_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Copyright: &copy;2012 DeLorme',
+  	minZoom: 1,
+  	maxZoom: 11
+  });
+
+  var mping_hail = new L.featureGroup();
+  var mping_wind = new L.featureGroup();
+  var lsr_markers = new L.featureGroup();
+  var current_warnings = new L.layerGroup();
+
+  /////////////// LAYER CONTROL ////////////////
+  var layer_control_1 = {
+      base_layers : {
+          "Dark (default)" : dark,
+          "Light" : light,
+          "Open Street Map" : osm,
+          "World Imagery": world_imagery,
+          "ESRI Map": esri_map,
+          "ESRI Physical": esri_phyiscal,
+      }, overlays : {
+        "States": state_boundary,
+        "Counties": district_boundary,
+        "MPING Hail": mping_hail,
+        "MPING wind": mping_wind,
+        "LSRs": lsr_markers,
+      }
+  };
+  L.control.layers(layer_control_1.base_layers,
+                  layer_control_1.overlays,
+                  {"autoZIndex": true, "collapsed": true, "position": "topright"}
+                  ).addTo(map);
+
+
+  // initialize the state boundaries by default
+  state_boundary.addTo(map);
+  //district_boundary.addTo(map);
+
+
+///////////////////////////////////////// MPING Hail Markers //////////////////////////////////////////////
+  function get_mping_hail(){
+    $.ajax({
+    dataType: "json",
+    url: "{% static 'mping_hail.json' %}",
+    success: function(data) {
+        $(data.results).each(function(key, data) {
+            add_mping_hail(data);
+        });
+    }
+    }).error(function() {
+      console.log("Loading mping hail data failed.");
+    });
+  }
+
+  function add_mping_hail(data){
+    let latitude = data.geom.coordinates[1];
+    let longitude = data.geom.coordinates[0];
+    let size = parseFloat(data.description_id) - 8;
+    if (size < 8){
+      hailColor = "#00cc99"
+    } else {
+      hailColor = "#00cc00"
+    }
+    var hailmarker = new L.circleMarker([latitude, longitude], {radius: size, weight: 0.75, opacity: 1.0, color: "black", fillColor: hailColor, fillOpacity: 1.0, renderer: obsCanvas});
+    hailmarker.addTo(mping_hail);
+    // have to create a different marker because circleMarker is too buggy
+    let text = data.description + " @ " + data.obtime.substring(0,10) +" " + data.obtime.substring(11,16)+" UTC"
+    var hailText = new L.marker([latitude, longitude], { opacity: 0.0 });
+    hailText.bindTooltip(
+        `<div>
+             ${text}
+        </div>`,
+        {direction:'center', permanent: false, offset:[0,0]}
+    );
+    hailText.addTo(mping_hail);
+
+  } // end function add_mping_hail
+  get_mping_hail();
+  mping_hail.addTo(map);
+
+
+///////////////////////////////////////// MPING Wind Markers //////////////////////////////////////////////
+
+  function get_mping_wind(){
+    $.ajax({
+    dataType: "json",
+    url: "{% static 'mping_wind.json' %}",
+    success: function(data) {
+        $(data.results).each(function(key, data) {
+            add_mping_wind(data);
+        });
+    }
+    }).error(function() {
+      console.log("Loading mping wind data failed.");
+    });
+  }
+
+  function add_mping_wind(data){
+    console.log(data);
+    let latitude = data.geom.coordinates[1];
+    let longitude = data.geom.coordinates[0];
+    let size = parseFloat(data.description_id) - 28;
+    if (size < 6){
+      windColor = "#3399ff";
+    } else {
+      windColor = "#0000ff"
+    }
+    var windmarker = new L.circleMarker([latitude, longitude], {radius: size, weight: 0.75, opacity: 1.0, color: "black", fillColor: windColor, fillOpacity: 1.0, renderer: obsCanvas});
+    windmarker.addTo(mping_wind);
+    // have to create a different marker because circleMarker is too buggy
+    let text = data.description + " @ " + data.obtime.substring(0,10) +" " + data.obtime.substring(11,16)+" UTC"
+    var windText = new L.marker([latitude, longitude], { opacity: 0.0 });
+    windText.bindTooltip(
+        `<div>
+             ${text}
+        </div>`,
+        {direction:'center', permanent: false, offset:[0,0]}
+    );
+    windText.addTo(mping_wind);
+  } // end function add_mping_wind
+  get_mping_wind();
+  mping_wind.addTo(map);
+
+///////////////////////////////////////// LSR Markers //////////////////////////////////////////////
+  function get_lsr(){
+    $.ajax({
+    dataType: "json",
+    url: "{% static 'iem_lsr.geojson' %}",
+    success: function(data) {
+        for (i=0;i<data.features.length;i++){
+          let valid = false;
+          let report_time = string_to_date(data.features[i].properties.VALID);
+          let current_time = new Date();
+          let diff = current_time - report_time;
+          // note: 14400000 is 4 hours in ms
+          if (diff < 14400000){
+
+            let type = data.features[i].properties.TYPETEXT;
+            if (type == "TORNADO"){
+              lsr_color = "#ff3333";
+              valid = true;
+            }
+
+            else if (type == "HAIL") {
+              lsr_color = "#00cc00";
+              valid = true;
+            }
+
+            else if (type == "TSTM WND DMG" || type == "TSTM WND GST"){
+              lsr_color = "#0000ff";
+              valid = true;
+            }
+            if (valid){
+
+              let lat = data.features[i].properties.LAT;
+              let lon = data.features[i].properties.LON;
+              // add the icon to the map
+              LSRIcon = L.divIcon({
+                html: '<i class="fa fa-square" style="font-size:16px;color:'+lsr_color+';opacity:0.8;"></i>',
+                iconSize: [5, 5],
+                className: 'lsrIcon'
+              });
+              valid_time = data.features[i].properties.VALID.substring(4,6)+"/"+data.features[i].properties.VALID.substring(6,8)+"/"+data.features[i].properties.VALID.substring(0,4)+" "+data.features[i].properties.VALID.substring(8,10)+":"+data.features[i].properties.VALID.substring(10,12)+" UTC";
+              lsr_text = "LSR TIME: "+valid_time+"<br>TYPE: "+data.features[i].properties.TYPETEXT+"<br>MAG: "+data.features[i].properties.MAG+"<br>LOCATION: "+data.features[i].properties.CITY+", "+data.features[i].properties.STATE+"<br>SOURCE: "+data.features[i].properties.SOURCE+"<br>REMARK: "+data.features[i].properties.REMARK;
+              L.marker([data.features[i].properties.LAT, data.features[i].properties.LON], {
+                icon: LSRIcon
+              }).addTo(lsr_markers).bindPopup(lsr_text);
+            } // end if valid
+          } // end datetime check
+        } // end for loop
+    } // end success
+    }).error(function() {
+      console.log("Loading IEM LSR data failed.");
+    });
+  } // end function
+  get_lsr();
+  lsr_markers.addTo(map);
+  ///////////////////////////////// SURFACE OBS //////////////////////////////////////////////
+  var surface_stations = new L.featureGroup();
+  var sfc_stns_obs = [];
+  var wind_thres = 40.0 // knots
+  var stations = {{ site_list | safe }};
+
+  function getBulkObs(){
+    globalThis.sfc_stns_obs = [];
+    var request = new XMLHttpRequest();
+    request.overrideMimeType("application/xml");
+    request.open("GET","{% static 'metars.cache.xml' %}", false);
+    //request.setRequestHeader("Content-Type","text/xml");
+    request.send(null);
+    var doc = request.responseXML;
+    var root = doc.childNodes[0];
+    var metars = root.children[6];
+    for (i=0;i<metars.children.length;i++){
+      let stid = metars.children[i].getElementsByTagName("station_id")[0].textContent;
+      if (stations.includes(stid)){
+        try {
+          let wspd = parseFloat(metars.children[i].getElementsByTagName("wind_speed_kt")[0].textContent);
+          let gust = parseFloat(metars.children[i].getElementsByTagName("wind_gust_kt")[0].textContent);
+          if (wspd >= wind_thres || gust >= wind_thres) {
+            let obs_time = metars.children[i].getElementsByTagName("observation_time")[0].textContent;
+            let stid = metars.children[i].getElementsByTagName("station_id")[0].textContent;
+            let wdir = parseFloat(metars.children[i].getElementsByTagName("wind_dir_degrees")[0].textContent);
+            let text = metars.children[i].getElementsByTagName("raw_text")[0].textContent;
+            let lat = parseFloat(metars.children[i].getElementsByTagName("latitude")[0].textContent);
+            let lon = parseFloat(metars.children[i].getElementsByTagName("longitude")[0].textContent);
+            let obs_obj = {
+              type: "ASOS/AWOS",
+              observed_time: obs_time,
+              station_id: stid,
+              obs_text: text,
+              latitude: lat,
+              longitude: lon,
+              wind_speed: wspd,
+              wind_gust: gust,
+              wind_dir: wdir
+            };
+            sfc_stns_obs.push(obs_obj);
+            //var data = [lat,lon,wspd,gust,wdir,text];
+            //return data;
+            //addStation(data);
+          } // end if
+        } catch {
+          //console.log("Error parsing METAR data.");
+        } // end try/catch
+      } // end if
+
+    } // end for
+  } // end function
+
+
+  function createWindBarb(latitude,longitude,wspd,dir){
+    var icon = L.WindBarb.icon({lat: latitude, deg: dir, speed: wspd, pointRadius: 0, strokeWidth: 2, strokeLength: 18, barbSpaceing: 4, barbHeight: 10, fillColor: 'gray'});
+    var windbarb = L.marker([latitude,longitude], {icon: icon, renderer: obsCanvas});
+    windbarb.addTo(surface_stations);
+  }
+
+  function addMETARText(latitude,longitude,text, wind_color){
+    var textmarker = new L.circleMarker([latitude, longitude], {radius: 5, weight: 0.75, opacity: 0.8, color: "black", fillColor: wind_color, fillOpacity: 1.0, renderer: obsCanvas});
+    textmarker.addTo(surface_stations);
+    // have to create a different marker because circleMarker is too buggy
+    var textholder = new L.marker([latitude, longitude], { opacity: 0.0 });
+    textholder.bindTooltip(
+        `<div>
+             ${text}
+        </div>`,
+        {direction:'center', permanent: false, offset:[0,0]}
+    );
+    textholder.addTo(surface_stations);
+  }
+
+  function addSingleValue(lat,lon,value){
+    var marker = new L.marker([lat, lon], { opacity: 0.0, renderer: obsCanvas}); //opacity may be set to zero
+    marker.bindTooltip(`<p style="color:#ffffff; margin-bottom:0;">${value}</p>`, {permanent: true, className: "text-label", offset: [6,-2], direction:'center' });
+    marker.addTo(surface_stations);
+  }
+
+  function addStations(obs_list){
+    for (i=0;i<obs_list.length;i++){
+      // read in data
+      let lat = obs_list[i].latitude;
+      let lon = obs_list[i].longitude;
+      time = obs_list[i].observed_time;
+      stid = obs_list[i].station_id;
+      wspd = obs_list[i].wind_speed;
+      gust = obs_list[i].wind_gust;
+      wdir = obs_list[i].wind_dir;
+      text = obs_list[i].obs_text;
+
+      // get the max wind
+      let max = gust;
+      if (wspd > gust){
+        max = wspd;
+      }
+
+      // get the wind color
+      wind_color = "#3399ff";
+      if (max >= 50.0){
+        wind_color = "#0000ff";
+      }
+      // add the station to the map
+      addSingleValue(lat,lon,max);
+      addMETARText(lat,lon,text,wind_color);
+      createWindBarb(lat,lon,max,wdir);
+    } // end function
+  }
+  // get the initial obs
+  getBulkObs();
+  addStations(sfc_stns_obs);
+  surface_stations.addTo(map);
+  // set the initial time on the display
+////////////////////////////////// Warning Display //////////////////////////////////////////
+  function createWarnings(){
+    console.log("Getting latest warnings...");
+    var times = getWarningTimes();
+    let url = '/static/forecasts/hazards/current_warnings/current_warnings_'+times[0]+'.shp';
+    var exists = checkFileExists(url);
+    if (exists){
+      filestring2 = '/static/forecasts/hazards/current_warnings/current_warnings_'+times[0];
+    } else {
+      filestring2 = '/static/forecasts/hazards/current_warnings/current_warnings_'+times[1];
+    }
+    var warning_data = new L.Shapefile(filestring2,{
+      onEachFeature:function(feature,layer){
+        let type = feature.properties.PROD_TYPE;
+        let color = warnColor(type);
+        let issuance = feature.properties.ISSUANCE.substring(0,10) + " " + feature.properties.ISSUANCE.substring(11,16) + " LT";
+        let expiration = feature.properties.EXPIRATION.substring(0,10) + " " + feature.properties.EXPIRATION.substring(11,16) + " LT";
+        let wfo = feature.properties.WFO;
+        let url = feature.properties.URL;
+        let text = `Warning Type: ${type} <br>
+                    Issued by WFO: ${wfo.substring(1)} <br>
+                    Start Time: ${issuance} <br>
+                    End Time: ${expiration} <br>`
+        let ref = `<a href=${url}>More Info Here</a>`;
+        text = text + ref;
+        layer.bindPopup(text);
+        layer.setStyle({"color":color});
+        layer.opacity(0.3);
+        layer.bringToFront();
+        current_warnings.addLayer(layer);
+      } // end forEach
+    }); // end new shapefile
+    warning_data.remove();
+    warning_data.clearLayers();
+  } // end function
+  // initialize
+  createWarnings();
+  current_warnings.addTo(map);
+///////////////////////////////// Time Control //////////////////////////////////////////////
+  setInterval(function(){
+    console.log("Removing map items");
+    // remove surface stations
+    surface_stations.eachLayer(function(layer){
+      map.removeLayer(layer);
+    });
+    // remove mping hail markers
+    mping_hail.eachLayer(function(layer){
+      map.removeLayer(layer);
+    });
+    // remove mping wind markers
+    mping_wind.eachLayer(function(layer){
+      map.removeLayer(layer);
+    });
+    // remove LSR markers
+    lsr_markers.eachLayer(function(layer){
+      map.removeLayer(layer);
+    });
+
+    // clear the layers
+    surface_stations.clearLayers();
+    mping_hail.clearLayers();
+    mping_wind.clearLayers();
+    lsr_markers.clearLayers();
+
+    // clear the warnings
+    current_warnings.clearLayers();
+    current_warnings.remove();
+
+    // get the new:
+    console.log("Adding surface obs");
+    getBulkObs();
+    addStations(sfc_stns_obs);
+    surface_stations.addTo(map);
+    console.log("Adding MPING Hail");
+    get_mping_hail();
+    mping_hail.addTo(map);
+    console.log("Adding MPING wind");
+    get_mping_wind();
+    mping_wind.addTo(map);
+    console.log("Adding LSR markers");
+    get_lsr();
+    lsr_markers.addTo(map);
+    console.log("Refreshing warnings.");
+    createWarnings();
+    current_warnings.addTo(map);
+
+    // update the time on the display:
+    console.log("Updating times");
+    globalThis.times = createTimeArray(1); // create list of times
+    changeSFCtext(times);
+    console.log("Update complete.");
+
+  },(300*1000));
+
+///////////////////////////////// MAP TEXT CONTROL //////////////////////////////////////////////
+  // Lat lon text
+  L.Control.textbox = L.Control.extend({
+    onAdd: function(map) {
+      var text = L.DomUtil.create('div');
+      text.id = "LatLonLabel";
+      text.innerHTML = "<p id='label' style='color: white; text-shadow: 1px 1px black; font-size:15px;'></p>";
+      return text;
+    },
+    onRemove: function(map) {
+      // nothing?
+    }
+  });
+  L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+  L.control.textbox({position: 'bottomright'}).addTo(map);
+
+  // time stamp text
+  L.Control.textbox = L.Control.extend({
+    onAdd: function(map) {
+      var text = L.DomUtil.create('div');
+      text.id = "info text";
+      sfctext = "<a id='sfctext' style='color: white; text-shadow: 1px 1px black; font-size:15px;'>Surface Obs: Off</a><br/>";
+      basetime = "<p id='timestamp' style='color: white; text-shadow: 1px 1px black; font-size:15px;'>Current Time:</p>";
+      text.innerHTML = sfctext+basetime;
+      return text;
+    },
+    onRemove: function(map) {
+      // nothing?
+    }
+  });
+  L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+  L.control.textbox({position: 'bottomleft'}).addTo(map);
+
+
+  function changeSFCtext(times){
+    formatedTime = times[0].substring(4,6)+"/"+times[0].substring(6,8)+"/"+times[0].substring(0,4)+" "+times[0].substring(8,10)+":"+times[0].substring(10,12)+":00Z";
+    document.getElementById('sfctext').innerHTML = "Updated at: "+formatedTime;
+  }
+
+  // set the intitial time displays
+  changeSFCtext(times);
+///////////////////////////////// Sat, Rad, GLM, sfc obs, Updates //////////////////////////////////////////////
+  // radar update
+  setInterval(function(){iem_conus_base_refl.setParams({"time":radarTime()},false)}, (300*1000));
+  setInterval(function(){
+    clockAndLabel();
+  },1000);
+///////////////////////////////////////////////////////////////////////////////
+// Look for NWS T-storm and Tornado warnings
+nws_alerts();
+console.log(new Date().getTime());
+// setInterval(function() {
+//   nws_alerts();
+// }, 3000);
+///////////////////////////////////////////////////////////////////////////////
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  {% block content %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <!--<meta http-equiv="refresh" content="300" >-->
+
+  <title>Surface Charts</title>
+
+  <!-- Bootstrap core CSS -->
+  {% load static %}
+  <link href="{% static '/javascript/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <script type="text/javascript" src="{% static '/javascript/mapping_functions.js' %}"></script>
+  <style>
+
+  body::after {
+    content: "";
+    /* background-image: url("{% static 'raindrops.jpg' %}"); */
+    background-color: gray;
+    background-size: cover;
+    opacity: 0.6;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    z-index: -1;
+  }
+
+  #mainCanvas{
+    position: absolute;
+    top: 0px;
+    left: 10vw;
+    width: 90vw;
+    height: 100vh;
+    border: 1px solid #000000;
+  }
+
+
+  #chart_menu{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 10vw;
+    height: 100vh;
+    border: 1px solid #000000;
+  }
+
+  img{
+    position: absolute;
+    left: 10%;
+    width: 80%;
+    height: 7%;
+    border: 1px solid #000000;
+    cursor: pointer;
+  }
+
+  #conus{
+    top: 2%;
+  }
+
+  #neast{
+    top: 12%;
+  }
+
+  #midatl{
+    top: 22%;
+  }
+
+  #seast{
+    top: 32%;
+  }
+
+  #midwest{
+    top: 42%;
+  }
+
+  #nplains{
+    top: 52%;
+  }
+
+  #cplains{
+    top: 62%;
+  }
+
+  #splains{
+    top: 72%;
+  }
+
+  #nwest{
+    top: 82%;
+  }
+
+  #swest{
+    top: 92%;
+  }
+
+  #printer{
+    position: absolute;
+    z-index: 10;
+    top: 0px;
+    left: 11vw;
+    height: 50px;
+    width: 50px;
+    background-color: rgba(242,242,242,0.95);
+    border: 1px solid #000000;
+    cursor: pointer;
+  }
+  #sfc_chart{
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    cursor: default;
+  }
+
+  </style>
+
+</head>
+<body>
+
+  <div id="chart_menu">
+    <img class="thumnail" id="conus" src={% static '/media/thumbnails/conus_basic.png' %} alt="conus view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="neast" src={% static '/media/thumbnails/neast_basic.png' %} alt="northeast view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="midatl" src={% static '/media/thumbnails/midatl_basic.png' %} alt="mid-atlantic view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="seast" src={% static '/media/thumbnails/seast_basic.png' %} alt="southeast view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="midwest" src={% static '/media/thumbnails/midwest_basic.png' %} alt="midwest view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="nplains" src={% static '/media/thumbnails/nplains_basic.png' %} alt="northern plains view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="cplains" src={% static '/media/thumbnails/cplains_basic.png' %} alt="central plains view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="splains" src={% static '/media/thumbnails/splains_basic.png' %} alt="southern plains view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="nwest" src={% static '/media/thumbnails/nwest_basic.png' %} alt="northwest view" onClick="changeRegion(this.id)">
+    <img class="thumnail" id="swest" src={% static '/media/thumbnails/swest_basic.png' %} alt="southwest view" onClick="changeRegion(this.id)">
+  </div>
+
+  <div id="mainCanvas">
+    <!-- <embed id="sfc_chart" src="" width="100%" height="100%" /> -->
+    <img id="sfc_chart" src=""/>
+  </div>
+  <img id="printer" src={% static '/media/icons/print.png' %} alt="save img" onClick="printImage()">
+
+  <script>
+
+    var defaultRegion = "conus";
+    var update = 10; // seconds
+    var interval = 12; // number of frames
+    var times = createTimeArray(interval); // create list of times
+    var currentIndex = 0;
+    var previousIndex = interval;
+
+    function createTimeArray(intervals){
+      var times = [];
+      var time = dataTimeFormat(new Date(Math.floor( new Date() / 900000) * 900000));
+      //times.push(time); // add the initial time
+      for (i=1; i <= intervals; i++){
+        var time = new Date(Math.floor( new Date() / 900000) * 900000);
+        time.setMinutes(time.getMinutes() - (i*15));
+        timestring = dataTimeFormat(time);
+        times.push(timestring);
+      }
+      return times;
+    }
+
+    function draw(sat_img){
+      console.log("Drawing!");
+      console.log(document.getElementById("sfc_chart"));
+      document.getElementById("sfc_chart").src = sat_img;
+    }
+
+
+    function getSatImages(region,times){
+      globalThis.sat_imgs = [];
+      var sat_img1 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[0]+'.png';
+      var sat_img2 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[1]+'.png';
+      var sat_img3 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[2]+'.png';
+      var sat_img4 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[3]+'.png';
+      var sat_img5 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[4]+'.png';
+      var sat_img6 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[5]+'.png';
+      var sat_img7 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[6]+'.png';
+      var sat_img8 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[7]+'.png';
+      var sat_img9 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[8]+'.png';
+      var sat_img10 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[9]+'.png';
+      var sat_img11 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[10]+'.png';
+      var sat_img12 = '/static/data/sfc/'+region+'/'+region+'_basemosaic_'+times[11]+'.png';
+      sat_imgs.push(sat_img1,sat_img2,sat_img3,sat_img4,sat_img5,sat_img6,sat_img7,sat_img8,sat_img9,sat_img10,sat_img11,sat_img12);
+
+      // set the initial image
+      draw(sat_imgs[currentIndex]);
+    }
+
+
+    function changeRegion(region){
+      console.log("Getting image for "+region);
+      globalThis.defaultRegion = region;
+      getSatImages(defaultRegion,times);
+    }
+
+    // initialize
+    changeRegion(defaultRegion);
+
+    function printImage(){
+      var target = document.getElementById("mainCanvas");
+      console.log(target.innerHTML);
+      var WinPrint = window.open('', '', 'letf=100,top=100,width=900,height=600');
+      WinPrint.document.write(target.innerHTML);
+      WinPrint.document.getElementById("sfc_chart").style.width = '1700px';
+      WinPrint.document.getElementById("sfc_chart").style.height = '1100px';
+      WinPrint.document.close();
+      WinPrint.focus();
+      WinPrint.print();
+      WinPrint.close();
+    }
+
+///////////////////////////////// Time/Loop control //////////////////////////////////////////////
+    var play = false;
+    var loops = [];
+    document.addEventListener("keydown", (event) => {
+
+        if (event.keyCode == 37){
+          play = false;
+          try{
+            clearTimers(loops);
+          } catch {
+            console.log("No timers yet");
+          }
+          globalThis.previousIndex = currentIndex;
+          globalThis.currentIndex = currentIndex + 1;
+          if (currentIndex == times.length){
+             globalThis.currentIndex = 0;
+          } // end if
+          draw(sat_imgs[currentIndex]);
+          console.log(times[currentIndex])
+        } // end if
+
+        else if (event.keyCode == 39) {
+          play = false;
+          try{
+            clearTimers(loops);
+          } catch {
+            console.log("No timers yet");
+          }
+          globalThis.previousIndex = currentIndex;
+          globalThis.currentIndex = currentIndex - 1;
+          if (currentIndex < 0){
+            globalThis.currentIndex = times.length-1;
+          } // end if
+          draw(sat_imgs[currentIndex]);
+          console.log(times[currentIndex])
+        } // end else if
+
+        else if (event.keyCode == 32) {
+          //console.log("Space Bar was hit!");
+          play = !play;
+          if (play) {
+            var loop = setInterval(function() {
+              globalThis.previousIndex = currentIndex;
+              globalThis.currentIndex = currentIndex - 1;
+              if (currentIndex < 0){
+                globalThis.currentIndex = times.length-1;
+              } // end if
+              draw(sat_imgs[currentIndex]);
+              console.log(times[currentIndex])
+            }, (500));
+            loops.push(loop);
+          }
+          else {
+            clearTimers(loops);
+          } // end else
+        } // end else if
+    }); // end event listener
+
+
+    setInterval(function(){
+      // clear the old:
+      globalThis.times = createTimeArray(interval);
+      getSatImages(defaultRegion,times);
+    },(300*1000));
+
+  </script>
+  {% endblock %}
+</body>
+</html>

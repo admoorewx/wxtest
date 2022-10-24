@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Wx Watcher Home</title>
+
+  <!-- load static  -->
+  {% load static %}
+  <!-- Bootstrap core CSS -->
+  <link href="{% static '/javascript/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <!-- Non-Template sytles and JS links -->
+  <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+  <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet-src.js"></script>
+  <script type="text/javascript" src="{% static '/javascript/mapping_functions.js' %}"></script>
+  <script type="text/javascript" src="{% static '/javascript/index.js' %}"></script>
+  <link rel="stylesheet" href="{% static '/css/index.css' %}"/>
+
+
+
+  <style>
+    body{
+      background-image: url("{% static '/media/gustfront.jpg' %}");
+      background-size: cover;
+      background-repeat:repeat;
+      background-attachment:fixed;
+      overflow-y:scroll;
+    }
+
+
+  </style>
+
+</head>
+
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">Weather Watcher</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/map/wxmap/" target="_blank" rel="noopener noreferrer">Wx Map</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/map/wim/" target="_blank" rel="noopener noreferrer">W.I.M.</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/map/cim/" target="_blank" rel="noopener noreferrer">C.I.M.</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/textProd/text" target="_blank" rel="noopener noreferrer">Text Products</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/climo/plot" target="_blank" rel="noopener noreferrer">Climo</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/plot/submit/" target="_blank" rel="noopener noreferrer">Meteograms</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/blsn/table/" target="_blank" rel="noopener noreferrer">Blowing Snow Table</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/map/outlook/" target="_blank" rel="noopener noreferrer">Outlook Practice</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/sounding/" target="_blank" rel="noopener noreferrer">Soundings</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/fire/" target="_blank" rel="noopener noreferrer">Fire</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+  <section>
+    <div id="news_ticker_bar">
+      <p id="news_message">
+        Loading the latest headlines...
+      </p>
+    </div>
+    <div id="map_container">
+      <div id="current_map" style="width: 100%; height: 100%; padding-top: 10px; margin-left: auto; margin-right: auto;"></div>
+    </div>
+    <p id="clock">Current Time:</p>
+
+    <div id="station_map"></div>
+    <div id="current_observation">
+      <h4 id="current_station">Current Conditions at</h4>
+      <table style="width:100%">
+        <tr>
+          <td>Current Weather: </td>
+          <td id="current_wx"></td>
+        </tr>
+        <tr>
+          <td>Temperature: </td>
+          <td id="temp"> F</td>
+        </tr>
+        <tr>
+          <td>Dewpoint: </td>
+          <td id="dewp"> F</td>
+        </tr>
+        <tr>
+          <td>Rel. Humidity: </td>
+          <td id="relh"> %</td>
+        </tr>
+        <tr>
+          <td>Wind Speed/Dir: </td>
+          <td id="wind"></td>
+        </tr>
+        <tr>
+          <td>Wind Gust: </td>
+          <td id="gust"> mph</td>
+        </tr>
+        <tr>
+          <td>Visibility: </td>
+          <td id="visb"> mi</td>
+        </tr>
+        <tr>
+          <td>Sky Conditions: </td>
+          <td id="sky"></td>
+        </tr>
+      </table>
+    </div>
+
+    <div id="rotating_slides">
+      <img id="display_slide" src="https://forecast.weather.gov/wwamap/png/US.png" border="2">
+    </div>
+
+
+  </section>
+
+  <script>
+
+//  ---------- Check for Mobile ---------------------------
+  window.onload = function(){
+    var viewport_width = window.innerWidth;
+    if (viewport_width <= 1080){
+      console.log("Mobile detected");
+      $('#clock').css('left', '5vw');
+      $('#map_container').css('left', '5vw');
+      $('#map_container').css('height', '500px');
+      $('#map_container').css('width', '90vw');
+      $('#rotating_slides').css('top', '640px');
+      $('#rotating_slides').css('left', '5vw');
+      $('#rotating_slides').css('width', '90vw');
+      $('#current_observation').css('top', '1050px');
+      $('#current_observation').css('left', '5vw');
+      $('#current_observation').css('width', '90vw');
+      $('#station_map').css('top', '1050px');
+      $('#station_map').css('left', '5vw');
+      $('#station_map').css('width', '90vw');
+      current_map.invalidateSize();
+      stationmap.invalidateSize();
+    }
+  }
+  var current_map = L.map("current_map").setView([38.0, -102.0], 4);
+  // // ------------- Current Conditions Map ------------------
+
+  attrib = "Data sources: \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, \u003ca href=\"http://mesonet.agron.iastate.edu/GIS/\"\u003eIEM\u003c/a\u003e, \u003ca href=\"https://www.noaa.gov/\"\u003eNOAA\u003c/a\u003e, \u003ca href=\"https://www.spc.noaa.gov/\"\u003eSPC\u003c/a\u003e, \u003ca href=\"https://www.aviationweather.gov/metar\"\u003eAWC\u003c/a\u003e, \u003ca href=\"https://www.esri.com/en-us/home\"\u003eESRI\u003c/a\u003e";
+
+  var g16_conus_ch13 = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+      {"attribution": "", "format": "image/png", "layers": "conus_ch13", "opacity": 0.75, "styles": "", "transparent": true, "zIndex": "9", "version": "1.1.1"}
+  );
+
+  var g16_conus_ch2 = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+      {"attribution": "", "format": "image/png", "layers": "conus_ch02", "opacity": 0.75, "styles": "", "transparent": true, "zIndex":"9", "version": "1.1.1"}
+  );
+
+  var g16_conus_ch7 = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+      {"attribution": "", "format": "image/png", "layers": "conus_ch07", "opacity": 0.75, "styles": "", "transparent": true, "zIndex":"9", "version": "1.1.1"}
+  );
+
+
+  var hazards = L.tileLayer.wms(
+      "https://idpgis.ncep.noaa.gov/arcgis/services/NWS_Forecasts_Guidance_Warnings/watch_warn_adv/MapServer/WMSServer",
+      {"format": "image/png", "layers": "0", "opacity": 0.35, "transparent": true, "zIndex":"13"}
+  ).addTo(current_map);
+
+  ///////////////  BASE LAYERS /////////////////
+  var osm = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {"attribution": attrib, "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  ).addTo(current_map);
+  ///////////////////////////////// BOUNDARY LAYERS //////////////////////////////////////////////
+  /// State boundary
+  var state_style = {
+      "color":"#000000",
+      "fillColor":"none",
+      "fillOpacity":0.0,
+      "opacity":0.9,
+      "weight": 0.9,
+  }
+  var state_boundary = new L.geoJson();
+  state_boundary.addTo(current_map);
+  $.ajax({
+  dataType: "json",
+  url: "{% static '/geo/boundaries/usstates.json' %}",
+  success: function(data) {
+      $(data.features).each(function(key, data) {
+          state_boundary.addData(data);
+          state_boundary.setStyle(state_style);
+      });
+  }
+  }).error(function() {});
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////// NWS WARNINGS ////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  var current_warnings = new L.geoJSON().addTo(current_map);
+  function hazard_color(hazard){
+    let color = return_hazard_color(hazard);
+    hazard.setStyle({
+      color: color,
+      weight: 2,
+      opacity: 1.0,
+      fillColor: color,
+      fillOpacity: 0.25,
+    });
+  } // end hazard_color function
+////////////////////////////////////////////////////////////////////////////////
+  function nws_alerts(warning_list){
+    valid_alerts = ["Special Marine Warning", "Tornado Warning", "Severe Thunderstorm Warning", "Flash Flood Warning"];
+    var alert_url = "https://api.weather.gov/alerts/active";
+    var request = new XMLHttpRequest();
+    request.open("GET",alert_url, false);
+    request.send(null);
+    data = JSON.parse(request.response);
+    alerts = data.features;
+    alerts.forEach(function(alert){
+      if (valid_alerts.includes(alert.properties.event)){
+        // VTEC 6+: .KLMK.SV.W.0194.220706T2106Z-220706T2145Z/
+        id = alert.properties.parameters.VTEC[0].substring(6,22);
+        if (alert.properties.parameters.VTEC[0].includes("CAN")){
+          // Find the old alert and remove it.
+          current_warnings.eachLayer(function(layer){
+            if (layer.feature.properties.parameters.VTEC[0].substring(6,22) == id){
+              // we found a match, remove it.
+              current_warnings.removeLayer(layer);
+            }// end if
+          }); // end eachLayer
+        } // end if
+        else if (alert.properties.parameters.VTEC[0].includes("CON")){
+          // This is a warning update/continuation. We need to clear our the old
+          // warning and plot the new one (though we won't zoom in).
+          // First, see if the warning is already in the warning_list.
+          // It may not be if this is the first time the page is loaded.
+          if (warning_list.includes(id)){
+            // Loop through the layers in the geoJSON layer to find the matching id,
+            // remove that layer, then replace it with the continuation alert.
+            current_warnings.eachLayer(function(layer){
+              if (layer.feature.properties.parameters.VTEC[0].substring(6,22) == id){
+                // we found a match, remove it.
+                current_warnings.removeLayer(layer);
+                // replace it with the new alert
+                current_warnings.addData(alert);
+                //update_text(alert)
+              }// end if
+            }); // end eachFeature
+          } // end if
+          // If it's not in the list, then it's probably the initial page load, go ahead and add it.
+          else {
+            current_warnings.addData(alert);
+            warning_list.push(id);
+          } // end else
+        } // end else if
+        else if (warning_list.includes(id)){
+          // do nothing, this alert has already been added.
+        } // end else if
+        else {
+          warning_list.push(id);
+          //console.log(alert);
+          current_warnings.addData(alert);
+        } // end else
+      } // end if valid alert
+    }); // end alerts.forEach
+    // run a function that matches the color with the right hazards
+    current_warnings.eachLayer(function(layer){
+      hazard_color(layer);
+      text = layer.feature.properties.description.replace(/\n/g,"</br>");
+      layer.bindPopup(text,{minWidth:400});
+    });
+    return warning_list;
+  } // end function
+////////////////////////////////////////////////////////////////////////////////
+  function cleanse_warnings(geojson_layer){
+    // Convert the expiration time to epoch time
+    // then convert current time to epoch time, if the warning has expired,
+    // clear it from the geoJSON layer.
+    geojson_layer.eachLayer(function(layer){
+      let expire_time = layer.feature.properties.expires;
+      let expire_datetime = datetime_to_epoch(expire_time);
+      let current_datetime = new Date().getTime();
+      if (expire_datetime < current_datetime){
+        //console.log(expire_datetime,current_datetime);
+        geojson_layer.removeLayer(layer);
+      }
+    });
+  } // end function
+////////////////////////////////////////////////////////////////////////////////
+  var warning_list = [];
+  warning_list = nws_alerts(warning_list);
+  setInterval(function() {
+    warning_list = nws_alerts(warning_list);
+    cleanse_warnings(current_warnings);
+  }, 5000); // every 5 seconds
+  // Clock
+  setInterval(function(){
+    currentTime();
+  },1000);
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////// Looping radar ////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  function generateLayers(){
+    const NEXRAD_URL = `https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi`;
+    const NEXRAD_LAYER = `nexrad-n0q-900913`;
+    let timeLayers = [];
+    const TOTAL_INTERVALS = 10;
+    const INTERVAL_LENGTH_HRS = 5;
+    const OPACITY = 0.45;
+    const ZINDEX = 10;
+    const currentTime = new Date();
+    for (let i = 0; i <= TOTAL_INTERVALS; i++) {
+        const timeDiffMins =
+            TOTAL_INTERVALS * INTERVAL_LENGTH_HRS -
+            INTERVAL_LENGTH_HRS * i;
+        const suffix = (function(time) {
+            switch(time) {
+                case 0:
+                    return '';
+                case 5:
+                    return '-m05m';
+                default:
+                    return '-m' + time + 'm';
+            }
+            })(timeDiffMins);
+        const layerRequest = NEXRAD_LAYER + suffix;
+        const layer = L.tileLayer.wms(NEXRAD_URL, {
+            layers: layerRequest,
+            format: `image/png`,
+            transparent: true,
+            opacity: OPACITY,
+            zIndex: ZINDEX
+        });
+        const timeString = new Date(
+            currentTime.valueOf() - timeDiffMins * 60 * 1000
+        ).toLocaleTimeString();
+        timeLayers.push({
+            timestamp: `${timeString} (-${timeDiffMins} min)`,
+            tileLayer: layer
+        });
+    }
+    return timeLayers;
+  }
+////////////////////////////////////////////////////////////////////////////////
+  var radar_layers = generateLayers();
+  const transitionTime = 500; // ms
+  var index = 0;
+  // add layers to map
+  radar_layers.forEach(layer =>{
+    layer.tileLayer.setOpacity(0);
+    layer.tileLayer.addTo(current_map);
+  });
+  setInterval(function(){
+    let past_index = index - 1;
+    if (past_index < 0){
+      past_index = radar_layers.length - 1;
+    }
+    // hide previous layer
+    radar_layers[past_index].tileLayer.setOpacity(0);
+    // show current layer
+    radar_layers[index].tileLayer.setOpacity(0.35);
+    // increment
+    index++;
+    if (index >= radar_layers.length){
+      index = 0;
+    }
+  },transitionTime);
+////////////////////////////////////////////////////////////////////////////////
+ // Crawler Text timer
+ const TIMEDELTA = 3600; // seconds
+ const UPDATE_INTERVAL = 300*1000; // one minute in milliseconds
+ updateCrawlerText(TIMEDELTA)
+ setInterval(function(){
+   updateCrawlerText(TIMEDELTA);
+ },UPDATE_INTERVAL); // update every minute
+////////////////////////////////////////////////////////////////////////////////
+  // rotate images
+  rotateImages();
+  // initiate current conditions
+  retrieveASOS("kokc");
+  // set up the event listener
+  document.getElementById("current_station").addEventListener("click",function(){
+    displayStationMap();
+  });
+  var stationmap = L.map("station_map").setView([38.0, -102.0], 4);
+  var osm = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {"attribution": attrib, "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  ).addTo(stationmap);
+  var station_markers = new L.featureGroup();
+  ////////////////////////////////////////////////////////////////////////////////
+  function getStationList(){
+    var stations = [];
+    var request = new XMLHttpRequest();
+    request.overrideMimeType("application/xml");
+    request.open("GET","{% static '/data/metars.cache.xml' %}", false);
+    request.send(null);
+    var doc = request.responseXML;
+    var root = doc.childNodes[0];
+    var metars = root.children[6];
+    for (i=0;i<metars.children.length;i++){
+      try {
+        var stid = metars.children[i].getElementsByTagName("station_id")[0].textContent;
+        if (stid.substring(0,1).includes("K")){
+          //var tc = metars.children[i].getElementsByTagName("temp_c")[0].textContent;
+
+          var lat = parseFloat(metars.children[i].getElementsByTagName("latitude")[0].textContent);
+          var lon = parseFloat(metars.children[i].getElementsByTagName("longitude")[0].textContent);
+          var info = [stid,lat,lon];
+          stations.push(info);
+        }
+      } catch {
+        // do nothing
+      }
+    }
+    return stations;
+  }
+////////////////////////////////////////////////////////////////////////////////
+  function add_markers(){
+    station_markers.clearLayers();
+    stationmap.removeLayer(station_markers);
+    var stations = getStationList();
+    stations.forEach(function(station){
+      let lat = station[1];
+      let lon = station[2];
+      let stid = station[0];
+      var marker = new L.circleMarker([lat, lon], { radius: 3, color: "black", weight: 2, opacity: 1.0, fillColor: "blue", fillOpacity: 0.4 }); //opacity may be set to zero
+      marker.on('click',function(){
+          console.log(`Selected site for current obs: ${stid}`);
+          displayStationMap();
+          retrieveASOS(stid);
+      });
+      marker.addTo(station_markers);
+    })
+    station_markers.addTo(stationmap);
+  } // end add_markers
+  ////////////////////////////////////////////////////////////////////////////////
+  function displayStationMap(){
+    var mapcontainer = document.getElementById("station_map");
+    if (mapcontainer.style.display == "flex"){
+      mapcontainer.style.display = "none";
+    } else {
+      mapcontainer.style.display = "flex";
+      stationmap.invalidateSize();
+    } // end else
+  } // end function
+  ////////////////////////////////////////////////////////////////////////////////
+  add_markers();
+  </script>
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="{% static '/javascript/vendor/jquery/jquery.min.js' %}"></script>
+  <script src="{% static '/javascript/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+</body>
+
+</html>

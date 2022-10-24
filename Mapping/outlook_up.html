@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Outlook Practice</title>
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+    <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+    {% load static %}
+    <script type="text/javascript" src="{% static '/javascript/leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+    <script type="text/javascript" src="{% static '/javascript/dom-to-image-master/src/dom-to-image.js' %}"></script>
+    <script type="text/javascript" src="{% static '/javascript/shapefile-js/dist/shp.js' %}"></script>
+    <script type="text/javascript" src="{% static '/javascript/mapping_functions.js' %}"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- links for Leaflet draw -->
+    <link rel="stylesheet" href="{% static '/javascript/Leaflet.Draw/src/leaflet.draw.css' %}"/>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/Leaflet.draw.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/Leaflet.Draw.Event.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/Toolbar.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/Tooltip.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/GeometryUtil.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/LatLngUtil.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/LineUtil.Intersect.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/Polygon.Intersect.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/Polyline.Intersect.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/TouchEvents.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/DrawToolbar.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Feature.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.SimpleShape.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Polyline.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Marker.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Circle.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.CircleMarker.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Polygon.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Rectangle.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/EditToolbar.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/EditToolbar.Edit.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/EditToolbar.Delete.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/Control.Draw.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.Poly.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.SimpleShape.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.Rectangle.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.Marker.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.CircleMarker.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.Circle.js' %}"></script>
+
+
+
+    <meta name="viewport" content="width=device-width,
+        initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+
+    #container {
+      position: absolute;
+      height: 100.0%;
+      width: 100.0%;
+      top: 0px;
+      z-index: 0;
+    }
+    #map_holder {
+        position: absolute;
+        width: 100.0%;
+        height: 100.0%;
+        left: 0.0%;
+        top: 0.0vh;
+    }
+
+    #CategorySelection{
+      position: relative;
+      z-index: 10;
+      left:50px;
+      top:12px;
+      height:50px;
+      width: 150px;
+      color: white;
+      background-color: rgba(80,78,78,0.9);
+    }
+
+    #ProbabilitySelection{
+      position: absolute;
+      z-index: 10;
+      left:205px;
+      top:12px;
+      height:50px;
+      width: 150px;
+      color: white;
+      background-color: rgba(80,78,78,0.9);
+    }
+
+    #LSRSelection{
+      position: absolute;
+      z-index: 10;
+      left:360px;
+      top:12px;
+      height:50px;
+      width: 150px;
+      color: white;
+      text-align: center;
+      background-color: rgba(80,78,78,0.9);
+    }
+
+    #save_div{
+      position: absolute;
+      z-index: 10;
+      left:620px;
+      top:12px;
+      height:50px;
+      width: 100px;
+      text-align: center;
+      color: white;
+      background-color: rgba(80,78,78,0.9);
+      border-style: solid;
+      border-width: 1px;
+      border-color: white;
+    }
+
+    #load_button{
+      position: absolute;
+      z-index: 10;
+      left: 515px;
+      top:12px;
+      height:50px;
+      width: 100px;
+      color: white;
+      background-color: rgba(80,78,78,0.9);
+    }
+
+    #save_button{
+      color: white;
+      text-align: center;
+      display: inline-block;
+      padding-top: 15%;
+    }
+
+    #image_button{
+      position: absolute;
+      z-index: 10;
+      left:725px;
+      top:12px;
+      height:50px;
+      width: 100px;
+      color: white;
+      background-color: rgba(80,78,78,0.9);
+    }
+
+    .lsr_tag{
+      overflow-wrap: break-word;
+    }
+
+    #LSRButton{
+      height: 100%;
+      width: 100%;
+      color: white;
+      background-color: rgba(80,78,78,0.9);
+      display: inline-block;
+    }
+
+    /* #LSRButton:hover #lsr_options {
+      display: block;
+    } */
+
+
+    #lsr_options{
+      position: absolute;
+      min-width: 150px;
+      color: white;
+      background-color: rgba(80,78,78,0.9);
+      display: none;
+      z-index: 1;
+    }
+
+    .lsr_opt{
+      color: white;
+      background-color: rgba(80,78,78,0.9);
+      display: block;
+    }
+
+    .lsr_opt:hover{
+      color: white;
+      background-color: rgba(118,118,137,0.5);
+    }
+
+    </style>
+
+</head>
+<body>
+{% block content %}
+  <form>
+    <select id="CategorySelection" onChange="setCategory(value)">
+      <option value="genthunder" selected>Category</option>
+      <option value="genthunder">General Thunder</option>
+      <option value="marginal">Marginal</option>
+      <option value="slight">Slight</option>
+      <option value="enhanced">Enhanced</option>
+      <option value="moderate">Moderate</option>
+      <option value="high">High</option>
+    </select>
+  </form>
+
+  <form>
+    <select id="ProbabilitySelection" onChange="setProbability(value)">
+      <option value="None" selected>Probability</option>
+      <option value="2">2%</option></option>
+      <option value="5">5%</option>
+      <option value="10">10%</option>
+      <option value="15">15%</option>
+      <option value="30">30%</option>
+      <option value="45">45%</option>
+      <option value="60">60%</option>
+    </select>
+  </form>
+
+  <div id="LSRSelection">
+    <button id="LSRButton">LSRs</button>
+    <div id="lsr_options">
+      <li id="none" class="lsr_opt" >No LSRs</li>
+      <li id="past24" class="lsr_opt" >Past 24 Hours</li>
+      <li id="yesterday" class="lsr_opt" >yesterday</li>
+      <li id="twodaysago" class="lsr_opt" >2 Day Ago</li>
+      <li id="threedaysago" class="lsr_opt" >3 Day Ago</li>
+      <li id="fourdaysago" class="lsr_opt" >4 Day Ago</li>
+      <li id="fivedaysago" class="lsr_opt" >5 Day Ago</li>
+      <li id="sixdaysago" class="lsr_opt" >6 Day Ago</li>
+      <li id="sevendaysago" class="lsr_opt" >7 Day Ago</li>
+    </div>
+  </div>
+
+  <div id="save_div">
+    <a href='#' id="save_button">Export geojson</a>
+  </div>
+
+  <input  id="loadfile" type="file" onchange="loadOutlook()" hidden/>
+  <button id="load_button">Load geojson</button>
+  <button id="image_button" onClick="exportImage()">Export JPEG</button>
+
+  <div id="container">
+    <div class="folium-map" id="map_holder"></div>
+  </div>
+
+  <div id="time_info">
+    <p id="current_time">Current Time: </p>
+  </div>
+
+  <script type="text/javascript">
+  ///////////////////////////////////// Handling the LSR menu ///////////////////////////////////////////
+    document.getElementById("LSRButton").addEventListener("click",function(){
+      document.getElementById("lsr_options").style.display="block";
+    });
+    document.getElementById("lsr_options").addEventListener("click",function(){
+      document.getElementById("lsr_options").style.display="none";
+    });
+    document.getElementById("lsr_options").addEventListener("mouseleave",function(){
+      document.getElementById("lsr_options").style.display="none";
+    });
+  ///////////////////////////////////// DEFAULT CATEGORY COLOR VALUE ///////////////////////////////////////////
+    var category = "genthunder";
+    var category_color = "#9BE1A2";
+  ///////////////////////////////////// SET GLOBAL CATEGORY COLOR ON CHANGE ///////////////////////////////
+
+    function setCategory(value){
+      if (value == "genthunder"){
+        globalThis.category = value;
+        globalThis.category_color = "#9BE1A2";
+      }
+      else if (value == "marginal") {
+        globalThis.category = value;
+        globalThis.category_color = "#147628";
+      }
+      else if (value == "slight") {
+        globalThis.category = value;
+        globalThis.category_color = "#E4EF44";
+      }
+      else if (value == "enhanced") {
+        globalThis.category = value;
+        globalThis.category_color = "#FDBC23";
+      }
+      else if (value == "moderate") {
+        globalThis.category = value;
+        globalThis.category_color = "#F3390B";
+      }
+      else if (value == "high") {
+        globalThis.category = value;
+        globalThis.category_color = "#F30BF3";
+      }
+      // change the probability selection menu to "Probability"
+      var probSelect = document.getElementById("ProbabilitySelection");
+      probSelect.selectedIndex = 0;
+    }
+
+    ///////////////////////////// SET GLOBAL CATEGORY COLOR ON PROBABILITY CHANGE ///////////////////////
+
+    function setProbability(value){
+        if (value == "None"){
+          // If None, set back to general thunder
+          globalThis.category = "genthunder";
+          globalThis.category_color = "#9BE1A2";
+        }
+        else if (value == "2") {
+          globalThis.category = value;
+          globalThis.category_color = "#789F65";
+        }
+        else if (value == "5") {
+          globalThis.category = value;
+          globalThis.category_color = "#87694F";
+        }
+        else if (value == "10") {
+          globalThis.category = value;
+          globalThis.category_color = "#F3FF4B";
+        }
+        else if (value == "15") {
+          globalThis.category = value;
+          globalThis.category_color = "#DB350B";
+        }
+        else if (value == "30") {
+          globalThis.category = value;
+          globalThis.category_color = "#DD54E6";
+        }
+        else if (value == "45") {
+          globalThis.category = value;
+          globalThis.category_color = "#74217A";
+        }
+        else if (value == "60") {
+          globalThis.category = value;
+          globalThis.category_color = "#3B46E2";
+        }
+        // change the probability selection menu to "Probability"
+        var catSelect = document.getElementById("CategorySelection");
+        catSelect.selectedIndex = 0;
+      }
+
+  ///////////////////////////////////// SAVE OUTLOOK ///////////////////////////////
+    document.getElementById("save_button").onclick = function(e) {
+      console.log("Saving Outlook...")
+      var data = drawnItems.toGeoJSON();
+      var convertedData = 'text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data));
+      if (convertedData.length > 100){
+        document.getElementById('save_button').setAttribute('href', 'data:' + convertedData);
+        document.getElementById('save_button').setAttribute('download','data.geojson');
+      } else{
+        console.log("No data to save!");
+        document.getElementById('save_button').setAttribute('href', '#');
+        document.getElementById('save_button').setAttribute('download','');
+      }
+    }
+  ///////////////////////////////////// LOAD OUTLOOK ///////////////////////////////
+    document.getElementById("load_button").onclick = function(e){
+      document.getElementById("loadfile").click();
+    }
+
+    function loadOutlook(){
+      var [file] = document.querySelector('input[type="file"]').files;
+      var fr = new FileReader();
+
+      fr.addEventListener("load",() => {
+        var json_data = JSON.parse(fr.result);
+        json_data.features.forEach(item => {
+          let cat = item.properties.title;
+          let style = loadOutlookColor(cat);
+          var new_layer = L.geoJSON(item,style);
+          addNonGroupLayers(new_layer,drawnItems);
+        })
+
+      },false);
+
+      var extension = file.name.split('.')[1]
+      if (file && extension == "geojson") {
+        fr.readAsText(file);
+      } else {
+        console.log("Invalid file input type. Must be geojson file.");
+      } // end if/else
+
+    } // end function
+  ///////////////////////////////////// LOAD OUTLOOK ///////////////////////////////
+    function loadOutlookColor(value){
+      if (value == "genthunder"){
+        category_color = "#9BE1A2";
+      }
+      else if (value == "marginal") {
+        category_color = "#147628";
+      }
+      else if (value == "slight") {
+        category_color = "#E4EF44";
+      }
+      else if (value == "enhanced") {
+        category_color = "#FDBC23";
+      }
+      else if (value == "moderate") {
+        category_color = "#F3390B";
+      }
+      else if (value == "high") {
+        category_color = "#F30BF3";
+      }
+      else if (value == "2") {
+        category_color = "#789F65";
+      }
+      else if (value == "5") {
+        category_color = "#87694F";
+      }
+      else if (value == "10") {
+        category_color = "#F3FF4B";
+      }
+      else if (value == "15") {
+        category_color = "#DB350B";
+      }
+      else if (value == "30") {
+        category_color = "#DD54E6";
+      }
+      else if (value == "45") {
+        category_color = "#74217A";
+      }
+      else if (value == "60") {
+        category_color = "#3B46E2";
+      }
+      var style = {
+          "color":category_color,
+          "fillColor":"None",
+          "fillOpacity":0.0,
+          "opacity":1.0,
+          "weight": 3.0,
+      }
+      return style;
+    }
+
+  ///////////////////////////////// EXPORT IMAGE FUNCTION //////////////////////////////////////////////
+  function exportImage(){
+    domtoimage.toJpeg(document.getElementById("container"), { quality: 1.0 })
+      .then(function(dataurl){
+        var link = document.createElement('a');
+        link.download = 'outlook.jpeg';
+        link.href = dataurl;
+        link.click();
+      });
+  }
+
+  ///////////////////////////////// ADD LAYER FUNCTION //////////////////////////////////////////////
+    function addNonGroupLayers(sourceLayer,targetGroup){
+      if (sourceLayer instanceof L.LayerGroup){
+        sourceLayer.eachLayer(function(layer){
+          addNonGroupLayers(layer,targetGroup);
+        });
+      } else {
+        targetGroup.addLayer(sourceLayer);
+      }
+    } // end function
+
+  ///////////////////////////////// MOUSE LAT/LON FUNCTIONS //////////////////////////////////////////////
+
+    L.CursorHandler = L.Handler.extend({
+        addHooks: function () {
+            this._map.on('mousemove', this._update, this);
+        },
+        _update: function (e) {
+          document.getElementById('label').innerHTML = e.latlng.lat.toFixed(4).toString()+", "+e.latlng.lng.toFixed(4).toString();
+        }
+    });
+    L.Map.addInitHook('addHandler', 'cursor', L.CursorHandler);
+
+
+  /////////////////////////////////////// BOUNDARY CONTROL //////////////////////////////////////////////
+    var county_style = {
+        "color":"#F7F3F3",
+        "fillColor":"none",
+        "fillOpacity":0.0,
+        "opacity":0.4,
+        "weight": 0.5,
+    }
+    var state_style = {
+        "color":"#F7F3F3",
+        "fillColor":"none",
+        "fillOpacity":0.0,
+        "opacity":0.9,
+        "weight": 0.9,
+    }
+
+
+    var district_boundary = new L.geoJson();
+    $.ajax({
+    dataType: "json",
+    url: "{% static '/geo/boundaries/uscounties.json' %}",
+    success: function(data) {
+        $(data.features).each(function(key, data) {
+            district_boundary.addData(data).setStyle(county_style);
+            //district_boundary.setStyle(county_style);
+        });
+    }
+    }).error(function() {});
+
+    var state_boundary = new L.geoJson();
+    $.ajax({
+    dataType: "json",
+    url: "{% static '/geo/boundaries/usstates.json' %}",
+    success: function(data) {
+        $(data.features).each(function(key, data) {
+            state_boundary.addData(data);
+            state_boundary.setStyle(state_style);
+        });
+    }
+    }).error(function() {});
+
+
+  ///////////////////////////////////////// MAP DEFINITION //////////////////////////////////////////////
+    var map = L.map(
+        "map_holder",
+        {
+            center: [40.0, -100.0],
+            crs: L.CRS.EPSG3857,
+            zoom: 5,
+            zoomControl: true,
+            cursor: true,
+            preferCanvas: true,
+            renderer: L.canvas(),
+            keyboard: false,
+            updateWhenIdle: true,
+            updateWhenZooming: false,
+            attributionControl: false,
+        }
+    );
+    var obsCanvas = L.canvas(); // for surface observations
+    /////////////// BASE LAYERS /////////////////
+    var dark = L.tileLayer(
+        "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+        {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+    ).addTo(map);
+
+    var light = L.tileLayer(
+        "https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+        {"attribution": "Map tiles by \u003ca href=\"http://stamen.com\"\u003eStamen Design\u003c/a\u003e, under \u003ca href=\"http://creativecommons.org/licenses/by/3.0\"\u003eCC BY 3.0\u003c/a\u003e. Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+    );
+
+    var osm = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+    );
+
+    var esri_phyiscal = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+    	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
+    });
+
+    var world_imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+
+    var esri_map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Specialty/DeLorme_World_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+    	attribution: 'Tiles &copy; Esri &mdash; Copyright: &copy;2012 DeLorme',
+    	minZoom: 1,
+    	maxZoom: 11
+    });
+
+    var iem_conus_base_refl = L.tileLayer.wms(
+        "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
+        {"attribution": "", "format": "image/png", "layers": "nexrad-n0q", "opacity": 0.55, "styles": "", "transparent": true, "zIndex":"10"}
+    );
+
+    var g16_conus_ch13 = L.tileLayer.wms(
+        "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+        {"attribution": "", "format": "image/png", "layers": "conus_ch13", "opacity": 0.65, "styles": "", "transparent": true, "zIndex": "10"}
+    );
+
+    var g16_conus_ch2 = L.tileLayer.wms(
+        "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+        {"attribution": "", "format": "image/png", "layers": "conus_ch02", "opacity": 0.75, "styles": "", "transparent": true, "zIndex":"10"}
+    );
+
+
+  /////////////// LAYER CONTROL ////////////////
+    var layer_control_1 = {
+        base_layers : {
+            "Dark (default)" : dark,
+            "Light" : light,
+            "Open Street Map" : osm,
+            "World Imagery": world_imagery,
+            "ESRI Map": esri_map,
+            "ESRI Physical": esri_phyiscal,
+        }, overlays : {
+          "States": state_boundary,
+          "Counties": district_boundary,
+          "Comp. Reflectivity": iem_conus_base_refl,
+          "GOES 16 Visible": g16_conus_ch2,
+          "GOES 16 IR": g16_conus_ch13,
+        }
+    };
+    L.control.layers(layer_control_1.base_layers,
+                    layer_control_1.overlays,
+                    {"autoZIndex": true, "collapsed": true, "position": "topright"}
+                    ).addTo(map);
+
+
+    // initialize the state boundaries by default
+    state_boundary.addTo(map);
+    //district_boundary.addTo(map);
+    // initialize the LSR markers
+    var lsr_24hours = new L.featureGroup();
+    var lsr_yesterday = new L.featureGroup();
+    var lsr_2days = new L.featureGroup();
+    var lsr_3days = new L.featureGroup();
+    var lsr_4days = new L.featureGroup();
+    var lsr_5days = new L.featureGroup();
+    var lsr_6days = new L.featureGroup();
+    var lsr_7days = new L.featureGroup();
+
+  ////////// Drawing Tools //////////////
+
+    var drawnItems = new L.featureGroup();
+    map.addLayer(drawnItems);
+
+    map.addControl(new L.Control.Draw({
+        edit: {
+            featureGroup: drawnItems,
+            poly: {
+                allowIntersection: false
+            }
+        },
+        draw: {
+            polygon: {
+                allowIntersection: false,
+                showArea: true,
+            },
+            polyline: false,
+            marker: false,
+            circle: false,
+            rectangle: false,
+            circlemarker: false,
+        }
+    }));
+
+    map.on(L.Draw.Event.CREATED, function (event) {
+      var layer = event.layer,
+        feature = layer.feature = layer.feature || {};
+      feature.type = feature.type || "Feature";
+      var props = feature.properties = feature.properties || {};
+      props.title = category;
+      layer.options.color = category_color;
+      layer.options.fillOpacity = 0.0;
+      layer.options.weight = 3.0;
+      layer.options.opacity = 1.0;
+        // var layer = event.layer;
+      drawnItems.addLayer(layer);127
+    });
+  //////////////////////////////////////// LSR Remark Formatter //////////////////////////////////////////////
+    function formatRemark(text){
+      var words = text.split(" ");
+      var ind = Math.round(words.length/2);
+      words.splice(ind,0,"<br/>")
+      return words.join(" ");
+    }
+  //////////////////////////////////////////// Add LSR Markers to map routine /////////////////////////////
+    function add_lsr_markers(lsr_url, marker_layer){
+      $.ajax({
+      dataType: "json",
+      url: lsr_url,
+      success: function(data) {
+          for (i=0;i<data.features.length;i++){
+            let valid = false;
+            //console.log(data.features[i].properties);
+            let type = data.features[i].properties.TYPETEXT;
+            if (type == "TORNADO"){
+              lsr_color = "#ff3333";
+              valid = true;
+            }
+
+            else if (type == "HAIL") {
+              lsr_color = "#00cc00";
+              valid = true;
+            }
+
+            else if (type == "TSTM WND DMG" || type == "TSTM WND GST"){
+              lsr_color = "#0000ff";
+              valid = true;
+            }
+            if (valid){
+
+              let lat = data.features[i].properties.LAT;
+              let lon = data.features[i].properties.LON;
+
+              var lsrmarker = new L.circleMarker([lat, lon], {radius: 7.0, weight: 0.75, opacity: 1.0, color: "black", fillColor: lsr_color, fillOpacity: 1.0});
+              lsrmarker.addTo(marker_layer);
+              // have to create a different marker because circleMarker is too buggy
+              var remark = formatRemark(data.features[i].properties.REMARK);
+              let valid_time = data.features[i].properties.VALID.substring(4,6)+"/"+data.features[i].properties.VALID.substring(6,8)+"/"+data.features[i].properties.VALID.substring(0,4)+" "+data.features[i].properties.VALID.substring(8,10)+":"+data.features[i].properties.VALID.substring(8,10)+" UTC";
+              let text = "LSR TIME: "+valid_time+"<br>TYPE: "+data.features[i].properties.TYPETEXT+"<br>MAG: "+data.features[i].properties.MAG+"<br>LOCATION: "+data.features[i].properties.CITY+", "+data.features[i].properties.STATE+"<br>SOURCE: "+data.features[i].properties.SOURCE+"<br>REMARK: "+remark;
+              var lsrText = new L.marker([lat, lon], { radius: 7.0, opacity: 0.0 });
+              lsrText.bindTooltip(
+                  `<div class="lsr_tag">
+                    ${text}
+                  </div>`,
+                  {direction:'auto', permanent: false, offset: [1,25]}
+              );
+              lsrText.addTo(marker_layer);
+            } // end if valid
+          } // end for loop
+      } // end success
+      }).error(function() {
+        console.log("Loading LSR data failed.");
+      }); // end ajax call
+      // add layer to map
+      marker_layer.addTo(map);
+    } // end function
+  /////////////////////////////////////////// Remove marker routine /////////////////////////////////
+    function remove_markers(marker_layer){
+      marker_layer.eachLayer(function(layer){
+        map.removeLayer(layer);
+      });
+      marker_layer.clearLayers();
+    }
+
+  /////////////////////////////////////////// LSR Marker Event Listeners ////////////////////////////////////////
+    // initialize the LSR layer display booleans
+    var past24 = false;
+    var day1 = false;
+    var day2 = false;
+    var day3 = false;
+    var day4 = false;
+    var day5 = false;
+    var day6 = false;
+    var day7 = false;
+    var nonSelectColor = "rgba(80,78,78,0.0)";
+    var selectColor = "rgba(48,49,71,0.8)";
+
+    document.getElementById("none").addEventListener("click",function(){
+      var opts = document.getElementsByClassName("lsr_opt")
+      for (i=0;i < opts.length; i++){
+        opts[i].style.backgroundColor = nonSelectColor;
+      }
+      remove_markers(lsr_24hours);
+      remove_markers(lsr_yesterday);
+      remove_markers(lsr_2days);
+      remove_markers(lsr_3days);
+      remove_markers(lsr_4days);
+      remove_markers(lsr_5days);
+      remove_markers(lsr_6days);
+      remove_markers(lsr_7days);
+    });
+
+    document.getElementById("past24").addEventListener("click",function(){
+      past24 = !past24;
+      if (past24){
+        var date = document.getElementById("past24").innerHTML;
+        var lsr_url = "/static/data/cim/iem_lsr.geojson";
+        add_lsr_markers(lsr_url,lsr_24hours);
+        document.getElementById("past24").style.backgroundColor = selectColor;
+      } else {
+        remove_markers(lsr_24hours);
+        document.getElementById("past24").style.backgroundColor = nonSelectColor;
+      }
+    });
+
+    document.getElementById("yesterday").addEventListener("click",function(){
+      day1 = !day1;
+      if (day1){
+        var date = document.getElementById("yesterday").innerHTML;
+        var monthday = date.substr(0,2) + date.substr(3,2);
+        var lsr_url = "/static/data/cim/"+monthday+"_lsr.geojson";
+        console.log(lsr_url);
+        add_lsr_markers(lsr_url,lsr_yesterday);
+        document.getElementById("yesterday").style.backgroundColor = selectColor;
+      } else {
+        remove_markers(lsr_yesterday);
+        document.getElementById("yesterday").style.backgroundColor = nonSelectColor;
+      }
+    });
+
+    document.getElementById("twodaysago").addEventListener("click",function(){
+      day2 = !day2;
+      if (day2){
+        var date = document.getElementById("twodaysago").innerHTML;
+        var monthday = date.substr(0,2) + date.substr(3,2);
+        var lsr_url = "/static/data/cim/"+monthday+"_lsr.geojson";
+        add_lsr_markers(lsr_url,lsr_2days);
+        document.getElementById("twodaysago").style.backgroundColor = selectColor;
+      } else {
+        remove_markers(lsr_2days);
+        document.getElementById("twodaysago").style.backgroundColor = nonSelectColor;
+      }
+    });
+
+    document.getElementById("threedaysago").addEventListener("click",function(){
+      day3 = !day3;
+      if (day3){
+        var date = document.getElementById("threedaysago").innerHTML;
+        var monthday = date.substr(0,2) + date.substr(3,2);
+        var lsr_url = "/static/data/cim/"+monthday+"_lsr.geojson";
+        add_lsr_markers(lsr_url,lsr_3days);
+        document.getElementById("threedaysago").style.backgroundColor = selectColor;
+      } else {
+        remove_markers(lsr_3days);
+        document.getElementById("threedaysago").style.backgroundColor = nonSelectColor;
+      }
+    });
+
+    document.getElementById("fourdaysago").addEventListener("click",function(){
+      day4 = !day4;
+      if (day4){
+        var date = document.getElementById("fourdaysago").innerHTML;
+        var monthday = date.substr(0,2) + date.substr(3,2);
+        var lsr_url = "/static/data/cim/"+monthday+"_lsr.geojson";
+        add_lsr_markers(lsr_url,lsr_4days);
+        document.getElementById("fourdaysago").style.backgroundColor = selectColor;
+      } else {
+        remove_markers(lsr_4days);
+        document.getElementById("fourdaysago").style.backgroundColor = nonSelectColor;
+      }
+    });
+
+    document.getElementById("fivedaysago").addEventListener("click",function(){
+      day5 = !day5;
+      if (day5){
+        var date = document.getElementById("fivedaysago").innerHTML;
+        var monthday = date.substr(0,2) + date.substr(3,2);
+        var lsr_url = "/static/data/cim/"+monthday+"_lsr.geojson";
+        add_lsr_markers(lsr_url,lsr_5days);
+        document.getElementById("fivedaysago").style.backgroundColor = selectColor;
+      } else {
+        remove_markers(lsr_5days);
+        document.getElementById("fivedaysago").style.backgroundColor = nonSelectColor;
+      }
+    });
+
+    document.getElementById("sixdaysago").addEventListener("click",function(){
+      day6 = !day6;
+      if (day6){
+        var date = document.getElementById("sixdaysago").innerHTML;
+        var monthday = date.substr(0,2) + date.substr(3,2);
+        var lsr_url = "/static/data/cim/"+monthday+"_lsr.geojson";
+        add_lsr_markers(lsr_url,lsr_6days);
+        document.getElementById("sixdaysago").style.backgroundColor = selectColor;
+      } else {
+        remove_markers(lsr_6days);
+        document.getElementById("sixdaysago").style.backgroundColor = nonSelectColor;
+      }
+    });
+
+    document.getElementById("sevendaysago").addEventListener("click",function(){
+      day7 = !day7;
+      if (day7){
+        var date = document.getElementById("sevendaysago").innerHTML;
+        var monthday = date.substr(0,2) + date.substr(3,2);
+        var lsr_url = "/static/data/cim/"+monthday+"_lsr.geojson";
+        add_lsr_markers(lsr_url,lsr_7days);
+        document.getElementById("sevendaysago").style.backgroundColor = selectColor;
+      } else {
+        remove_markers(lsr_7days);
+        document.getElementById("sevendaysago").style.backgroundColor = nonSelectColor;
+      }
+    });
+
+  ///////////////////////////////////////// LSR Menu Dates //////////////////////////////////////////////
+    // get the current Date
+    var current = new Date()
+    var onedayago = new Date(current - (24.0 * 3600.0 * 1000.0)); // # of hours * 3600 sec/hour * 1000 milliseconds/sec
+    var twodaysago = new Date(current - (48.0 * 3600.0 * 1000.0));
+    var threedaysago = new Date(current - (72.0 * 3600.0 * 1000.0));
+    var fourdaysago  = new Date(current - (96.0 * 3600.0 * 1000.0));
+    var fivedaysago  = new Date(current - (120.0 * 3600.0 * 1000.0));
+    var sixdaysago   = new Date(current - (144.0 * 3600.0 * 1000.0));
+    var sevendaysago = new Date(current - (168.0 * 3600.0 * 1000.0));
+
+    var firstdatestring = (onedayago.getMonth()+1).toString() + "/" + onedayago.getDate().toString() + "/" + onedayago.getFullYear().toString();
+    var seconddatestring = (twodaysago.getMonth()+1).toString() + "/" + twodaysago.getDate().toString() + "/" + twodaysago.getFullYear().toString();
+    var thirddatestring = (threedaysago.getMonth()+1).toString() + "/" + threedaysago.getDate().toString() + "/" + threedaysago.getFullYear().toString();
+    var fourthdatestring = (fourdaysago.getMonth()+1).toString() + "/" + fourdaysago.getDate().toString() + "/" + fourdaysago.getFullYear().toString();
+    var fifthdatestring = (fivedaysago.getMonth()+1).toString() + "/" + fivedaysago.getDate().toString() + "/" + fivedaysago.getFullYear().toString();
+    var sixthdatestring = (sixdaysago.getMonth()+1).toString() + "/" + sixdaysago.getDate().toString() + "/" + sixdaysago.getFullYear().toString();
+    var seventhdatestring = (sevendaysago.getMonth()+1).toString() + "/" + sevendaysago.getDate().toString() + "/" + sevendaysago.getFullYear().toString();
+
+    document.getElementById("yesterday").innerHTML = firstdatestring + " LSRs";
+    document.getElementById("twodaysago").innerHTML = seconddatestring + " LSRs";
+    document.getElementById("threedaysago").innerHTML = thirddatestring + " LSRs";
+    document.getElementById("fourdaysago").innerHTML = fourthdatestring + " LSRs";
+    document.getElementById("fivedaysago").innerHTML = fifthdatestring + " LSRs";
+    document.getElementById("sixdaysago").innerHTML = sixthdatestring + " LSRs";
+    document.getElementById("sevendaysago").innerHTML = seventhdatestring + " LSRs";
+
+  ///////////////////////////////// MAP TEXT CONTROL //////////////////////////////////////////////
+    // Lat lon text
+    L.Control.textbox = L.Control.extend({
+      onAdd: function(map) {
+        var text = L.DomUtil.create('div');
+        text.id = "LatLonLabel";
+        text.innerHTML = "<p id='label' style='color: white; text-shadow: 1px 1px black; font-size:15px;'></p>";
+        return text;
+      },
+      onRemove: function(map) {
+        // nothing?
+      }
+    });
+    L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+    L.control.textbox({position: 'bottomright'}).addTo(map);
+
+    // time stamp text
+    L.Control.textbox = L.Control.extend({
+      onAdd: function(map) {
+        var text = L.DomUtil.create('div');
+        text.id = "current_time";
+        basetime = "<p id='timestamp' style='color: white; text-shadow: 1px 1px black; font-size:15px;'>Current Time:</p>";
+        text.innerHTML = basetime;
+        return text;
+      },
+      onRemove: function(map) {
+        // nothing?
+      }
+    });
+    L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+    L.control.textbox({position: 'bottomleft'}).addTo(map);
+
+
+  ///////////////////////////////// Bottom Left Time Control //////////////////////////////////////////////
+
+    function currentTime() {
+      time = new Date();
+      if (time.getSeconds() < 10) {
+        seconds = "0"+time.getSeconds().toString();
+      } else {
+        seconds = time.getSeconds().toString();
+      }
+      result = formatTime(time);
+      result = result.substring(0,(result.length-3))+seconds+"Z";
+      validTime = radarTime();
+
+      obj = document.getElementById('current_time');
+      obj.innerHTML = "<p id='timestamp' style='color: white; text-shadow: 1px 1px black; font-size:15px;'>Current Time: "+result;
+      //obj.innerHTML = "Current Time: "+result;
+    }
+
+    setInterval(function(){
+      currentTime();
+    },1000);
+  ///////////////////////////////////////////////////////////////////////////////
+
+  </script>
+</body>
+
+{% endblock %}

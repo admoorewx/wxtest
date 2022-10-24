@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Wx Map</title>
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+    <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+    {% load static %}
+    <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+    <script type="text/javascript" src="{% static 'leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+    <script type="text/javascript" src="{% static 'shapefile-js/dist/shp.js' %}"></script>
+    <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+
+
+                #container {
+                  position: absolute;
+                  height: 100.0%;
+                  width: 100.0%;
+                  top: 0px;
+                  z-index: 0;
+                }
+                #map_holder {
+                    position: absolute;
+                    width: 100.0vw;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0vh;
+                }
+                #layerOps {
+                  position: absolute;
+                  width: 10.0vw;
+                  height: 48.0vh;
+                  left: 0.0%;
+                  top: 4.0vh;
+                  background-color:red;
+                }
+                #actLayers {
+                  position: absolute;
+                  width: 10.0vw;
+                  height: 48.0vh;
+                  left: 0.0%;
+                  top: 50.0vh;
+                  background-color:blue;
+                }
+                #toolbar {
+                  display: none;
+                  z-index: 10;
+                  position: absolute;
+                  width: 700px;
+                  height: 50px;
+                  left: 20.0%;
+                  top: 12px;
+                  background-color:rgba(80,78,78,0.9);
+                  text-align: center;
+                  border-color: black;
+                  border-width: 2px;
+                  border-style: solid;
+                  min-width: 50px;
+                }
+                #MapView {
+                  text-align: center;
+                }
+                #RadarSelect {
+                  text-align: center;
+                }
+                #SatSelect {
+                  text-align: center;
+                }
+                #HazSelect {
+                  text-align: center;
+                }
+                #SfcSelect {
+                  text-align: center;
+                }
+                .spc_box{
+                  top: 10px;
+                }
+                .fire_box{
+                  top: 30px;
+                }
+                .text-label {
+                    position: absolute;
+                    width:0px;
+                    height:0px;
+                    background-color: rgba(0,0,0,0.0);
+                    border-color: rgba(0,0,0,0.0);
+                    border: 0px;
+                    font-size:12px;
+                    font-weight: bold;
+                    text-shadow: 0 0 4px Black;
+                    box-shadow: none;
+                }
+                .leaflet-tooltip-top:before,
+                .leaflet-tooltip-bottom:before,
+                .leaflet-tooltip-left:before,
+                .leaflet-tooltip-right:before {
+                  background-color: rgba(0,0,0,0.0);
+                  border:none;
+                  box-shadow:none;
+                }
+
+                #menu_button{
+                  position: relative;
+                  z-index: 10;
+                  left:50px;
+                  top:12px;
+                  height:50px;
+                  width: 75px;
+                  background-color: white;
+                }
+
+            </style>
+
+</head>
+<body>
+{% block content %}
+  <button id="menu_button" onclick="showToolbar()">Show Menu</button>
+
+  <div class="toolBar" id="toolbar">
+    <!-- Map View Option -->
+    <label for="MapView">Map View:</label>
+    <select id="MapView" onchange="changeMapView(map)">
+      <option value="WORLD">World</option>
+      <option value="NORTHAM">North America</option>
+      <option value="CONUS" selected>CONUS</option>
+      <option value="NW">Northwest</option>
+      <option value="NP">Northern Plains</option>
+      <option value="NE">Northeast</option>
+      <option value="CP">Central Plains</option>
+      <option value="CR">Central Rockies</option>
+      <option value="SW">Southwest</option>
+      <option value="SP">Southern Plains</option>
+      <option value="SE">Southeast</option>
+      <option value="MW">Midwest</option>
+    </select>
+
+    <!-- Radar Selection Option -->
+    <label for="RadarSelect">Radar:</label>
+    <select id="RadarSelect" onChange="changeRadar(map)">
+      <option value="NONE" selected>None</option>
+      <option value="conus_base_refl">IEM National Base Refl.</option>
+      <option value="MRMS">MRMS Comp. Refl.</option>
+      <option value="echotops">IEM Echo Tops</option>
+    </select>
+
+    <!-- GOES 16 Selection Option -->
+    <label for="SatSelect">Satellite:</label>
+    <select id="SatSelect" onChange="changeSat(map)">
+      <option value="NONE" selected>None</option>
+      <option value="NONE" style="color:gray">------- CONUS -------</option>
+      <option value="G16ch2">GOES-16 CONUS Ch2 Visible</option>
+      <option value="G16ch5">GOES-16 CONUS Ch5 Snow/Ice</option>
+      <option value="G16ch8">GOES-16 CONUS Ch8 Upper-Level WV</option>
+      <option value="G16ch9">GOES-16 CONUS Ch9 Mid-Level WV</option>
+      <option value="G16ch10">GOES-16 CONUS Ch10 Low-Level WV</option>
+      <option value="G16ch13">GOES-16 CONUS Ch13 IR</option>
+      <option value="G16IRsand">GOES-16 CONUS Vis/IR Sandwich</option>
+      <option value="NONE" style="color:gray">------- MESO 1 -------</option>
+      <option value="G16ch2m1">GOES-16 MESO 1 Ch2 Visible</option>
+      <option value="G16ch10m1">GOES-16 MESO 1 Ch10 Low-Level WV</option>
+      <option value="G16ch13m1">GOES-16 MESO 1 Ch13 IR</option>
+      <option value="G16IRsandm1">GOES-16 MESO 1 Vis/IR Sandwich</option>
+      <option value="NONE" style="color:gray">------- MESO 2 -------</option>
+      <option value="G16ch2m2">GOES-16 MESO 2 Ch2 Visible</option>
+      <option value="G16ch10m2">GOES-16 MESO 2 Ch10 Low-Level WV</option>
+      <option value="G16ch13m2">GOES-16 MESO 2 Ch13 IR</option>
+      <option value="G16IRsandm2">GOES-16 MESO 2 Vis/IR Sandwich</option>
+    </select>
+
+    <!-- Hazards Selection Option -->
+    <label for="HazSelect">Hazards:</label>
+    <select id="HazSelect" onChange="changeHaz(map)">
+      <option value="NONE" selected>None</option>
+      <option value="all">All Hazards</option>
+      <option value="long">Long-Term Hazards</option>
+      <option value="short">Convective Warnings</option>
+      <option value="watch">Convective Watches</option>
+      <option value="convective">Convective Watch/Warning</option>
+    </select>
+
+    <!-- Surface Selection Option -->
+    <label for="SfcSelect">Surface Obs:</label>
+    <select id="SfcSelect" onChange="updateSFC()">
+      <option value="NONE" selected>None</option>
+      <option value="standard">Standard</option>
+      <option value="RLT">RLT Obs</option>
+      <option value="TEMP">Temperature</option>
+      <option value="DEWP">Dewpoint</option>
+      <option value="WIND">Winds</option>
+      <option value="FIRE">RH + Wind</option>
+      <option value="VISB">Visibility</option>
+    </select>
+
+    <!-- SPC T-storm Outlook Selection Option -->
+    <input type="checkbox" class="spc_box" id="spc_otlk_bttn" name="spc_otlk_bttn" onChange="addOutlooks(map)">
+    <label class="spc_box" for="spc_otlk_bttn">Current SPC Outlook</label>
+
+    <!-- SPC Fire Outlook Selection Option -->
+    <input type="checkbox" class="fire_box" id="spc_fire_bttn" name="spc_fire_bttn" onChange="addOutlooks(map)">
+    <label class="fire_box" for="spc_fire_bttn">Current Fire Outlook</label>
+
+  </div>
+
+
+
+        <div id="container">
+
+          <!-- <div class="layerOptions" id="layerOps">
+          </div>
+
+          <div class="activeLayers" id="actLayers">
+          </div> -->
+          <div class="folium-map" id="map_holder"></div>
+
+        </div>
+
+</body>
+<script>
+
+///////////////////////////////// Handles hiding/showing the toolbar //////////////////////////////////////////////
+
+            var showMenu = false;
+            function showToolbar() {
+              if (!showMenu){
+                $('#menu_button').text("Hide Menu");
+                showMenu = true;
+                console.log(showMenu);
+                $('#toolbar').css({display: "block"})
+              } else {
+                $('#menu_button').text("Show Menu");
+                showMenu = false;
+                console.log(showMenu);
+                $('#toolbar').css({display: "none"})
+              } // end else
+            } // end showToolbar function
+
+
+
+///////////////////////////////// MOUSE LAT/LON //////////////////////////////////////////////
+            L.CursorHandler = L.Handler.extend({
+                addHooks: function () {
+                    this._map.on('mousemove', this._update, this);
+                },
+                _update: function (e) {
+                  document.getElementById('label').innerHTML = e.latlng.lat.toFixed(4).toString()+", "+e.latlng.lng.toFixed(4).toString();
+                }
+            });
+            L.Map.addInitHook('addHandler', 'cursor', L.CursorHandler);
+
+///////////////////////////////// MAP DEFINITION //////////////////////////////////////////////
+            var map = L.map(
+                "map_holder",
+                {
+                    center: [40.0, -100.0],
+                    crs: L.CRS.EPSG3857,
+                    zoom: 5,
+                    zoomControl: true,
+                    cursor: true,
+                    preferCanvas: false,
+                    keyboard: false,
+                }
+            );
+
+///////////////////////////////// BOUNDARY CONTROL //////////////////////////////////////////////
+            var county_style = {
+                "color":"#F7F3F3",
+                "fillColor":"none",
+                "fillOpacity":0.0,
+                "opacity":0.4,
+                "weight": 0.5,
+            }
+            var state_style = {
+                "color":"#F7F3F3",
+                "fillColor":"none",
+                "fillOpacity":0.0,
+                "opacity":0.9,
+                "weight": 0.9,
+            }
+
+            var district_boundary = new L.geoJson();
+            district_boundary.addTo(map);
+            $.ajax({
+            dataType: "json",
+            url: "{% static '/boundaries/uscounties.json' %}",
+            success: function(data) {
+                $(data.features).each(function(key, data) {
+                    district_boundary.addData(data).setStyle(county_style);
+                    //district_boundary.setStyle(county_style);
+                });
+            }
+            }).error(function() {});
+
+            var state_boundary = new L.geoJson();
+            state_boundary.addTo(map);
+            $.ajax({
+            dataType: "json",
+            url: "{% static '/boundaries/usstates.json' %}",
+            success: function(data) {
+                $(data.features).each(function(key, data) {
+                    state_boundary.addData(data);
+                    state_boundary.setStyle(state_style);
+                });
+            }
+            }).error(function() {});
+
+
+///////////////////////////////// LAYER CONTROL //////////////////////////////////////////////
+            var tile_layer_31680ca70d5c4ed09d82b9a00869ad62 = L.tileLayer(
+                "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+                {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            ).addTo(map);
+
+
+            var iem_conus_base_refl = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r-t.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "nexrad-n0r-wmst", "opacity": 0.55, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1", "interactive": true}
+            ).addTo(map);
+
+            // create a feature group for the surface stations later
+            var surface_stations = L.featureGroup().addTo(map);
+
+
+            /////////////// GOES CONUS //////////////////////
+
+            var g16_conus_ch13 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "conus_ch13", "opacity": 0.65, "styles": "", "time": radarTime(), "transparent": true, "zIndex": "10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_conus_ch2 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "conus_ch02", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_conus_ch5 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "conus_ch05", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_conus_ch8 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "conus_ch08", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_conus_ch9 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "conus_ch09", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_conus_ch10 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "conus_ch10", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+
+
+
+            /////////////// GOES MESO 1 //////////////////////
+
+            var g16_m1_ch13 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "mesoscale-1_ch13", "opacity": 0.65, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_m1_ch2 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "mesoscale-1_ch02", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_m1_ch10 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "mesoscale-1_ch10", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+
+            /////////////// GOES MESO 2 //////////////////////
+
+            var g16_m2_ch13 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "mesoscale-2_ch13", "opacity": 0.65, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_m2_ch2 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "mesoscale-2_ch02", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+            ).addTo(map);
+
+            var g16_m2_ch10 = L.tileLayer.wms(
+                "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+                {"attribution": "", "format": "image/png", "layers": "mesoscale-2_ch10", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "version": "1.1.1"}
+            ).addTo(map);
+
+
+            ///////////////  BASE LAYERS /////////////////
+            var tile_layer_0380b506520048679fbe53ddc41282f4 = L.tileLayer(
+                "https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+                {"attribution": "Map tiles by \u003ca href=\"http://stamen.com\"\u003eStamen Design\u003c/a\u003e, under \u003ca href=\"http://creativecommons.org/licenses/by/3.0\"\u003eCC BY 3.0\u003c/a\u003e. Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            );
+
+            var tile_layer_76372fbd767c4d0991c11397f3198b1e = L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            );
+
+
+            var esri_phyiscal = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+            	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
+            	maxZoom: 8
+            });
+
+            var world_imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            });
+
+            var esri_map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Specialty/DeLorme_World_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+            	attribution: 'Tiles &copy; Esri &mdash; Copyright: &copy;2012 DeLorme',
+            	minZoom: 1,
+            	maxZoom: 11
+            });
+
+            /////////////  ADDITIONAL PRODCUTS //////////////////////
+            var MRMS_refl = L.tileLayer("http://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/q2-hsr-900913/{z}/{x}/{y}.png",{"opacity":"0.7","transparent": true, "zIndex":"12", "updateWhenIdle": true,}).addTo(map);
+            var echo_tops = L.tileLayer("http://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-eet-900913/{z}/{x}/{y}.png",{"opacity":"0.4","transparent": true, "zIndex":"10", "time": radarTime(),}).addTo(map);
+
+            var interstates = new L.Shapefile("{% static '/interstate/interstate_shapefile' %}",{"opacity":"0.9", "color":"#25FF34", "weight":"0.8"})
+            var cwa_boundaries = new L.Shapefile("{% static '/boundaries/cwa/cwa' %}",{"opacity":"0.9", "color":"#d6d126", "fillOpacity":"0.0", "weight":"0.95"})
+
+            var spc_day1_cat = new L.layerGroup();
+            var fire_day1 = new L.layerGroup();
+
+            var current_warnings = new L.layerGroup();
+            var current_hazards = new L.layerGroup();
+            var convective_watches = new L.layerGroup();
+
+
+            /////////////// LAYER CONTROL ////////////////
+            var layer_control_3726261c4cbf42db93c15e02377a96a7 = {
+                base_layers : {
+                    "Dark (default)" : tile_layer_31680ca70d5c4ed09d82b9a00869ad62,
+                    "Light" : tile_layer_0380b506520048679fbe53ddc41282f4,
+                    "Open Street Map" : tile_layer_76372fbd767c4d0991c11397f3198b1e,
+                    "World Imagery": world_imagery,
+                    "ESRI Map": esri_map,
+                    "ESRI Physical": esri_phyiscal,
+                },
+                overlays :  {
+                  "State Borders":state_boundary,
+                  "County Borders":district_boundary,
+                  "CWA Boundaries": cwa_boundaries,
+                  "Interstates":interstates,
+
+                },
+            };
+            L.control.layers(
+                layer_control_3726261c4cbf42db93c15e02377a96a7.base_layers,
+                layer_control_3726261c4cbf42db93c15e02377a96a7.overlays,
+                {"autoZIndex": true, "collapsed": true, "position": "topright"}
+            ).addTo(map);
+            // tile_layer_0380b506520048679fbe53ddc41282f4.remove();
+            // tile_layer_76372fbd767c4d0991c11397f3198b1e.remove();
+            iem_conus_base_refl.remove();
+            MRMS_refl.remove();
+            g16_conus_ch2.remove();
+            g16_conus_ch5.remove();
+            g16_conus_ch8.remove();
+            g16_conus_ch9.remove();
+            g16_conus_ch10.remove();
+            g16_conus_ch13.remove();
+            g16_m1_ch2.remove();
+            g16_m1_ch10.remove();
+            g16_m1_ch13.remove();
+            g16_m2_ch2.remove();
+            g16_m2_ch10.remove();
+            g16_m2_ch13.remove();
+            district_boundary.remove();
+            interstates.remove();
+            spc_day1_cat.remove();
+            fire_day1.remove();
+            echo_tops.remove();
+
+///////////////////////////////// TEXT CONTROL //////////////////////////////////////////////
+            // Lat lon text
+            L.Control.textbox = L.Control.extend({
+              onAdd: function(map) {
+                var text = L.DomUtil.create('div');
+                text.id = "LatLonLabel";
+                text.innerHTML = "<p id='label' style='color: white; text-shadow: 1px 1px black; font-size:15px;'></p>";
+                return text;
+              },
+              onRemove: function(map) {
+                // nothing?
+              }
+            });
+            L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+            L.control.textbox({position: 'bottomright'}).addTo(map);
+
+
+            // time stamp text
+            L.Control.textbox = L.Control.extend({
+              onAdd: function(map) {
+                var text = L.DomUtil.create('div');
+                text.id = "info text";
+                text.innerHTML = "<p id='timestamp' style='color: white; text-shadow: 1px 1px black; font-size:15px;'></p>";
+                return text;
+              },
+              onRemove: function(map) {
+                // nothing?
+              }
+            });
+            L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+            L.control.textbox({position: 'bottomleft'}).addTo(map);
+
+
+            L.Control.textbox = L.Control.extend({
+              onAdd: function(map) {
+                var text = L.DomUtil.create('div');
+                text.id = "info text";
+                text.innerHTML = "<p id='validtimestamp' style='color: white; text-shadow: 1px 1px black; font-size:15px;'></p>";
+                return text;
+              },
+              onRemove: function(map) {
+                // nothing?
+              }
+            });
+            L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+            L.control.textbox({position: 'bottomleft'}).addTo(map);
+
+
+
+///////////////////////////////// TIME DISPLAY //////////////////////////////////////////////
+            function changeValidTime(map){
+              console.log("Valid Time Changed");
+              interval = 10;
+              var times = createTimeArray(interval);
+              var currentIndex = 0;
+              obj = document.getElementById('validtimestamp');
+              obj.innerHTML = "Image ["+(10-currentIndex).toString()+"/"+interval.toString()+"] <br>"+times[currentIndex]+" | Valid Time";
+              document.addEventListener("keydown", (event) => {
+                  if (event.keyCode == 37){
+                    currentIndex = currentIndex + 1;
+                    if (currentIndex == times.length){
+                      currentIndex = 0;
+                    }
+                  }
+                  else if (event.keyCode == 39) {
+                    currentIndex = currentIndex - 1;
+                    if (currentIndex < 0){
+                      currentIndex = times.length-1;
+                    }
+                  }
+                  map.eachLayer(function(layer){
+                    try{
+                      console.log(iem_conus_base_refl);
+                      //layer.setParams({"time":times[currentIndex]});
+                      //console.log(iem_conus_base_refl);
+                    }
+                    catch(err){
+                      console.log("Could not set time for layer.");
+                    }
+                  });
+
+                  obj = document.getElementById('validtimestamp');
+                  obj.innerHTML = "Image ["+(10-currentIndex).toString()+"/"+interval.toString()+"] <br>"+times[currentIndex]+" | Valid Time";
+              }); // end function
+            } // end changeTime
+
+
+///////////////////////////////// CHANGE/UPDATE RADAR //////////////////////////////////////////////
+
+            function changeRadar(map){
+              var rad = document.getElementById("RadarSelect").value;
+              //console.log(map.eachLayer());
+              if (rad == "NONE"){
+                iem_conus_base_refl.remove();;
+                MRMS_refl.remove();
+                echo_tops.remove();
+              }
+
+              else if (rad === "conus_base_refl") {
+                iem_conus_base_refl.addTo(map);
+                MRMS_refl.remove();
+                echo_tops.remove();
+                setInterval(function(){iem_conus_base_refl.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+
+              else if (rad === "MRMS") {
+                MRMS_refl.addTo(map);
+                iem_conus_base_refl.remove();
+                echo_tops.remove();
+                setInterval(function(){MRMS_refl.redraw()}, (120*1000));
+              }
+
+              else if (rad === "echotops") {
+                iem_conus_base_refl.remove();
+                MRMS_refl.remove()
+                echo_tops.addTo(map);
+                setInterval(function(){echo_tops.redraw()}, (300*1000));
+              }
+
+              else {
+                iem_conus_base_refl.remove();
+                MRMS_refl.remove();
+                echo_tops.remove();
+              }
+            }
+
+
+///////////////////////////////// CHANGE SAT //////////////////////////////////////////////
+            function changeSat(map){
+              var rad = document.getElementById("SatSelect").value;
+              //console.log(map.eachLayer());
+              if (rad == "NONE"){
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_conus_ch13.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+              }
+
+              else if (rad === "G16ch2") {
+                g16_conus_ch2.addTo(map);
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_conus_ch13.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                g16_conus_ch2.setOpacity(0.75);
+                setInterval(function(){g16_conus_ch2.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+              else if (rad === "G16ch13") {
+                g16_conus_ch13.addTo(map);
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                g16_conus_ch13.setOpacity(0.75);
+                setInterval(function(){g16_conus_ch13.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+
+              else if (rad === "G16IRsand") {
+                g16_conus_ch13.remove(); // these 1st two removals are needed for a clean look.
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_conus_ch13.addTo(map);
+                g16_conus_ch2.addTo(map);
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                g16_conus_ch13.setOpacity(1.0);
+                g16_conus_ch2.setOpacity(0.7);
+                setInterval(function(){g16_conus_ch13.setParams({"time":radarTime()},false)}, (300*1000));
+                setInterval(function(){g16_conus_ch2.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+
+              else if (rad === "G16ch5") {
+                g16_conus_ch13.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch5.addTo(map);
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                setInterval(function(){g16_conus_ch5.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+
+              else if (rad === "G16ch8") {
+                g16_conus_ch13.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.addTo(map);
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                setInterval(function(){g16_conus_ch8.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+
+              else if (rad === "G16ch9") {
+                g16_conus_ch13.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.addTo(map);
+                g16_conus_ch10.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                setInterval(function(){g16_conus_ch9.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+
+              else if (rad === "G16ch10") {
+                g16_conus_ch13.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.addTo(map);
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                setInterval(function(){g16_conus_ch10.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+
+              else if (rad === "G16ch2m1") {
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_conus_ch13.remove();
+                g16_m1_ch2.addTo(map);
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                g16_m2_ch13.setOpacity(0.75);
+                setInterval(function(){g16_conus_ch2.setParams({"time":radarTime()},false)}, (60*1000));
+              }
+              else if (rad === "G16ch13m1") {
+                g16_conus_ch13.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.addTo(map);
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                g16_m1_ch13.setOpacity(0.75);
+                setInterval(function(){g16_conus_ch13.setParams({"time":radarTime()},false)}, (60*1000));
+              }
+
+              else if (rad === "G16IRsandm1") {
+                g16_conus_ch13.remove(); // these 1st two removals are needed for a clean look.
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch13.remove();
+                g16_m1_ch13.addTo(map);
+                g16_m1_ch2.addTo(map);
+                g16_m1_ch10.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                g16_m1_ch13.setOpacity(1.0);
+                g16_m1_ch2.setOpacity(0.7);
+                setInterval(function(){g16_conus_ch13.setParams({"time":radarTime()},false)}, (60*1000));
+                setInterval(function(){g16_conus_ch2.setParams({"time":radarTime()},false)}, (60*1000));
+              }
+
+              else if (rad === "G16ch10m1") {
+                g16_conus_ch13.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.addTo(map);
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                setInterval(function(){g16_conus_ch10.setParams({"time":radarTime()},false)}, (60*1000));
+              }
+
+              else if (rad === "G16ch2m2") {
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_conus_ch13.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.addTo(map);
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+                g16_m2_ch2.setOpacity(0.75);
+                setInterval(function(){g16_conus_ch2.setParams({"time":radarTime()},false)}, (60*1000));
+              }
+              else if (rad === "G16ch13m2") {
+                g16_conus_ch13.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.addTo(map);
+                g16_m2_ch13.setOpacity(0.75);
+                setInterval(function(){g16_conus_ch13.setParams({"time":radarTime()},false)}, (60*1000));
+              }
+
+              else if (rad === "G16IRsandm2") {
+                g16_conus_ch13.remove(); // these 1st two removals are needed for a clean look.
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch13.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch13.addTo(map);
+                g16_m2_ch2.addTo(map);
+                g16_m2_ch10.remove();
+                g16_m2_ch13.setOpacity(1.0);
+                g16_m2_ch2.setOpacity(0.7);
+                setInterval(function(){g16_conus_ch13.setParams({"time":radarTime()},false)}, (60*1000));
+                setInterval(function(){g16_conus_ch2.setParams({"time":radarTime()},false)}, (60*1000));
+              }
+
+              else if (rad === "G16ch10m2") {
+                g16_conus_ch13.remove();
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.addTo(map);
+                g16_m2_ch13.remove();
+                setInterval(function(){g16_conus_ch10.setParams({"time":radarTime()},false)}, (300*1000));
+              }
+
+
+              else {
+                g16_conus_ch2.remove();
+                g16_conus_ch5.remove();
+                g16_conus_ch8.remove();
+                g16_conus_ch9.remove();
+                g16_conus_ch10.remove();
+                g16_conus_ch13.remove();
+                g16_m1_ch2.remove();
+                g16_m1_ch10.remove();
+                g16_m1_ch13.remove();
+                g16_m2_ch2.remove();
+                g16_m2_ch10.remove();
+                g16_m2_ch13.remove();
+              }
+            }
+
+
+///////////////////////////////// HAZARDS AND OUTLOOKS //////////////////////////////////////////////
+
+/////////////////////// warnings/hazards /////////////////////////
+            function createHazards(){
+              console.log("Updating Hazards...");
+              var times = getHazardTimes();
+              let url = '/static/forecasts/hazards/current_hazards/current_hazards_'+times[0]+'.shp';
+              var exists = checkFileExists(url);
+              if (exists){
+                filestring = '/static/forecasts/hazards/current_hazards/current_hazards_'+times[0];
+              } else {
+                filestring = '/static/forecasts/hazards/current_hazards/current_hazards_'+times[1];
+              }
+              var hazard_data = new L.Shapefile(filestring,{
+                onEachFeature:function(feature,layer){
+                  let type = feature.properties.PROD_TYPE;
+                  if (type.includes("Severe Thunderstorm Warning") || type.includes("Tornado Warning") || type.includes("Flash Flood Warning")){
+                    // do nothing, these are handled elsewhere.
+                  }
+                  else if (type.includes("Severe Thunderstorm Watch") || type.includes("Tornado Watch")){
+                    let color = hazardColor(type);
+                    let issuance = feature.properties.ISSUANCE.substring(0,10) + " " + feature.properties.ISSUANCE.substring(11,16) + " LT";
+                    let expiration = feature.properties.EXPIRATION.substring(0,10) + " " + feature.properties.EXPIRATION.substring(11,16) + " LT";
+                    let wfo = feature.properties.WFO;
+                    let url = "https://www.spc.noaa.gov/products/watch/";
+                    let text = `Hazard Type: ${type} <br>
+                                Issued by WFO: ${wfo.substring(1)} <br>
+                                Start Time: ${issuance} <br>
+                                End Time: ${expiration} <br>`
+                    let ref = `<a href=${url}>More Info Here</a>`;
+                    text = text + ref;
+                    layer.bindPopup(text);
+                    layer.setStyle({"color":color, "weight":"0.3", "opacity":"0.5"});
+                    convective_watches.addLayer(layer);
+                  } // end if
+                  else {
+                    let color = hazardColor(type);
+                    let issuance = feature.properties.ISSUANCE.substring(0,10) + " " + feature.properties.ISSUANCE.substring(11,16) + " LT";
+                    let expiration = feature.properties.EXPIRATION.substring(0,10) + " " + feature.properties.EXPIRATION.substring(11,16) + " LT";
+                    let wfo = feature.properties.WFO;
+                    let url = feature.properties.URL;
+                    let text = `Hazard Type: ${type} <br>
+                                Issued by WFO: ${wfo.substring(1)} <br>
+                                Start Time: ${issuance} <br>
+                                End Time: ${expiration} <br>`
+                    let ref = `<a href=${url}>More Info Here</a>`;
+                    text = text + ref;
+                    layer.bindPopup(text);
+                    if (type.includes("Warning")){
+                      layer.setStyle({"color":color, "weight":"0.3", "opacity":"0.5"});
+                      layer.bringToFront();
+                    } else {
+                      layer.setStyle({"color":color, "weight":"0.3", "opacity":"0.5"});
+                      layer.bringToBack();
+                    } // end else
+                    current_hazards.addLayer(layer);
+                  } // end else
+                } // end for each feature
+              }); // end shapefile layer
+              hazard_data.remove();
+              hazard_data.clearLayers();
+            } // end function
+
+
+            function createWarnings(){
+              console.log("Updating Warnings...");
+              var times = getWarningTimes();
+              let url = '/static/forecasts/hazards/current_warnings/current_warnings_'+times[0]+'.shp';
+              var exists = checkFileExists(url);
+              if (exists){
+                filestring2 = '/static/forecasts/hazards/current_warnings/current_warnings_'+times[0];
+              } else {
+                filestring2 = '/static/forecasts/hazards/current_warnings/current_warnings_'+times[1];
+              }
+              var warning_data = new L.Shapefile(filestring2,{
+                onEachFeature:function(feature,layer){
+                  let type = feature.properties.PROD_TYPE;
+                  let color = warnColor(type);
+                  let issuance = feature.properties.ISSUANCE.substring(0,10) + " " + feature.properties.ISSUANCE.substring(11,16) + " LT";
+                  let expiration = feature.properties.EXPIRATION.substring(0,10) + " " + feature.properties.EXPIRATION.substring(11,16) + " LT";
+                  let wfo = feature.properties.WFO;
+                  let url = feature.properties.URL;
+                  let text = `Warning Type: ${type} <br>
+                              Issued by WFO: ${wfo.substring(1)} <br>
+                              Start Time: ${issuance} <br>
+                              End Time: ${expiration} <br>`
+                  let ref = `<a href=${url}>More Info Here</a>`;
+                  text = text + ref;
+                  layer.bindPopup(text);
+                  layer.setStyle({"color":color});
+                  layer.bringToFront();
+                  current_warnings.addLayer(layer);
+                } // end forEach
+              }); // end new shapefile
+              warning_data.remove();
+              warning_data.clearLayers();
+            } // end function
+
+
+
+            function changeHaz(map){
+              var rad = document.getElementById("HazSelect").value;
+              // clear layers
+              current_warnings.clearLayers();
+              current_hazards.clearLayers();
+              convective_watches.clearLayers();
+              // remove layers
+              current_warnings.remove();
+              current_hazards.remove();
+              convective_watches.remove();
+
+              if (rad == "NONE"){
+                current_warnings.remove();
+                current_hazards.remove();
+                convective_watches.remove();
+              }
+              else if (rad === "all") {
+                createHazards();
+                createWarnings();
+                current_hazards.addTo(map);
+                convective_watches.addTo(map);
+                current_warnings.addTo(map);
+              }
+              else if (rad === "long") {
+                createHazards();
+                current_hazards.addTo(map);
+              }
+              else if (rad === "short") {
+                createWarnings();
+                current_warnings.addTo(map);
+              }
+              else if (rad === "convective") {
+                createHazards();
+                createWarnings()
+                convective_watches.addTo(map);
+                current_warnings.addTo(map);
+              }
+              else if (rad === "watch") {
+                createHazards();
+                convective_watches.addTo(map);
+              }
+              else {
+                current_warnings.remove();
+                current_hazards.remove();
+                convective_watches.remove();
+              }
+            }
+
+            // interval timer for warnings
+            setInterval(function(){
+              // timer function to auto-update the warnings.
+              var rad = document.getElementById("HazSelect").value;
+              if ((rad === "short") || (rad === "all") || (rad === "convective")){
+                current_warnings.clearLayers();
+                current_warnings.remove();
+                createWarnings();
+                current_warnings.addTo(map);
+              }
+            },(70*1000)); // update every 70 seconds
+
+            // interval timer for non-warnings
+            setInterval(function(){
+              // timer function to auto-update the warnings.
+              var rad = document.getElementById("HazSelect").value;
+              if (rad === "all"){
+                convective_watches.clearLayers();
+                convective_watches.remove();
+                current_hazards.clearLayers();
+                current_hazards.remove();
+                createHazards();
+                current_hazards.addTo(map);
+                convective_watches.addTo(map);
+              } else if ((rad == "watches") || (rad === "convective")) {
+                convective_watches.clearLayers();
+                convective_watches.remove();
+                createHazards();
+                convective_watches.addTo(map);
+              } else if (rad === "long") {
+                current_hazards.clearLayers();
+                current_hazards.remove();
+                createHazards();
+                current_hazards.addTo(map);
+              }
+            },(15*60*1000)); // update every 15 minutes
+
+
+////////////////////////// outlooks /////////////////////////////
+
+            function createOutlooks(){
+              console.log("Refreshing Outlooks");
+              var day1_cat_data = new L.Shapefile("{% static '/outlooks/spc/day1/day1otlk_cat' %}",{
+                onEachFeature:function(feature,layer){
+                  let dn = feature.properties.DN;
+                  let color = spcCatColor(dn);
+                  layer.setStyle({"color":color, "opacity":"0.01"});
+                  spc_day1_cat.addLayer(layer);
+                }
+              });
+              var day1_fire_data = new L.Shapefile("{% static '/outlooks/spc_fire/day1/firewx_day1' %}",{
+                onEachFeature:function(feature,layer){
+                  let dn = feature.properties.DN;
+                  let color = fireCatColor(dn);
+                  layer.setStyle({"color":color, "opacity":"0.03"});
+                  fire_day1.addLayer(layer);
+                }
+              });
+            } // end function createOutlooks
+
+
+            function addOutlooks(map){
+              // add the SPC Day 1 outlook
+              var spc_day1_ischecked = document.getElementById("spc_otlk_bttn").checked;
+              var fire_day1_ischecked = document.getElementById("spc_fire_bttn").checked;
+
+              spc_day1_cat.remove();
+              spc_day1_cat.clearLayers();
+              fire_day1.remove();
+              fire_day1.clearLayers();
+              createOutlooks();
+
+              if (spc_day1_ischecked){
+                spc_day1_cat.addTo(map);
+              } else {
+                spc_day1_cat.remove();
+              }
+
+              if (fire_day1_ischecked){
+                fire_day1.addTo(map);
+              } else {
+                fire_day1.remove();
+              }
+            } // end function addOutlooks
+
+
+            setInterval(function(){
+              // timer function to auto-update the surface obs.
+              addOutlooks(map);
+            },(1800*1000));
+
+///////////////////////////////// MAP VIEW //////////////////////////////////////////////
+            function changeMapView(map){
+              // changes the map view based on menu selection
+              var newView = document.getElementById("MapView").value;
+
+              if (newView === "CONUS"){
+                var center = L.latLng(40.0, -100.0);
+                var zoom = 5;
+                map.setView(center,zoom);
+              }
+              else if (newView == "NORTHAM") {
+                var center = L.latLng(48.0, -101.0);
+                var zoom = 4;
+                map.setView(center,zoom);
+              }
+              else if (newView == "WORLD") {
+                var center = L.latLng(35.0, -18.0);
+                var zoom = 2;
+                map.setView(center,zoom);
+              }
+              else if (newView == "NW") {
+                var center = L.latLng(45.0, -117.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+              else if (newView == "SW") {
+                var center = L.latLng(36.0, -115.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+              else if (newView == "SP") {
+                var center = L.latLng(35.0, -97.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+              else if (newView == "SE") {
+                var center = L.latLng(32.0, -85.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+              else if (newView == "NE") {
+                var center = L.latLng(41.0, -76.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+              else if (newView == "MW") {
+                var center = L.latLng(41.0, -87.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+              else if (newView == "CP") {
+                var center = L.latLng(40.0, -98.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+              else if (newView == "NP") {
+                var center = L.latLng(47.0, -100.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+              else if (newView == "CR") {
+                var center = L.latLng(41.0, -108.0);
+                var zoom = 7;
+                map.setView(center,zoom);
+              }
+            }
+
+            // script that controls the layer update
+            window.onload = function () {
+                time = 300 * 1000;
+                //changeValidTime(map); // initialize
+                setInterval(clockAndLabel,1000);
+                //setInterval(changeValidTime(map),300*1000);
+                //setInterval(function(){updateRadar(iem_conus_base_refl)}, time);
+            };
+
+
+///////////////////////////////// SURFACE OBS //////////////////////////////////////////////
+            function updateSFC(){
+              // updates the surface observations
+              // get the surface obs type
+              var obsType = document.getElementById("SfcSelect").value;
+              //console.log(type);
+              if (obsType == "NONE"){ // if NONE, just remove all obs
+                surface_stations.eachLayer(function(layer){
+                  map.removeLayer(layer);
+                });
+                surface_stations.clearLayers();
+              }
+              else {
+                // clear out the old layers and data
+                surface_stations.eachLayer(function(layer){
+                  map.removeLayer(layer);
+                });
+                surface_stations.clearLayers();
+                // get new data based on zoom level
+                getBulkObs(obsType);
+                // plot the new data on the map
+                surface_stations.addTo(map);
+                // only show the obs that are in the current view.
+                let zoom = map.getZoom();
+                surface_stations.eachLayer(function(layer){
+                  let isVisible = map.getBounds().contains(layer.getLatLng());
+                  if ((isVisible) && (zoom >= 7)){
+                    map.addLayer(layer);
+                  }
+                  else {
+                    map.removeLayer(layer);
+                  } // end else
+                }); // end station loop
+              } // end if obsType
+            } // end updateSFC function
+
+            // control how many surface stations are shown based on zoom
+            /// This works decently well, but needs to be expanded. Still doesn
+            // address the main issue of having too many obs load at larger zoom sizes (i.e. CONUS view).
+            map.on('zoomend', function(){
+              var obsType = document.getElementById("SfcSelect").value;
+              if (obsType != "NONE"){
+                let zoom = map.getZoom();
+                surface_stations.eachLayer(function(layer){
+                  let isVisible = map.getBounds().contains(layer.getLatLng());
+                  if ((isVisible) && (zoom >= 7)){
+                    map.addLayer(layer);
+                  } // end if
+                  else {
+                    map.removeLayer(layer);
+                  } // end else
+                }); // end for each layer in surface_stations
+              } // end if
+              else {
+                surface_stations.eachLayer(function(layer){
+                  map.removeLayer(layer);
+                });
+                surface_stations.clearLayers();
+              } // end else
+            }) // end map.on(zoom)
+
+
+            map.on('dragend', function(){
+              var obsType = document.getElementById("SfcSelect").value;
+              if (obsType != "NONE"){
+                let zoom = map.getZoom();
+                surface_stations.eachLayer(function(layer){
+                  let isVisible = map.getBounds().contains(layer.getLatLng());
+                  if ((isVisible) && (zoom >= 7)){
+                    map.addLayer(layer);
+                  } // end if
+                  else {
+                    map.removeLayer(layer);
+                  } // end else
+                }); // end for each layer in surface_stations
+              } // end if
+              else {
+                surface_stations.eachLayer(function(layer){
+                  map.removeLayer(layer);
+                });
+                surface_stations.clearLayers();
+              } // end else
+            }) // end map.on(pan)
+
+            setInterval(function(){
+              // timer function to auto-update the surface obs.
+              updateSFC();
+            },(300*1000));
+
+
+            // function for getting data
+            function getObs(site) {
+              var request = new XMLHttpRequest({mozSystem:true});
+              request.open('GET','https://api.weather.gov/stations/'+site+'/observations/latest?require_qc=true',true)
+              request.onload = function() {
+                var data = JSON.parse(this.response);
+                if (request.status >= 200 && request.status < 400) {
+                  var temp = data.properties.temperature.value;
+                  var dewp = data.properties.dewpoint.value;
+                  var lat = data.geometry.coordinates[1];
+                  var lon = data.geometry.coordinates[0];
+                  var text = data.properties.rawMessage;
+                  var data = [lat,lon,temp,dewp,text];
+                  addStation(data);
+                }
+                else {
+                  console.log("No Valid Updates for site "+site);
+                }
+              }
+              request.send()
+            } // end getObs function
+
+
+            function getBulkObs(type){
+              // REQUEST SECTION
+              var stations = {{ site_list | safe }};
+              var request = new XMLHttpRequest();
+              request.overrideMimeType("application/xml");
+              request.open("GET","{% static '/metars.cache.xml' %}", false);
+              //request.setRequestHeader("Content-Type","text/xml");
+              request.send(null);
+              var doc = request.responseXML;
+              var root = doc.childNodes[0];
+              var metars = root.children[6];
+              for (i=0;i<metars.children.length;i++){
+                var stid = metars.children[i].getElementsByTagName("station_id")[0].textContent;
+                if (stations.includes(stid)){
+                  try {
+                    //console.log(metars.children[i].getElementsByTagName("visibility_statute_mi")[0].textContent);
+                    let tc = parseFloat(metars.children[i].getElementsByTagName("temp_c")[0].textContent);
+                    let tdc = parseFloat(metars.children[i].getElementsByTagName("dewpoint_c")[0].textContent);
+                    let temp = C2F(tc);
+                    let dewp = C2F(tdc);
+                    let relh = RH(tc,tdc);
+                    let wspd = parseFloat(metars.children[i].getElementsByTagName("wind_speed_kt")[0].textContent);
+                    let wdir = parseFloat(metars.children[i].getElementsByTagName("wind_dir_degrees")[0].textContent);
+                    let visb = parseFloat(metars.children[i].getElementsByTagName("visibility_statute_mi")[0].textContent);
+                    let text = metars.children[i].getElementsByTagName("raw_text")[0].textContent;
+                    let lat = parseFloat(metars.children[i].getElementsByTagName("latitude")[0].textContent);
+                    let lon = parseFloat(metars.children[i].getElementsByTagName("longitude")[0].textContent);
+                    var data = [lat,lon,temp,dewp,wspd,wdir,text,relh,visb];
+                    //return data;
+                    addStation(data,type);
+                  } catch {
+                    //console.log("Error parsing METAR data.");
+                  } // end try/catch
+                } // end if
+              } // end for
+            } // end function
+
+
+            function createWindBarb(latitude,longitude,wspd,dir){
+              var icon = L.WindBarb.icon({lat: latitude, deg: dir, speed: wspd, pointRadius: 0, strokeWidth: 2, strokeLength: 18, barbSpaceing: 4, barbHeight: 10, fillColor: 'gray'});
+              var windbarb = L.marker([latitude,longitude], {icon: icon});
+              windbarb.addTo(surface_stations);
+            }
+
+            function addMETARText(latitude,longitude,text){
+              var textmarker = new L.marker([latitude, longitude], { opacity: 0.0 });
+              textmarker.bindTooltip(
+                  `<div>
+                       ${text}
+                  </div>`,
+                  {direction:'center', permanent: false, offset:[0,0]}
+              );
+              textmarker.addTo(surface_stations);
+            }
+
+            function addTempDewpPair(lat,lon,temp,dewp,temp_color,dewp_color){
+              var marker = new L.marker([lat, lon], { opacity: 0.0 }); //opacity may be set to zero
+              marker.bindTooltip(`<p style="color:${temp_color}; margin-bottom:0;">${temp}</p><p style="color:${dewp_color}; margin-top:0;">${dewp}</p>`, {permanent: true, className: "text-label", offset: [25,-10], direction:'center' });
+              marker.addTo(surface_stations);
+            }
+
+            function addSingleValue(lat,lon,value,value_color){
+              var marker = new L.marker([lat, lon], { opacity: 0.0 }); //opacity may be set to zero
+              marker.bindTooltip(`<p style="color:${value_color}; margin-bottom:0;">${value}</p>`, {permanent: true, className: "text-label", offset: [10,-10], direction:'center' });
+              marker.addTo(surface_stations);
+            }
+
+
+            // Way to add a station via JS!
+            function addStation(data,type){
+              if (type =="standard"){
+                let temp_color = "red";
+                let dewp_color = "green";
+                addTempDewpPair(data[0],data[1],data[2],data[3],temp_color,dewp_color);
+                addMETARText(data[0],data[1],data[6]);
+                createWindBarb(data[0],data[1],data[4],data[5]);
+              }
+              else if (type == "RLT") {
+                let temp_color = tempColor(data[2]);
+                let dewp_color = dewpColor(data[3]);
+                addTempDewpPair(data[0],data[1],data[2],data[3],temp_color,dewp_color);
+                addMETARText(data[0],data[1],data[6]);
+                createWindBarb(data[0],data[1],data[4],data[5]);
+              }
+              else if (type == "TEMP") {
+                let temp_color = tempColor(data[2]);
+                addSingleValue(data[0],data[1],data[2],temp_color);
+                addMETARText(data[0],data[1],data[6]);
+              }
+              else if (type == "DEWP") {
+                let dewp_color = dewpColor(data[3]);
+                addSingleValue(data[0],data[1],data[3],dewp_color);
+                addMETARText(data[0],data[1],data[6]);
+              }
+              else if (type == "WIND") {
+                createWindBarb(data[0],data[1],data[4],data[5]);
+                addMETARText(data[0],data[1],data[6]);
+              }
+              else if (type == "FIRE") {
+                let relh_color = relhColor(data[7]);
+                createWindBarb(data[0],data[1],data[4],data[5]);
+                addSingleValue(data[0],data[1],data[7],relh_color);
+                addMETARText(data[0],data[1],data[6]);
+              }
+              else if (type == "VISB") {
+                let visb_color = visbColor(data[8]);
+                addSingleValue(data[0],data[1],data[8],visb_color);
+                addMETARText(data[0],data[1],data[6]);
+              }
+            } // end addStation function
+///////////////////////////////////////////////////////////////////////////////
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Convective Impacts Map</title>
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+    <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+    {% load static %}
+    <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+    <script type="text/javascript" src="{% static 'leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+    <script type="text/javascript" src="{% static 'shapefile-js/dist/shp.js' %}"></script>
+    <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+    <script type="text/javascript" src="{% static 'cim.js' %}"></script>
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{% static 'cim.css' %}">
+
+    <meta name="viewport" content="width=device-width,
+        initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+</head>
+<body>
+{% block content %}
+
+  <div id="container">
+    <div class="folium-map" id="map_holder"></div>
+    <div id="textarea">
+      <h4 id="status">Status:</h4>
+      <h3>Most Recent Product/Report:</h3>
+      <input type="checkbox" id="audiocheckbox" name="audiocheckbox" value="Enabled" onchange="toggleAudio()">
+      <label id="audiocheckbox_label" for="audiocheckbox">Enable Audio Alerts</label>
+      <p id="text_headline">
+        No recent product/report.
+      </p>
+      <p id="recent_text"></p>
+    </div>
+    <div id="recent_list">
+      <h3>Recent Warnings, Obs, Reports:</h3>
+      <div id="list">
+      </div>
+    </div>
+  </div>
+  <audio id="alertAudio">
+    <source src="{% static 'audio/definite.mp3' %}" type="audio/mpeg" />
+  </audio>
+</body>
+<script>
+
+///////////////////////////////// Sat, Rad, GLM, sfc obs, Time settings //////////////////////////////////////////////
+  var times = createTimeArray(1); // create list of times
+///////////////////////////////// Toggle Audio Alerts //////////////////////////////////////////////
+  var audio = false;
+  function toggleAudio(){
+    if (document.getElementById("audiocheckbox").checked){
+      globalThis.audio = true;
+    }
+    else {
+      globalThis.audio = false;
+    }
+  }
+///////////////////////////////// audio alerts //////////////////////////////////////////////
+  function sendAudioAlert(){
+    if (audio){
+      console.log("Sending Audio Alert.");
+      var sound = document.getElementById("alertAudio");
+      sound.play();
+    }
+  }
+
+///////////////////////////////// MOUSE LAT/LON FUNCTIONS //////////////////////////////////////////////
+
+  L.CursorHandler = L.Handler.extend({
+      addHooks: function () {
+          this._map.on('mousemove', this._update, this);
+      },
+      _update: function (e) {
+        document.getElementById('label').innerHTML = e.latlng.lat.toFixed(4).toString()+", "+e.latlng.lng.toFixed(4).toString();
+      }
+  });
+  L.Map.addInitHook('addHandler', 'cursor', L.CursorHandler);
+
+///////////////////////////////////////// MAP DEFINITION //////////////////////////////////////////////
+  var map = L.map(
+      "map_holder",
+      {
+          center: [40.0, -100.0],
+          crs: L.CRS.EPSG3857,
+          zoom: 5,
+          zoomControl: true,
+          cursor: true,
+          preferCanvas: true,
+          renderer: L.canvas(),
+          keyboard: false,
+          updateWhenIdle: true,
+          updateWhenZooming: false,
+      }
+  );
+
+  // create a pane for the district lines
+  map.createPane('district_lines');
+  map.getPane('district_lines').style.zIndex = 230;
+  map.getPane('district_lines').style.pointerEvents = 'none';
+
+  /////////////// BASE LAYERS /////////////////
+  var dark = L.tileLayer(
+      "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+      {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var iem_conus_base_refl = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
+      {"attribution": "", "format": "image/png", "layers": "nexrad-n0q", "opacity": 0.5, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1", "interactive": true}
+  ).addTo(map);
+
+  var osm = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  ).addTo(map);
+
+  /////////////////////////////////////// BOUNDARY LAYERS //////////////////////////////////////////////
+  var state_style = {
+      "color":"#7c7c7c", // #F7F3F3
+      "fillColor":"none",
+      "fillOpacity":0.0,
+      "opacity":0.5,
+      "weight": 0.9,
+  }
+
+  var state_boundary = new L.geoJson();
+  $.ajax({
+  dataType: "json",
+  url: "{% static 'boundaries/usstates.json' %}",
+  success: function(data) {
+      $(data.features).each(function(key, data) {
+          state_boundary.addData(data,{pane:"district_lines"});
+          state_boundary.setStyle(state_style);
+      });
+  }
+  }).error(function() {});
+
+  /////////////////////////////////////// Additional Layers //////////////////////////////////////////////
+  var obsCanvas = L.canvas(); // for surface observations
+  var mping_hail = new L.featureGroup().addTo(map);
+  var mping_wind = new L.featureGroup().addTo(map);
+  var lsr_markers = new L.featureGroup().addTo(map);
+  var surface_stations = new L.featureGroup().addTo(map);
+  var current_warnings = new L.geoJSON().addTo(map);
+
+  /////////////// LAYER CONTROL ////////////////
+  var layer_control_1 = {
+      base_layers : {
+          "Open Street Map" : osm,
+          "Dark" : dark,
+      }, overlays : {
+        "States": state_boundary,
+      }
+  };
+  L.control.layers(layer_control_1.base_layers,
+                  layer_control_1.overlays,
+                  {"autoZIndex": true, "collapsed": true, "position": "topright"}
+                  ).addTo(map);
+
+
+  // initialize the state boundaries by default
+  state_boundary.addTo(map);
+  //district_boundary.addTo(map);
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////// MPING ///////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  var mping_objects = [];
+  ///////////////////////////////////////// MPING Hail Markers //////////////////////////////////////////////
+  function get_mping_hail(zoom_in){
+    $.ajax({
+    dataType: "json",
+    url: "{% static '/data/cim/mping_hail.json' %}",
+    success: function(data) {
+        $(data.results).each(function(key, data) {
+            add_mping_hail(data,zoom_in);
+        });
+    }
+    }).error(function() {
+      console.log("Loading mping hail data failed.");
+    });
+  }
+
+  function add_mping_hail(data,zoom_in){
+    let id = data.id;
+    zoom = false;
+    if (mping_objects.includes(id)){
+      console.log("MPING hail Already Displayed");
+    }
+    else {
+
+      mping_objects.push(id);
+      let latitude = data.geom.coordinates[1];
+      let longitude = data.geom.coordinates[0];
+      let size = parseFloat(data.description_id) - 8;
+      if (size < 8){
+        hailColor = "#00cc99";
+	zoom = true; // go ahead and zoom on non-severe too, helpful for ops.
+      } else {
+        hailColor = "#00cc00";
+        zoom = true;
+      }
+      var hailmarker = new L.circleMarker([latitude, longitude], {radius: size, weight: 0.75, opacity: 1.0, color: "black", fillColor: hailColor, fillOpacity: 1.0, renderer: obsCanvas});
+      hailmarker.addTo(mping_hail);
+      // have to create a different marker because circleMarker is too buggy
+      let text = data.description + " @ " + data.obtime.substring(0,10) +" " + data.obtime.substring(11,16)+" UTC"
+      var hailText = new L.marker([latitude, longitude], { opacity: 0.0 });
+      hailText.bindTooltip(
+          `<div>
+               ${text}
+          </div>`,
+          {direction:'center', permanent: false, offset:[0,0]}
+      );
+      hailText.addTo(mping_hail);
+      if (zoom_in){
+        if (zoom){
+          map.setView([latitude,longitude],9);
+          sendAudioAlert();
+        }  // end if zoom
+      } // end if zoom_in
+      // update the 'recent report/product' text
+      update_text_mping("HAIL",data,hailColor);
+      // update the 'recent product' List
+      let list_type = "MPING HAIL REPORT";
+      let list_text = data.description;
+      let list_time = `${data.obtime.substring(0,10)} ${data.obtime.substring(11,16)} UTC`;
+      addItemToList(list_type,latitude,longitude,list_text,list_time,hailColor);
+    }
+
+  } // end function add_mping_hail
+///////////////////////////////////////// MPING Wind Markers //////////////////////////////////////////////
+  function get_mping_wind(zoom_in){
+    $.ajax({
+    dataType: "json",
+    url: "{% static 'mping_wind.json' %}", // /data/cim/
+    success: function(data) {
+        $(data.results).each(function(key, data) {
+            add_mping_wind(data,zoom_in);
+        });
+    }
+    }).error(function() {
+      console.log("Loading mping wind data failed.");
+    });
+  }
+
+  function add_mping_wind(data,zoom_in){
+    let id = data.id;
+    if (mping_objects.includes(id)){
+      console.log("MPING wind already Displayed");
+    }
+    else {
+      mping_objects.push(id);
+      let zoomin = false;
+      let latitude = data.geom.coordinates[1];
+      let longitude = data.geom.coordinates[0];
+      let size = parseFloat(data.description_id) - 28;
+      if (size < 6){
+        windColor = "#3399ff";
+	       zoom = true; // Let's go ahead and zoom in on non-severe too. It's helpful for ops.
+      } else {
+        windColor = "#0000ff";
+        zoom = true;
+      }
+      var windmarker = new L.circleMarker([latitude, longitude], {radius: size, weight: 0.75, opacity: 1.0, color: "black", fillColor: windColor, fillOpacity: 1.0, renderer: obsCanvas});
+      windmarker.addTo(mping_wind);
+      // have to create a different marker because circleMarker is too buggy
+      let text = data.description + " @ " + data.obtime.substring(0,10) +" " + data.obtime.substring(11,16)+" UTC"
+      var windText = new L.marker([latitude, longitude], { opacity: 0.0 });
+      windText.bindTooltip(
+          `<div>
+               ${text}
+          </div>`,
+          {direction:'center', permanent: false, offset:[0,0]}
+      );
+      windText.addTo(mping_wind);
+      if (zoom_in){
+        if (zoom){
+          map.setView([latitude,longitude],9);
+          sendAudioAlert()
+        }  // end if zoom
+      } // end if zoom_in
+      // update the 'recent product/report' text
+      update_text_mping("WIND",data,windColor);
+      // update the 'recent product' List
+      let list_type = "MPING WIND REPORT";
+      let list_text = data.description;
+      let list_time = `${data.obtime.substring(0,10)} ${data.obtime.substring(11,16)} UTC`;
+      addItemToList(list_type,latitude,longitude,list_text,list_time,windColor);
+    }
+  } // end function add_mping_wind
+
+  get_mping_wind(false);
+  get_mping_hail(false);
+  setInterval(function(){
+    console.log("Updating MPING");
+    update_status("Updating MPING reports...");
+    get_mping_hail(true);
+    get_mping_wind(true);
+  },(60*1000));
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////// NWS WARNINGS ////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  function hazard_color(hazard){
+    let color = return_hazard_color(hazard);
+    hazard.setStyle({
+      color: color,
+      weight: 2,
+      opacity: 1.0,
+      fillColor: color,
+      fillOpacity: 0.25,
+    });
+  } // end hazard_color function
+
+  function nws_alerts(warning_list,zoom_in){
+    valid_alerts = ["Special Marine Warning", "Tornado Warning", "Severe Thunderstorm Warning", "Flash Flood Warning"];
+    var alert_url = "https://api.weather.gov/alerts/active";
+    var request = new XMLHttpRequest();
+    request.open("GET",alert_url, false);
+    request.send(null);
+    data = JSON.parse(request.response);
+    alerts = data.features;
+    alerts.forEach(function(alert){
+      if (valid_alerts.includes(alert.properties.event)){
+        // VTEC 6+: .KLMK.SV.W.0194.220706T2106Z-220706T2145Z/
+        id = alert.properties.parameters.VTEC[0].substring(6,22);
+        if (alert.properties.parameters.VTEC[0].includes("CAN")){
+          // Find the old alert and remove it.
+          current_warnings.eachLayer(function(layer){
+            if (layer.feature.properties.parameters.VTEC[0].substring(6,22) == id){
+              // we found a match, remove it.
+              current_warnings.removeLayer(layer);
+            }// end if
+          }); // end eachLayer
+        } // end if
+        else if (alert.properties.parameters.VTEC[0].includes("CON")){
+          // This is a warning update/continuation. We need to clear our the old
+          // warning and plot the new one (though we won't zoom in).
+          // First, see if the warning is already in the warning_list.
+          // It may not be if this is the first time the page is loaded.
+          if (warning_list.includes(id)){
+            // Loop through the layers in the geoJSON layer to find the matching id,
+            // remove that layer, then replace it with the continuation alert.
+            current_warnings.eachLayer(function(layer){
+              if (layer.feature.properties.parameters.VTEC[0].substring(6,22) == id){
+                // we found a match, remove it.
+                current_warnings.removeLayer(layer);
+                // replace it with the new alert
+                current_warnings.addData(alert);
+                //update_text(alert)
+              }// end if
+            }); // end eachFeature
+          } // end if
+          // If it's not in the list, then it's probably the initial page load, go ahead and add it.
+          else {
+            current_warnings.addData(alert);
+            update_text(alert)
+            warning_list.push(id);
+          } // end else
+        } // end else if
+        else if (warning_list.includes(id)){
+          // do nothing, this alert has already been added.
+        } // end else if
+        else {
+          warning_list.push(id);
+          //console.log(alert);
+          current_warnings.addData(alert);
+          update_text(alert);
+          // add this warning to the 'recent warnings, obs, reports' list.
+          //let text = alert.properties.description.replace(/\n/g,"</br>")
+          let current_datetime = new Date();
+          let time = alert.properties.onset;
+          let sender = alert.properties.senderName;
+          let text = `issued by ${sender}`;
+          let type = alert.properties.event;
+          let center = polygon_center(alert.geometry.coordinates);
+          addItemToList(type,center[0],center[1],text,time,color=return_hazard_color(alert));
+          if (zoom_in){
+            map.setView([center[0],center[1]],8);
+            sendAudioAlert()
+          }
+        } // end else
+      } // end if valid alert
+    }); // end alerts.forEach
+    // run a function that matches the color with the right hazards
+    current_warnings.eachLayer(function(layer){
+      hazard_color(layer);
+      text = layer.feature.properties.description.replace(/\n/g,"</br>");
+      layer.bindPopup(text,{minWidth:400});
+    });
+    return warning_list;
+  } // end function
+
+
+
+  function cleanse_warnings(geojson_layer){
+    // Convert the expiration time to epoch time
+    // then convert current time to epoch time, if the warning has expired,
+    // clear it from the geoJSON layer.
+    geojson_layer.eachLayer(function(layer){
+      let expire_time = layer.feature.properties.expires;
+      let expire_datetime = datetime_to_epoch(expire_time);
+      let current_datetime = new Date().getTime();
+      if (expire_datetime < current_datetime){
+        //console.log(expire_datetime,current_datetime);
+        geojson_layer.removeLayer(layer);
+      }
+    });
+  } // end function
+
+  var warning_list = [];
+  update_status("Checking for NWS Warnings...");
+  warning_list = nws_alerts(warning_list,false);
+  setInterval(function() {
+    update_status("Checking for NWS Warnings...");
+    warning_list = nws_alerts(warning_list,true);
+    cleanse_warnings(current_warnings);
+  }, 5000); // every 5 seconds
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////// SURFACE OBS ////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  plotted_stations = [];
+  ignore_list = ["ASBO1", "DEL12"]; // list of stations to never plot due to errant data.
+  function mesowest_obs(plotted_stations,threshold,within,zoom_in){
+    // Retrive the MesoWest observations from Synoptic
+    // within -> (minutes) number of minutes in the past to get data
+    // zoom_in -> (boolean) passed to the plot_ob function, determines whether or not to zoom in to the last plotted ob.
+    var token = "9eb6440e289d49b8a57a76f9b717a18e";
+    var min_wind_thres = threshold; // knots - minimum wind speed required for plotting.
+    $.getJSON('https://api.synopticdata.com/v2/stations/latest',
+      {
+        showemptystations: 0,
+        country:"us",
+        units: "english",
+        within: within,
+        hfmetars: 1,
+        vars: "wind_speed,wind_gust,wind_direction,peak_wind_speed,peak_wind_direction",
+        token: token
+      },
+      function(data)
+      {
+        current = new Date();
+        console.log("Got MesoWest data at: "+current);
+        update_status(`Received MesoWest data.`);
+        // Loop through each observation inside of data
+        data.STATION.forEach(function(observation){
+          //console.log(observation.OBSERVATIONS);
+          // check to make sure the ob is not in the ignore list.
+          if (ignore_list.includes(observation.STID)){
+            // send a notice that we're ignoring this ob.
+            console.log(`Notice: ignoring ob from ${observation.STID}`);
+            update_status(`Notice: ignoring ob from ${observation.STID}`);
+          }
+          else {
+            // use a series of try/catch to catch the observations that either peak wind, wind gusts, wind speed, or no wind at all.
+            // Do a try/catch to see if the ob has a peak wind report. Most don't but some do, so we need to check for this.
+            try {
+              if (observation.OBSERVATIONS.peak_wind_speed_value_1.value >= min_wind_thres){
+                if (plotted_stations.includes(observation.STID)){
+                  // remove the old ob, plot the new ob.
+                  remove_old_ob(surface_stations,observation.STID);
+                  plot_ob(observation,zoom_in);
+                } // end if
+                else {
+                  // plot the new ob, add it to the plotted_stations list.
+                  plot_ob(observation,zoom_in);
+                  plotted_stations.push(observation.STID);
+                } // end else
+              } // end if
+            }// end first try
+            catch {
+              // use an inner try/catch ot catch the observations that have a wind speed report, but no wind gust.
+              // If either a valid wind speed or wind gust is reported and is above the threshold, then pass the
+              // observation to the plotting function.
+              try {
+                if (observation.OBSERVATIONS.wind_gust_value_1.value >= min_wind_thres || observation.OBSERVATIONS.wind_gust_value_2.value >= min_wind_thres){
+                  if (plotted_stations.includes(observation.STID)){
+                    // remove the old ob, plot the new ob.
+                    remove_old_ob(surface_stations,observation.STID);
+                    plot_ob(observation,zoom_in);
+                  } // end if
+                  else {
+                    // plot the new ob, add it to the plotted_stations list.
+                    plot_ob(observation,zoom_in);
+                    plotted_stations.push(observation.STID);
+                  } // end else
+                } // end if
+              } // end second try
+              catch {
+                // Have to include a third try here since some observations will come in with only
+                // the wind direction. These obs will get to here and then break.
+                try {
+                  if (observation.OBSERVATIONS.wind_speed_value_1.value >= min_wind_thres){
+                    if (plotted_stations.includes(observation.STID)){
+                      // remove the old ob, plot the new ob.
+                      remove_old_ob(surface_stations,observation.STID);
+                      plot_ob(observation,zoom_in);
+                    } // end if
+                    else {
+                      // plot the new ob, add it to the plotted_stations list.
+                      plot_ob(observation,zoom_in);
+                      plotted_stations.push(observation.STID);
+                    } // end else
+                  } // end if
+                } catch {
+                  // do nothing.
+                } // end thrid catch
+              } // end second catch
+            } // end first catch
+          } // end outer else/ignore list else
+        }); // end forEach function
+      } // end forEach
+    ); // end getJSON
+    return plotted_stations;
+  } // end mesowest_obs function
+
+  function remove_old_ob(obs_layer,stid){
+    obs_layer.eachLayer(function(layer){
+      if (layer.feature.STID == stid){
+        obs_layer.removeLayer(layer);
+      }// end if
+    }); // end eachLayer loop
+  } // end remove_old_ob function
+
+  /// Surface/Wind observation Plotting routines
+  function plot_ob(observation,zoom_in){
+    var severe_wind_thres = 50.0; // knots - severe wind threshold (plots in darker color)
+    var base_wind_color = "#3399ff";
+    var svr_wind_color = "#0000ff";
+    var wind_barb_color = "#009002";
+    let gust = 0.0;
+    // some observations have report a peak wind. Check for this frist.
+    try {
+      gust = observation.OBSERVATIONS.peak_wind_speed_value_1.value;
+    } // end first try
+    catch {
+      // Some observations have wind speed but no wind gust. This will catch those instances.
+      try {
+        gust = observation.OBSERVATIONS.wind_gust_value_1.value;
+      } // end second try
+      catch {
+        try {
+          gust = observation.OBSERVATIONS.wind_gust_value_2.value;
+        } catch {
+          // do nothing, just wind speed data.
+        } // end third catch
+      } // end second catch
+    } // end first catch
+    let wspd = observation.OBSERVATIONS.wind_speed_value_1.value;
+    let obtime = observation.OBSERVATIONS.wind_speed_value_1.date_time;
+    let wdir = observation.OBSERVATIONS.wind_direction_value_1.value;
+    let latitude = observation.LATITUDE;
+    let longitude = observation.LONGITUDE;
+    let elevation = observation.ELEVATION;
+    let stid = observation.STID;
+    let state = observation.STATE;
+    let text = `Station: ${stid}   State: ${state}<br>\
+            Time: ${obtime}<br>\
+            Lat/Lon: ${latitude}, ${longitude} <br />\
+            Elevation: ${elevation} ft <br />\
+            Wind Gust: ${gust} knots <br>\
+            Wind Speed: ${wspd} knots <br>\
+            Wind Dir: ${wdir} deg`;
+    // We need to do a QC check to make sure the wind gust isn't spurious.
+    let valid = wspd_gust_QC(wspd,gust);
+    if (valid){
+      // We want to plot the highest wind measurement.
+      let max = gust;
+      if (wspd > gust) {
+        max = wspd;
+      }
+      let color = base_wind_color;
+      if (max >= severe_wind_thres){
+        color = svr_wind_color;
+      } // end if clause
+      // add the station to the map
+      addSingleValue(latitude,longitude,max);
+      createWindBarb(latitude,longitude,max,wdir,color);
+      addMETARText(latitude,longitude,text,color);
+      // since we already have the text generated, let's go ahead and pass it
+      // to a function to update the "most recent product/report" text.
+      update_text_obs(text,color);
+      // Let's also pass this info to the "recent report list"
+      let type = "Measured Wind";
+      let list_text = `- Station: ${stid}, State: ${state}, Max Wind: ${max} knots`;
+      addItemToList(type,latitude,longitude,list_text,obtime,color);
+      // if zoom_in is true, zoom to the ob
+      if (zoom_in){
+        map.setView([latitude,longitude],9);
+        sendAudioAlert();
+      } // end zoom in if statement
+    } // end gust QC check if statement
+  } // end function
+
+  function createWindBarb(latitude,longitude,wspd,dir,color){
+    var icon = L.WindBarb.icon({lat: latitude, deg: dir, speed: wspd, pointRadius: 0, strokeWidth: 2, strokeLength: 18, barbSpaceing: 4, barbHeight: 10, fillColor: 'gray', barbColor: color});
+    var windbarb = L.marker([latitude,longitude], {icon: icon, renderer: obsCanvas});
+    windbarb.addTo(surface_stations);
+  }
+
+  function addMETARText(latitude,longitude,text, wind_color){
+    var textmarker = new L.circleMarker([latitude, longitude], {radius: 5, weight: 0.75, opacity: 0.8, color: "black", fillColor: wind_color, fillOpacity: 1.0, renderer: obsCanvas});
+    textmarker.addTo(surface_stations);
+    // have to create a different marker because circleMarker is too buggy
+    var textholder = new L.marker([latitude, longitude], { opacity: 0.0 });
+    textholder.bindTooltip(
+        `<div>
+             ${text}
+        </div>`,
+        {direction:'top', permanent: false, offset:[0,0]}
+    );
+    textholder.addTo(surface_stations);
+  }
+
+  function addSingleValue(lat,lon,value){
+    var marker = new L.marker([lat, lon], { opacity: 0.0, renderer: obsCanvas}); //opacity may be set to zero
+    marker.bindTooltip(`<p style="color:#ffffff; margin-bottom:0;">${value}</p>`, {permanent: true, className: "text-label", offset: [6,-2], direction:'center' });
+    marker.addTo(surface_stations);
+  }
+
+  // Initialize the surface obs
+  wind_threshold = 30.0;
+  console.log("Retrieving Mesowest Obs");
+  update_status("Retrieving Mesowest Obs...");
+  plotted_stations = mesowest_obs(plotted_stations,wind_threshold,15,false);
+  // set up a timer to get new obs every minute
+  setInterval(function(){
+    current = new Date();
+    console.log(current+": Retrieving Mesowest Obs");
+    update_status("Retrieving Mesowest Obs...");
+    plotted_stations = mesowest_obs(plotted_stations,wind_threshold,5,true);
+  },(60*1000));
+  // set up a timer to clear the surface_stations layer after 1 hour to reduce clutter.
+  setInterval(function(){
+    console.log("Clearing surface observations...");
+    update_status("Clearing old surface obs...");
+    surface_stations.clearLayers();
+    plotted_stations = [];
+    plotted_stations = mesowest_obs(plotted_stations,wind_threshold,15,false);
+    console.log("Surface obs cleared.");
+    update_status("Surface obs cleared.");
+  },(3600*1000));
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////// NWS LSRs ////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+var lsr_list = []; // initilize the lsr list.
+function plot_lsr(url,zoom_in){
+  valid_reports = ["HAIL", "TSTM WND DMG", "TSTM GST", "TORNADO"];
+  var request = new XMLHttpRequest();
+  request.open('GET',url,false);
+  request.onload = function() {
+    var data = JSON.parse(this.response);
+    if (request.status >= 200 && request.status < 400) {
+      output = parse_lsr_type(data.productText);
+      type = output[0];
+      color = output[1];
+      if (valid_reports.includes(type)){
+        coords = parse_lsr_latlon(data.productText);
+        text = parse_lsr_text(data.productText.substring(31,));
+        // add the icon to the map
+        LSRIcon = L.divIcon({
+          html: '<i class="fa fa-square" style="font-size:16px;color:'+color+';opacity:0.8;"></i>',
+          iconSize: [5, 5],
+          className: 'lsrIcon'
+        });
+        L.marker([coords[0], coords[1]], {
+          icon: LSRIcon
+        }).addTo(lsr_markers).bindPopup(text,{minWidth:350});
+        // zoom in functionality
+        if (zoom_in){
+          map.setView([coords[0],coords[1]],9);
+          sendAudioAlert();
+        }
+        // update the 'recent product/report' text
+        update_text_lsr(type,text,color);
+        // update the "recent product list"
+         let list_type = `${type} LSR`;
+         let list_text = `from NWS ${parse_lsr_sender(data.productText)}`;
+         let time = parse_lsr_time(data.productText);
+        addItemToList(list_type,coords[0],coords[1],list_text,time,color);
+      } // end if
+    } // end if
+  }; // end onload
+  request.send();
+}
+
+function retrieve_lsrs(lsr_list,zoom_in){
+  var last = (7200*1000); // one hour in milliseconds. Used as a filter to avoid plotting days old LSRs.
+  var lsr_url = "https://api.weather.gov/products/types/LSR";
+  var request = new XMLHttpRequest();
+  request.open("GET",lsr_url, false);
+  request.send(null);
+  data = JSON.parse(request.response);
+  products = data["@graph"].slice(0,30); // just check the last 30 LSRs, this will save a bit of time.
+  products.forEach(function(product){
+    if (lsr_list.includes(product.id)){
+      // do nothing, LSR already added.
+    } else {
+      // do a final check to make sure we're not plotting really old LSRs (which isn't helpful).
+      let issuanceTime = product.issuanceTime;
+      issuanceTime = datetime_to_epoch(issuanceTime);
+      let current_datetime = new Date().getTime();
+      let diff = current_datetime - issuanceTime;
+      if (diff <= last){
+        // add to map and lsr_list
+        lsr_list.push(product.id);
+        plot_lsr(product["@id"],zoom_in);
+      } // end if
+    } // end else
+  }); // end forEach
+  return lsr_list;
+} // end function
+// initialize
+lsr_list = retrieve_lsrs(lsr_list,false);
+// set a timer to get new LSRs every minute
+setInterval(function(){
+  //console.log("Getting LSRs...");
+  update_status("Updating LSRs...");
+  lsr_list = retrieve_lsrs(lsr_list,true);
+},(10*1000));
+
+// set up a timer to clear the surface_stations layer after 1 hour to reduce clutter.
+setInterval(function(){
+  console.log("Clearing LSRs...")
+  update_status("Clearing LSRs...");
+  lsr_markers.clearLayers();
+  console.log("Old LSRs cleared.");
+  update_status("Old LSRs cleared.");
+  lsr_list = []; // clear out the LSR list.
+  lsr_list = retrieve_lsrs(lsr_list,false); // plot the last few LSRs.
+},(3600*1000));
+
+///////////////////////////////// NWS TEXT PRODUCTS //////////////////////////////////////////////
+
+// function retrieve_products(timedelta){
+//   var lsr_url = "https://api.weather.gov/products/types";
+//   var request = new XMLHttpRequest();
+//   request.open("GET",lsr_url, false);
+//   request.send(null);
+//   data = JSON.parse(request.response);
+//   products = data["@graph"];
+//   products.forEach(function(product){
+//     issuance_time = product.issuanceTime;
+//     let issuance_datetime = datetime_to_epoch(issuance_time);
+//     let current_datetime = new Date().getTime();
+//     let diff = current_datetime - issuance_datetime;
+//     if (diff <= timedelta){
+//       // update the most recent product/report
+//     }
+//   });
+// } // end function
+
+///////////////////////////////// MAP TEXT CONTROL //////////////////////////////////////////////
+  // Lat lon text
+  L.Control.textbox = L.Control.extend({
+    onAdd: function(map) {
+      var text = L.DomUtil.create('div');
+      text.id = "LatLonLabel";
+      text.innerHTML = "<p id='label' style='color: white; text-shadow: 1px 1px black; font-size:15px;'></p>";
+      return text;
+    },
+    onRemove: function(map) {
+      // nothing?
+    }
+  });
+  L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+  L.control.textbox({position: 'bottomright'}).addTo(map);
+
+  // time stamp text
+  L.Control.textbox = L.Control.extend({
+    onAdd: function(map) {
+      var text = L.DomUtil.create('div');
+      text.id = "info text";
+      basetime = "<p id='timestamp' style='color: white; text-shadow: 1px 1px 1px black; font-size:15px; font-weight:bold;'>Current Time:</p>";
+      text.innerHTML = basetime;
+      return text;
+    },
+    onRemove: function(map) {
+      // nothing?
+    }
+  });
+  L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+  L.control.textbox({position: 'bottomleft'}).addTo(map);
+
+
+  function changeSFCtext(times){
+    formatedTime = times[0].substring(4,6)+"/"+times[0].substring(6,8)+"/"+times[0].substring(0,4)+" "+times[0].substring(8,10)+":"+times[0].substring(10,12)+":00Z";
+    document.getElementById('sfctext').innerHTML = "Updated at: "+formatedTime;
+  }
+  // set the intitial time displays
+  //changeSFCtext(times);
+///////////////////////////////// Sat, Rad, GLM, sfc obs, Updates //////////////////////////////////////////////
+  // radar update
+  setInterval(function(){iem_conus_base_refl.setParams({"time":radarTime()},false)}, (300*1000));
+  setInterval(function(){
+    clockAndLabel();
+  },1000);
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
+</script>
+
+{% endblock %}

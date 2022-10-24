@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  {% block content %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
+  <!--<meta http-equiv="refresh" content="300" >-->
+
+  <title>Wx Watcher Fire</title>
+
+  <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+  <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+  <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+  {% load static %}
+  <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+  <script type="text/javascript" src="{% static 'leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+  <script type="text/javascript" src="{% static 'dom-to-image-master/src/dom-to-image.js' %}"></script>
+  <script type="text/javascript" src="{% static 'shapefile-js/dist/shp.js' %}"></script>
+  <script type="text/javascript" src="{% static '/jscolor/jscolor.js' %}"></script>
+  <script type="text/javascript" src="{% static '/javascript/fire.js' %}"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+  <link rel="stylesheet" href="{% static '/css/fire.css'  %}" />
+
+
+
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <!-- <h1 style="display: inline-block">Fire Weather</h1><br /> -->
+      <p style="display: inline-block; padding: 10px;">Quick Stats:</p>
+      <p id="header_rfw" style="display: inline-block; padding: 10px; color: #c26666">-- Red Flag Warnings</p>
+      <p id="header_fww" style="display: inline-block; padding: 10px; color: #e9be11">-- Fire Weather Watches</p>
+      <p id="header_inc" style="display: inline-block; padding: 10px; color: orange">-- Incidents</p>
+      <p id="header_24h" style="display: inline-block; padding: 10px; color: #bd2525">-- Incidents Reported in the last 24 Hours</p>
+      <p id="header_spc" style="display: inline-block; padding: 10px; color: #bd2525">SPC Risk Cat: --</p>
+    </div>
+    <div class="tabs">
+      <div class="tabby-tab">
+        <input type="radio" id="tab-1" name="tabby-tabs" checked>
+        <label for="tab-1">Current</label>
+        <div class="tabby-content">
+          <div id="current_map" style="width: 100%; height: 100%; padding-top: 10px; margin-left: auto; margin-right: auto;"></div>
+        </div>
+      </div>
+
+      <div class="tabby-tab">
+        <input type="radio" id="tab-2" name="tabby-tabs">
+        <label for="tab-2">Fire Danger</label>
+        <div class="tabby-content">
+          <img class="static_img" src="https://www.wfas.net/images/firedanger/fd_class.png"/>
+          <img class="static_img" src="https://www.wfas.net/images/firedanger/fd_cls_f.png"/>
+        </div>
+      </div>
+
+      <div class="tabby-tab">
+        <input type="radio" id="tab-3" name="tabby-tabs">
+        <label for="tab-3">Fuel Guidance</label>
+        <div class="tabby-content">
+          <h2>Observed Fuel Moisture</h2>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/fm_10.png"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/fm_100.png"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/fm_1000.png"/>
+          <h2>Forecast Fuel Moisture</h2>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/fm_10_f.png"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/fm_100_f.png"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/fm_1000_f.png"/>
+          <h2>Growing Season Index</h2>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/subsets/gsi_us.png"/>
+          <h2>Anomalous Temperatures</h2>
+          <img class="static_img" style="padding-top: 10px;" src="https://hprcc.unl.edu/products/maps/acis/7dTDeptUS.png"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://hprcc.unl.edu/products/maps/acis/30dTDeptUS.png"/>
+        </div>
+      </div>
+
+      <div class="tabby-tab">
+        <input type="radio" id="tab-4" name="tabby-tabs">
+        <label for="tab-4">Drought</label>
+        <div class="tabby-content">
+          <div id="drought_map" style="width: 900px; height: 600px; padding-top: 10px; margin-left: auto; margin-right: auto;"></div>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/regional_monitoring/palmer.gif"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/kbdi.png"/>
+        </div>
+      </div>
+
+      <div class="tabby-tab">
+        <input type="radio" id="tab-5" name="tabby-tabs">
+        <label for="tab-5">Precipitation</label>
+        <div class="tabby-content">
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://water.weather.gov/precip/full.php?time_type=recent&time_frame=1day&recent_type=today&product=observed&units=eng&domain=conus&geo_width=7827151.696399967&geo_height=4891969.810249981&xmin=-131.71984374998854&ymin=19.7070615228758&xmax=-61.407343750007236&ymax=53.789180363666844&layers={%22precip_layer%22:0.75,%22rfc_layer%22:%22-1%22,%22state_layer%22:0.75,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.25}"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last7days&recent_type=today&product=observed&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last14days&recent_type=today&product=observed&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last30days&recent_type=today&product=observed&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last7days&recent_type=today&product=percent&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last14days&recent_type=today&product=percent&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last30days&recent_type=today&product=percent&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://hprcc.unl.edu/products/maps/acis/30dSPIDataUS.png"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://hprcc.unl.edu/products/maps/acis/30dPNormUS.png"/>
+          <img style="height: 800px; width: 90%; padding-top: 10px;" src="https://staticmaps.cocorahs.org/homepagemap"/>
+        </div>
+      </div>
+
+      <div class="tabby-tab">
+        <input type="radio" id="tab-6" name="tabby-tabs">
+        <label for="tab-6">Dry Thunder</label>
+        <div class="tabby-content">
+          <img class="static_img" style="padding-top: 10px;" src="https://www.spc.noaa.gov/products/outlook/day1otlk.gif"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/ltng_fp.png"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/ltng_pi.png"/>
+          <img class="static_img" style="padding-top: 10px;" src="https://www.wfas.net/images/firedanger/dry_lightning.png"/>
+          <img class="static_img" style="padding-top: 10px;" src="http://wfas.net/images/firedanger/dryness.png"/>
+        </div>
+      </div>
+
+      <div class="tabby-tab">
+        <input type="radio" id="tab-7" name="tabby-tabs">
+        <label for="tab-7">Forecasts</label>
+        <div class="tabby-content">
+          <h2>SPC Fire Day 1 & 2</h2>
+          <div class="cpc_images">
+            <img style="float: left; height: 500px; width: 45%;" src="https://www.spc.noaa.gov/products/fire_wx/day1otlk_fire.gif"/>
+            <img style="float: left; height: 500px; width: 45%;" src="https://www.spc.noaa.gov/products/fire_wx/day2otlk_fire.gif"/>
+          </div>
+          <h2>SPC Fire Days 3-8</h2>
+          <div class="cpc_images">
+            <img style="float: left; height: 300px; width: 30%;" src="https://www.spc.noaa.gov/products/exper/fire_wx/imgs/day3fireprob.gif"/>
+            <img style="float: left; height: 300px; width: 30%;" src="https://www.spc.noaa.gov/products/exper/fire_wx/imgs/day4fireprob.gif"/>
+            <img style="float: left; height: 300px; width: 30%;" src="https://www.spc.noaa.gov/products/exper/fire_wx/imgs/day5fireprob.gif"/>
+          </div>
+          <div class="cpc_images">
+            <img style="float: left; height: 300px; width: 30%;" src="https://www.spc.noaa.gov/products/exper/fire_wx/imgs/day6fireprob.gif"/>
+            <img style="float: left; height: 300px; width: 30%;" src="https://www.spc.noaa.gov/products/exper/fire_wx/imgs/day7fireprob.gif"/>
+            <img style="float: left; height: 300px; width: 30%;" src="https://www.spc.noaa.gov/products/exper/fire_wx/imgs/day8fireprob.gif"/>
+          </div>
+          <h2>GACC Sig. Fire Potential</h2>
+          <div class="cpc_images">
+            <img style="float: left; height: 300px; width: 30%;"  src="https://fsapps.nwcg.gov/psp/npsg/data/conus-sevenday/d1_0.png"/>
+            <img style="float: left; height: 300px; width: 30%;"  src="https://fsapps.nwcg.gov/psp/npsg/data/conus-sevenday/d2_0.png"/>
+            <img style="float: left; height: 300px; width: 30%;"  src="https://fsapps.nwcg.gov/psp/npsg/data/conus-sevenday/d3_0.png"/>
+          </div>
+          <div class="cpc_images">
+            <img style="float: left; height: 300px; width: 30%;"  src="https://fsapps.nwcg.gov/psp/npsg/data/conus-sevenday/d4_0.png"/>
+            <img style="float: left; height: 300px; width: 30%;"  src="https://fsapps.nwcg.gov/psp/npsg/data/conus-sevenday/d5_0.png"/>
+            <img style="float: left; height: 300px; width: 30%;"  src="https://fsapps.nwcg.gov/psp/npsg/data/conus-sevenday/d6_0.png"/>
+          </div>
+          <div class="cpc_images">
+            <img style="float: left; height: 300px; width: 30%;"  src="https://fsapps.nwcg.gov/psp/npsg/data/conus-sevenday/d7_0.png"/>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="tabby-tab">
+        <input type="radio" id="tab-8" name="tabby-tabs">
+        <label for="tab-8">Extended</label>
+        <div class="tabby-content">
+          <h2>CPC 6-10 Day Outlook</h2>
+          <div class="cpc_images">
+            <img style="float: left; height: 500px; width: 45%;" src="https://www.cpc.ncep.noaa.gov/products/predictions/610day/610temp.new.gif"/>
+            <img style="float: left; height: 500px; width: 45%;" src="https://www.cpc.ncep.noaa.gov/products/predictions/610day/610prcp.new.gif"/>
+          </div>
+          <h2>CPC 8-14 Day Outlook</h2>
+          <div class="cpc_images">
+            <img style="float: left; height: 500px; width: 45%;" src="https://www.cpc.ncep.noaa.gov/products/predictions/814day/814temp.new.gif"/>
+            <img style="float: left; height: 500px; width: 45%;" src="https://www.cpc.ncep.noaa.gov/products/predictions/814day/814prcp.new.gif"/>
+          </div>
+          <h2>CPC Monthly/Seasonal Outlook</h2>
+          <div class="cpc_images">
+            <img class="static_img" src="https://www.cpc.ncep.noaa.gov/products/predictions/multi_season/13_seasonal_outlooks/color/page2.gif"/>
+          </div>
+          <h2>Sig. Wildfire Potential Outlook</h2>
+          <div class="cpc_images">
+            <img style="float: left; height: 500px; width: 45%;"  src="https://www.predictiveservices.nifc.gov/outlooks/month1_outlook.png"/>
+            <img style="float: left; height: 500px; width: 45%;"  src="https://www.predictiveservices.nifc.gov/outlooks/month2_outlook.png"/>
+          </div>
+          <div class="cpc_images">
+            <img style="float: left; height: 500px; width: 45%;"  src="https://www.predictiveservices.nifc.gov/outlooks/month3_outlook.png"/>
+            <img style="float: left; height: 500px; width: 45%;"  src="https://www.predictiveservices.nifc.gov/outlooks/month4_outlook.png"/>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="tabby-tab">
+        <input type="radio" id="tab-9" name="tabby-tabs">
+        <label for="tab-9">Links</label>
+        <div class="tabby-content">
+          <div class="linkdiv">
+            <h3>NIFC & Fire News</h3>
+            <a href="https://www.nifc.gov/">NIFC Home</a><br />
+            <a href="https://www.nifc.gov/fire-information/nfn">NIFC Fire News</a><br />
+            <a href="https://www.nifc.gov/fire-information/statistics">NIFC Quick Statistics</a><br />
+            <a href="https://www.predictiveservices.nifc.gov/NMAC%20Weather%20Outlook.mp4">NIFC Outlook Web Briefing</a><br />
+            <a href="https://fsapps.nwcg.gov/psp/npsg/forecast#/outlooks?state=map">Sig. Wildfire Potential Viewer</a><br />
+            <a href="https://inciweb.nwcg.gov/">InciWeb Map</a><br />
+            <a href="https://www.nifc.gov/nicc/sitreprt.pdf">Daily Incident Report (pdf)</a><br />
+            <a href="https://wildfiretoday.com/">Wildfire Today</a><br />
+            <a href="https://m.wfas.net/">WFAS</a><br />
+            <a href="https://www.predictiveservices.nifc.gov/outlooks/NA_Outlook.pdf">North American Outlook (pdf)</a><br />
+            <button class="link_button" type="button" onClick="openallLinks(nifc_list)">Open All Links</button>
+          </div>
+          <div class="linkdiv">
+            <h3>GACCs</h3>
+            <a href="https://gacc.nifc.gov/">National Portal</a><br />
+            <a href="https://gacc.nifc.gov/nwcc/predict/fire_fuel.aspx">Northwest</a><br />
+            <a href="https://gacc.nifc.gov/oncc/">Northern California</a><br />
+            <a href="https://gacc.nifc.gov/oscc/">Southern California</a><br />
+            <a href="https://gacc.nifc.gov/gbcc/">Great Basin</a><br />
+            <a href="https://gacc.nifc.gov/nrcc/">Northern Rockies</a><br />
+            <a href="https://gacc.nifc.gov/rmcc/">Rocky Mountain</a><br />
+            <a href="https://gacc.nifc.gov/swcc/">Southwest</a><br />
+            <a href="https://gacc.nifc.gov/sacc/">Southern</a><br />
+            <a href="https://gacc.nifc.gov/eacc/">Eastern</a><br />
+            <button class="link_button" type="button" onClick="openallLinks(gacc_list)">Open All Links</button>
+          </div>
+          <div class="linkdiv">
+            <h3>California Resources</h3>
+            <a href="https://cw3e.ucsd.edu/precipitation-observations/">Recent CA Rainfall</a><br />
+            <a href="https://www.weather.gov/lox/fwmV3">LOX Fire Wx Snooper</a><br />
+            <a href="https://cansac.dri.edu/cansac_output.php?model=WRF">CANSAC WRF Output</a><br />
+            <a href="https://gacc.nifc.gov/oscc/predictive/weather/index.htm?m=no">SOCAL Sig Fire Potentail</a><br />
+            <a href="https://gacc.nifc.gov/oscc/predictive/weather/myfiles/Webcast.mp4">SOCAL Fire Wx Briefing</a><br />
+            <button class="link_button" type="button" onClick="openallLinks(cal_resource_list)">Open All Links</button>
+          </div>
+          <div class="linkdiv">
+            <h3>Misc. Resources</h3>
+            <a href="https://fsapps.nwcg.gov/afm/index.php">Current Large Incidents</a><br />
+            <a href="https://www.weather.gov/spot/monitor/">NWS SPOT Forecast Page</a><br />
+            <a href="https://gacc.nifc.gov/gbcc/predictive/cfs/#/">Great Basin Fuel Status</a><br />
+            <a href="https://www.predictiveservices.nifc.gov/fuels_fire-danger/national_fire_danger.html">National ERC Map</a><br />
+            <a href="https://maps.cocorahs.org/">CoCoRaHS</a><br />
+            <a href="https://water.weather.gov/precip/">AHPS Precipitation</a><br />
+            <a href="https://www.pivotalweather.com/maps.php?ds=mrms&p=mrms_qpe_024h_p&r=conus">Pivotal Wx MRMS QPE</a><br />
+            <a href="https://firms.modaps.eosdis.nasa.gov/usfs/map/#d:24hrs;l:noaa20-viirs,viirs,modis_a,modis_t,active-usa,country-outline;@-93.1,38.5,5z">FIRMS Fire Map</a><br />
+            <a href="https://fireweather.cira.colostate.edu/index8.php?usr=wfdss_gusr&page=rmc">Rocky Mountain Research Station</a><br />
+            <a href="http://www.mesonet.org/index.php/okfire/map/energy_release_component1/current_maps">OK Mesonet ERC</a><br />
+            <a href="https://secondary.mesonet.ksu.edu/fire/nfdrs/">KS Mesonet ERC</a><br />
+            <a href="https://fire.airnow.gov/">Smoke Monitoring</a><br />
+            <a href="https://cimss.ssec.wisc.edu/volcat-wildfires/event-dashboard/">CIMMS Wildfire Event Dashboard</a><br />
+            <a href="https://wrcc.dri.edu/Monitoring/spi_products.php">SPI Products</a><br />
+            <a href="https://vegdri.unl.edu/Home.aspx">Vegetation Drought Response Index</a><br />
+            <a href="https://www.hdwindex.org/">Hot Dry Windy Index</a><br />
+            <a href="https://data-nifc.opendata.arcgis.com/datasets/nifc::wfigs-current-wildland-fire-locations/about">Wildland Fire GIS Dataset</a><br />
+            <button class="link_button" type="button" onClick="openallLinks(misc_resource_list)">Open All Links</button>
+          </div>
+          <div class="linkdiv">
+            <h3>References (pdfs)</h3>
+            <a href="https://www.weather.gov/pimar/FireZones">NWS Fire Wx Zones</a><br />
+            <a href="http://www.nifc.gov/policies/pol_ref_redbook.html">NIFC Standards for Fire Ops</a><br />
+            <a href="https://www.nifc.gov/nicc/logistics/references/Fire%20Imaging%20Technologies%20Users%20Guide.pdf">Fire Imaging Tech</a><br />
+            <a href="https://famit.nwcg.gov/applications/WIMS/PocketCards/PocketCards">Pocket Cards</a><br />
+            <a href="https://gacc.nifc.gov/oncc/docs/40-Standard%20Fire%20Behavior%20Fuel%20Models.pdf">Fire Behavior Models</a><br />
+            <a href="https://gacc.nifc.gov/oncc/docs/Fire%20Behavior%20Nomograms%20NEW.pdf">Fuel Behavior Nomograms</a><br />
+            <a href="https://gacc.nifc.gov/oncc/docs/13_Aids%20to%20Determining%20Fuel%20Models.pdf">Fuel Models</a><br />
+            <a href="https://www.fs.fed.us/pnw/pubs/pnw_gtr854.pdf">Syn. of Fire Behavior Knowledge Vol. 1</a><br />
+            <a href="https://www.fs.fed.us/pnw/pubs/pnw_gtr891.pdf">Syn. of Fire Behavior Knowledge Vol. 2</a><br />
+            <a href="https://www.usfa.fema.gov/downloads/pdf/publications/fa-266.pdf">Fire Data Analysis</a><br />
+            <button class="link_button" type="button" onClick="openallLinks(reference_material)">Open All Links</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+<script>
+
+/// AHPS Links
+// Day 1 obs: https://water.weather.gov/precip/full.php?time_type=recent&time_frame=1day&recent_type=today&product=observed&units=eng&domain=conus&geo_width=7827151.696399967&geo_height=4891969.810249981&xmin=-131.71984374998854&ymin=19.7070615228758&xmax=-61.407343750007236&ymax=53.789180363666844&layers={%22precip_layer%22:0.75,%22rfc_layer%22:%22-1%22,%22state_layer%22:0.75,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.25}
+// Day 7 obs:https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last7days&recent_type=today&product=observed&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}
+// Day 14 Obs:https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last14days&recent_type=today&product=observed&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}
+// Day 30 Obs:https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last30days&recent_type=today&product=observed&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}
+// Day 7 percent: https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last7days&recent_type=today&product=percent&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"
+// Day 14 percent:https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last14days&recent_type=today&product=percent&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"
+// Day 30 percent:https://water.weather.gov/precip/full.php?time_type=recent&time_frame=last30days&recent_type=today&product=percent&units=eng&domain=conus&geo_width=7827151.696399968&geo_height=4891969.81024998&xmin=-133.56554687498806&ymin=18.461190216243274&xmax=-63.253046875006746&ymax=53.00309891767574&layers={%22precip_layer%22:0.55,%22rfc_layer%22:%22-1%22,%22state_layer%22:1,%22hsa_layer%22:%22-1%22,%22county_layer%22:0.26}"
+
+
+var current_map = L.map("current_map").setView([38.0, -102.0], 5);
+// // ------------- Current Conditions Map ------------------
+
+attrib = "Data sources: \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, \u003ca href=\"http://mesonet.agron.iastate.edu/GIS/\"\u003eIEM\u003c/a\u003e, \u003ca href=\"https://www.noaa.gov/\"\u003eNOAA\u003c/a\u003e, \u003ca href=\"https://www.spc.noaa.gov/\"\u003eSPC\u003c/a\u003e, \u003ca href=\"https://www.aviationweather.gov/metar\"\u003eAWC\u003c/a\u003e, \u003ca href=\"https://www.esri.com/en-us/home\"\u003eESRI\u003c/a\u003e";
+
+var drought_mon = L.tileLayer.wms(
+    "http://ndmc-001.unl.edu:8080/cgi-bin/mapserv.exe?map=/ms4w/apps/usdm/service/usdm_current_wms.map",
+    {format:"image/png", service:"WMS", version:"1.3.0", layers:"usdm_current", opacity:"0.4", zIndex:"8",}
+);
+
+var g16_conus_ch13 = L.tileLayer.wms(
+    "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+    {"attribution": "", "format": "image/png", "layers": "conus_ch13", "opacity": 0.75, "styles": "", "transparent": true, "zIndex": "9", "version": "1.1.1"}
+);
+
+var g16_conus_ch2 = L.tileLayer.wms(
+    "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+    {"attribution": "", "format": "image/png", "layers": "conus_ch02", "opacity": 0.75, "styles": "", "transparent": true, "zIndex":"9", "version": "1.1.1"}
+);
+
+var g16_conus_ch7 = L.tileLayer.wms(
+    "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+    {"attribution": "", "format": "image/png", "layers": "conus_ch07", "opacity": 0.75, "styles": "", "transparent": true, "zIndex":"9", "version": "1.1.1"}
+);
+
+var iem_conus_base_refl = L.tileLayer.wms(
+    "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
+    {"attribution": "", "format": "image/png", "layers": "nexrad-n0q", "opacity": 0.9, "styles": "", "transparent": true, "zIndex":"10", "version": "1.1.1", "interactive": true}
+).addTo(current_map);
+
+
+var hazards = L.tileLayer.wms(
+    "https://idpgis.ncep.noaa.gov/arcgis/services/NWS_Forecasts_Guidance_Warnings/watch_warn_adv/MapServer/WMSServer",
+    {"format": "image/png", "layers": "0", "opacity": 0.9, "transparent": true, "zIndex":"13"}
+);
+
+///////////////  BASE LAYERS /////////////////
+var dark = L.tileLayer(
+    "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+    {"attribution": "", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+);
+
+var light = L.tileLayer(
+    "https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+    {"attribution": attrib, "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+);
+
+var osm = L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {"attribution": attrib, "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+).addTo(current_map);
+
+
+var world_imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: attrib
+});
+
+var esri_map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Specialty/DeLorme_World_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: attrib,
+  minZoom: 1,
+  maxZoom: 11
+});
+
+///////////////////////////////// BOUNDARY LAYERS //////////////////////////////////////////////
+/// State boundary
+var state_style = {
+    "color":"#000000",
+    "fillColor":"none",
+    "fillOpacity":0.0,
+    "opacity":0.9,
+    "weight": 0.9,
+}
+var state_boundary = new L.geoJson();
+state_boundary.addTo(current_map);
+$.ajax({
+dataType: "json",
+url: "{% static '/geo/boundaries/usstates.json' %}",
+success: function(data) {
+    $(data.features).each(function(key, data) {
+        state_boundary.addData(data);
+        state_boundary.setStyle(state_style);
+    });
+}
+}).error(function() {});
+
+
+// Surface obs layer
+var surface_stations = L.featureGroup();
+surface_stations.addTo(current_map);
+// wildfire layers
+var large_incidents = L.featureGroup();
+large_incidents.addTo(current_map);
+var recent_incidents = L.featureGroup();
+recent_incidents.addTo(current_map);
+// SPC Day 1 fire layer:
+var fire_day1 = new L.layerGroup();
+function plot_spc_fire(){
+  var spc_level = 0;
+  var category = "None";
+  var cat_color = "#ffffff";
+  var day1_fire_data = new L.Shapefile("{% static '/forecasts/outlooks/spc_fire/day1/firewx_day1' %}",{
+    onEachFeature:function(feature,layer){
+      let dn = feature.properties.DN;
+      if (dn > spc_level){
+        spc_level = dn;
+      }
+      let color = fireCatColor(dn);
+      layer.setStyle({"color":color, "opacity":"0.4"});
+      fire_day1.addLayer(layer);
+      if (spc_level == 5){
+        category = "Elevated";
+        cat_color = "#f56521";
+      } else if (spc_level == 8){
+        category = "Critical";
+        cat_color = "#df2121";
+      } else if (spc_level == 10){
+        category = "Extremely Critical";
+        cat_color = "#df21cb";
+      } else {
+        category = "None";
+        cat_color = "#ffffff";
+      }
+      var spc_header_text = document.getElementById("header_spc")
+      spc_header_text.innerHTML = `SPC Risk Cat: ${category}`;
+      spc_header_text.style.color = cat_color;
+    }
+  });
+
+} // end functions
+plot_spc_fire();
+fire_day1.addTo(current_map);
+/////////////// LAYER CONTROL ////////////////
+var layer_control = {
+    base_layers : {
+        "Dark" : dark,
+        "Light" : light,
+        "Open Street Map (default)" : osm,
+        "World Imagery": world_imagery,
+        "ESRI Map": esri_map,
+    },
+    overlays :  {
+      "Current NWS Hazards": hazards,
+      "Surface Observations": surface_stations,
+      "Current Incidents": large_incidents,
+      "24-hour Fire Reports": recent_incidents,
+      "SPC Day 1 Fire Outlook": fire_day1,
+      "U.S. Drought Monitor": drought_mon,
+      "IEM Composite Reflectivity":iem_conus_base_refl,
+      "GOES Ch. 2 (Visible)": g16_conus_ch2,
+      "GOES Ch. 7 (Shortwave IR)": g16_conus_ch7,
+      "GOES Ch. 13 (Longwave IR)": g16_conus_ch13,
+      // "State Borders":state_boundary,
+      // "County Borders": us_counties_tiger,
+      // "County Borders":district_boundary,
+    },
+};
+var LayerControl = L.control.layers(
+    layer_control.base_layers,
+    layer_control.overlays,
+    {"autoZIndex": true, "collapsed": true, "position": "topright"}
+).addTo(current_map);
+
+
+
+// ------------- Drought Map ------------------
+var smoothdark = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+});
+var drought_map = L.map("drought_map").setView([38.0, -102.0], 4);
+var osmAttribution ='Map data &copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors | Drought data: <a href="https://droughtmonitor.unl.edu/CurrentMap.aspx">U.S. Drought Monitor</a>';
+smoothdark.addTo(drought_map);
+var drought_mon2 = L.tileLayer.wms(
+    "http://ndmc-001.unl.edu:8080/cgi-bin/mapserv.exe?map=/ms4w/apps/usdm/service/usdm_current_wms.map",
+    {format:"image/png", service:"WMS", version:"1.3.0", layers:"usdm_current", opacity:"0.5", zIndex:"8",}
+);
+drought_mon2.addTo(drought_map);
+
+
+// ---------------- Surface obsevations routines ------------------------------
+function getBulkObs(){
+  // REQUEST SECTION
+  var stations = {{ site_list | safe }};
+  var request = new XMLHttpRequest();
+  request.overrideMimeType("application/xml");
+  request.open("GET","{% static '/csv/metars.cache.xml' %}", false);
+  //request.setRequestHeader("Content-Type","text/xml");
+  request.send(null);
+  var doc = request.responseXML;
+  var root = doc.childNodes[0];
+  var metars = root.children[6];
+  for (i=0;i<metars.children.length;i++){
+    var stid = metars.children[i].getElementsByTagName("station_id")[0].textContent;
+    if (stations.includes(stid)){
+      try {
+        var lat = parseFloat(metars.children[i].getElementsByTagName("latitude")[0].textContent);
+        var lon = parseFloat(metars.children[i].getElementsByTagName("longitude")[0].textContent);
+        var tc = parseFloat(metars.children[i].getElementsByTagName("temp_c")[0].textContent);
+        var tdc = parseFloat(metars.children[i].getElementsByTagName("dewpoint_c")[0].textContent);
+        var metar = metars.children[i].getElementsByTagName("raw_text")[0].textContent;
+        var wspd = parseFloat(metars.children[i].getElementsByTagName("wind_speed_kt")[0].textContent);
+        var wdir = parseFloat(metars.children[i].getElementsByTagName("wind_dir_degrees")[0].textContent);
+        var temp = C2F(tc);
+        var dewp = C2F(tdc);
+        var relh = RH(tc,tdc);
+
+        try{
+          var visb = parseFloat(metars.children[i].getElementsByTagName("visibility_statute_mi")[0].textContent);
+        } catch{
+          var visb = -999;
+        }
+
+        try{
+          var mslp = parseFloat(metars.children[i].getElementsByTagName("sea_level_pressure_mb")[0].textContent);
+        } catch{
+          var mslp = -999;
+        }
+
+        try{
+          var gust = parseFloat(metars.children[i].getElementsByTagName("wind_gust_kt")[0].textContent);
+        } catch{
+          var gust = 0.0;
+        }
+
+        try{
+          var wx = metars.children[i].getElementsByTagName("wx_string")[0].textContent;
+        } catch{
+          var wx = "None";
+        }
+
+        text = `Station: ${metars.children[i].getElementsByTagName("station_id")[0].textContent} <br>\
+                Time: ${metars.children[i].getElementsByTagName("observation_time")[0].textContent}<br>\
+                Weather: ${wx}<br>\
+                Temp: ${temp} F <br>\
+                Dewp: ${dewp} F<br>\
+                Rel. Humidity: ${relh}%<br>\
+                Wind Speed: ${wspd} knots <br>\
+                Wind Gust: ${gust} knots <br>\
+                Wind Dir: ${wdir} deg<br>\
+                Visibility: ${visb} mi.<br>\
+                MSLP: ${mslp} mb`;
+
+
+        if (relh < 40.0){
+          let relh_color = relhColor(relh);
+          let wind_color = "black";
+          createWindBarb(lat,lon,wspd,wdir,wind_color);
+          addSingleValue(lat,lon,relh,relh_color);
+          addMETARText(lat,lon,text);
+        }
+
+      }
+      catch {
+        console.log("Error parsing METAR data.");
+      } // end try/catch
+    } // end if
+  } // end for
+  // display the data
+
+} // end function
+
+function createWindBarb(latitude,longitude,wspd,dir,color){
+  if (wspd < 5.0){
+    var windbarb = new L.circleMarker([latitude,longitude], {radius:5, weight: 1.0, opacity: 1.0, color: color, fillColor: "none", fillOpacity: 0.0});
+  } else {
+    var icon = L.WindBarb.icon({lat: latitude, deg: dir, speed: wspd, pointRadius: 0, strokeWidth: 2, strokeLength: 18, barbSpaceing: 4, barbHeight: 10, fillColor: 'gray', barbColor: color});
+    var windbarb = L.marker([latitude,longitude], {icon: icon});
+  }
+  windbarb.addTo(surface_stations);
+}
+
+function addMETARText(latitude,longitude,text){
+  var textmarker = new L.marker([latitude, longitude], { opacity: 0.0 });
+  textmarker.bindTooltip(
+      `<div>
+           ${text}
+      </div>`,
+      {direction:'left', permanent: false, offset:[0,0]}
+  );
+  textmarker.addTo(surface_stations);
+}
+
+function addFireText(latitude,longitude,text,fire_layer){
+  var textmarker = new L.marker([latitude, longitude], { opacity: 0.0 });
+  textmarker.bindTooltip(
+      `<div>
+           ${text}
+      </div>`,
+      {direction:'left', permanent: false, offset:[0,0]}
+  );
+  textmarker.addTo(fire_layer);
+}
+
+function addSingleValue(lat,lon,value,value_color){
+  var singleMarker = L.marker([lat,lon],{
+    icon: L.divIcon({
+      className: 'text-label',
+      html: `<p style="color:${value_color}; margin-bottom:0;">${value}</p>`,
+      iconSize: [20,50]
+    })
+  });
+  singleMarker.addTo(surface_stations);
+}
+
+function addCircleMarker(lat,lon,circle_color){
+  var marker = new L.circleMarker([lat, lon], { radius: 7, color: "black", weight: 2, opacity: 1.0, fillColor: circle_color, fillOpacity: 0.75 }); //opacity may be set to zero
+  marker.addTo(surface_stations);
+}
+
+// initialize surface obs
+getBulkObs();
+// Start a timer to refresh the surface observations every X minutes
+var refreshRate = 10.0 // minutes
+setInterval(function(){
+  // clear the surface observations layer
+  surface_stations.clearLayers();
+  // get new obs
+  getBulkObs();
+}, (refreshRate*60.0*1000.0));
+
+// ---------------- Wildfire Information routines ------------------------------
+// Plot the current large incidient/wildfire points with metadata from IRWIN
+function plot_fires(service_url, fire_color, fire_layer){
+  // This functions takes in 3 parameters and plots markers on the leaflet map.
+  // service_url - the URL to the geojson source
+  // fire_color - what color to create the marker
+  // fire_layer - the specific leaflet layer you want to add the markers to.
+  var request = new XMLHttpRequest();
+  request.open("GET",service_url, false);
+  request.send(null);
+  data = JSON.parse(request.response);
+  data.features.forEach(function(fire){
+    var lat = fire.geometry.coordinates[1];
+    var lon = fire.geometry.coordinates[0];
+    var discover_date_epoch = fire.properties.FireDiscoveryDateTime;
+    var discover_date_human = epoch2human(fire.properties.FireDiscoveryDateTime);
+    var total_acres = fire.properties.CalculatedAcres;
+    var daily_acres = fire.properties.DailyAcres;
+    var incident_name = fire.properties.IncidentName;
+    var fire_cause = fire.properties.FireCause;
+    var incident_type = fire.properties.IncidentTypeCategory;
+    var fire_behavior = fire.properties.FireBehaviorGeneral;
+    var fire_complexity = fire.properties.FireMgmtComplexity;
+    var percent_contained = fire.properties.PercentContained;
+    var estimated_cost = fire.properties.EstimatedCostToDate;
+    var incident_personnel = fire.properties.TotalIncidentPersonnel;
+
+    // Do a series of simple checks to make the missing information more readable in the map.
+    if (daily_acres == null){
+      daily_acres = "--";
+    }
+    if (incident_type == null || incident_type == undefined){
+      incident_type = "--";
+    }
+    if (fire_complexity == null || fire_complexity == undefined){
+      fire_complexity = "--";
+    }
+    if (fire_behavior == null || fire_behavior == undefined){
+      fire_behavior = "--";
+    }
+    if (estimated_cost == null || estimated_cost == undefined){
+      estimated_cost = "--";
+    }
+    if (percent_contained == null || percent_contained == undefined){
+      percent_contained = "--";
+    }
+    if (incident_personnel == null || incident_personnel == undefined){
+      incident_personnel = "--";
+    }
+    if (fire_cause == null || fire_cause == undefined){
+      fire_cause = "--";
+    }
+    // Will have to handle this one separately so that the epoch2human function doesn't return
+    // and invalid date/time.
+    var incident_update_time = fire.properties.ICS209ReportDateTime;
+    if (incident_update_time == null || incident_update_time == undefined){
+      incident_update_time = "--";
+    } else {
+      incident_update_time = epoch2human(incident_update_time);
+    }
+
+    text = `Incident Name: ${incident_name} <br>\
+            Incident Type: ${incident_type}<br>\
+            Last Updated: ${incident_update_time}<br>\
+            Discovery Date: ${discover_date_human}<br>\
+            Acres Burned: ${daily_acres}<br>\
+            Percent Contained: ${percent_contained}%<br>\
+            Fire Cause: ${fire_cause}<br>\
+            Fire Behaviour: ${fire_behavior}<br>\
+            Fire Complexity: ${fire_complexity}<br>\
+            Estimated Cost: $ ${estimated_cost}<br>\
+            Incident Personnel: ${incident_personnel}`;
+
+    addFireText(lat,lon,text,fire_layer);
+    var marker_size = fire_marker_size(daily_acres);
+    var marker = new L.circleMarker([lat, lon], { radius: marker_size, color: "black", weight: 2, opacity: 1.0, fillColor: fire_color, fillOpacity: 0.75 }); //opacity may be set to zero
+    marker.addTo(fire_layer);
+  });
+}
+
+var recent_incidents_url = "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/last24h_WildlandFire_Locations/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson";
+var recent_incident_color = "#8b1d1d";
+var current_large_incidents_url = "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Current_WildlandFire_Locations/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson";
+var current_incident_color = "orange";
+
+plot_fires(current_large_incidents_url,current_incident_color,large_incidents);
+plot_fires(recent_incidents_url,recent_incident_color,recent_incidents);
+
+
+/// Plot the current Red Flag warnings and Fire weather Watches
+// function plot_fire_headlines(){
+//   var alert_url = "https://api.weather.gov/alerts/active";
+//   var request = new XMLHttpRequest();
+//   request.open("GET",alert_url, false);
+//   request.send(null);
+//   data = JSON.parse(request.response);
+//   alerts = data.features;
+//   alerts.forEach(function(alert){
+//     if (alert.properties.event == "Red Flag Warning" || alert.properties.event == "Fire Weather Watch"){
+//       console.log(alert);
+//     }
+//   });
+// }
+// plot_fire_headlines();
+
+// Update the header statistics
+update_header_stats();
+</script>
+
+
+{% endblock %}
+</body>
+
+</html>

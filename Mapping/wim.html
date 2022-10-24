@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Winter Impacts Map</title>
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+    <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+    {% load static %}
+    <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+    <script type="text/javascript" src="{% static 'leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+    <script type="text/javascript" src="{% static 'shapefile-js/dist/shp.js' %}"></script>
+    <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+    <script type="text/javascript" src="{% static 'wim_functions.js' %}"></script>
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <meta name="viewport" content="width=device-width,
+        initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+
+        body {
+          overflow: hidden;
+        }
+
+        #container {
+          position: absolute;
+          height: 100.0%;
+          width: 100.0%;
+          top: 0px;
+          z-index: 0;
+        }
+        #map_holder {
+            position: absolute;
+            width: 67.0vw;
+            height: 100.0%;
+            left: 0.0%;
+            top: 0.0vh;
+        }
+        #layerOps {
+          position: absolute;
+          width: 10.0vw;
+          height: 48.0vh;
+          left: 0.0%;
+          top: 4.0vh;
+          background-color:red;
+        }
+
+
+        .station_ob {
+          width: 100%;
+          height: 120px;
+          border-color: black;
+          border-width: 2px;
+          border-style: solid;
+          font-size:12px;
+          padding-left: 5px;
+          color: white;
+          float:left;
+          cursor: pointer;
+        }
+        /* cool green color: rgba(50,215,0,1.0); */
+
+        .wind_ob_icon {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+
+        .spot_ob {
+          width: 85%;
+          height: 110px;
+          border-color: black;
+          border-width: 2px;
+          border-style: solid;
+          font-size:12px;
+          padding-left: 5px;
+          color: white;
+          float:left;
+          cursor: pointer;
+          overflow: scroll;
+        }
+
+        .spot_ob_icon {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+        .spoticon_holder {
+          width: 15%;
+          height: 110px;
+          border-top: 2px solid black;
+          border-bottom: 2px solid black;
+          float: left;
+        }
+
+
+        #impact_list {
+          z-index: 10;
+          position: absolute;
+          width: 33vw;
+          height: 90vh;
+          left: 67.0vw;
+          top: 100px;
+          background-color:rgba(80,78,78,0.9);
+          /* text-align: center; */
+          border-color: black;
+          border-width: 2px;
+          border-style: solid;
+          min-width: 500px;
+          overflow: scroll;
+        }
+
+        #top_menu{
+          position: absolute;
+          width: 33vw;
+          height:10vh;
+          min-height: 100px;
+          left: 67vw;
+          background-color: rgba(80,78,78,1.0);
+          font-size:13px;
+          font-weight:bold;
+          color: white;
+          border-color: black;
+          border-width: 2px;
+          border-style: solid;
+          min-width: 500px;
+        }
+
+        #time_info{
+          position: absolute;
+          left: 0%;
+          height: 100%;
+          width: 50%;
+        }
+
+        #opt_menu{
+          position: absolute;
+          left: 50%;
+          height: 100%;
+          width: 50%;
+        }
+
+        #current_time {
+          padding-left: 2%;
+          padding-top: 10px;
+          display: inline-block;
+        }
+
+        #refresh_time {
+          padding-left: 2%;
+          display: inline-block;
+        }
+
+
+        .text-label {
+            position: absolute;
+            width:0px;
+            height:0px;
+            background-color: rgba(0,0,0,0.0);
+            border-color: rgba(0,0,0,0.0);
+            border: 0px;
+            font-size:12px;
+            font-weight: bold;
+            text-shadow: 0 0 4px Black;
+            box-shadow: none;
+        }
+        .leaflet-tooltip-top:before,
+        .leaflet-tooltip-bottom:before,
+        .leaflet-tooltip-left:before,
+        .leaflet-tooltip-right:before {
+          background-color: rgba(0,0,0,0.0);
+          border:none;
+          box-shadow:none;
+        }
+    </style>
+
+</head>
+<body>
+{% block content %}
+
+  <div id="container">
+    <div class="folium-map" id="map_holder"></div>
+  </div>
+
+
+  <div id="top_menu">
+    <div id="time_info">
+      <p id="current_time">Current Time: --/--/---- --:--:--Z</p>
+      <p id="refresh_time">Next Update: --:--</p>
+    </div>
+    <div id="opt_menu">
+      <input type="checkbox" id="audiocheckbox" name="audiocheckbox" value="Enabled" onchange="toggleAudio()"> Enable Audio Alerts<br>
+      <input type="checkbox" id="localcheckbox" name="localcheckbox" value="Enabled" onchange="toggleLocal()"> Local Mode<br>
+      <input type="checkbox" id="radarcheckbox" name="radarcheckbox" value="Enabled" onchange="toggleRadar()"> Display Radar<br>
+      <input type="checkbox" id="satcheckbox" name="satcheckbox" value="Enabled" onchange="toggleSat()"> Display Satellite<br>
+    </div>
+  </div>
+
+  <div id="impact_list">
+  </div>
+
+  <audio id="alertAudio">
+    <source src="{% static '/audio/definite.mp3' %}" type="audio/mpeg" />
+  </audio>
+
+</body>
+<script>
+
+///////////////////////////////////////////////////////////////////////////////
+  var times = createTimeArray(1); // create list of times
+  var audio = false; // initilize the use of audio alerts
+  var localMode = false; // initizlie local mode
+///////////////////////////////// MOUSE LAT/LON FUNCTIONS //////////////////////////////////////////////
+  L.CursorHandler = L.Handler.extend({
+      addHooks: function () {
+          this._map.on('mousemove', this._update, this);
+      },
+      _update: function (e) {
+        document.getElementById('label').innerHTML = e.latlng.lat.toFixed(4).toString()+", "+e.latlng.lng.toFixed(4).toString();
+      }
+  });
+  L.Map.addInitHook('addHandler', 'cursor', L.CursorHandler);
+
+/////////////////////////////////////// BOUNDARY CONTROL //////////////////////////////////////////////
+  var county_style = {
+      "color":"#F7F3F3",
+      "fillColor":"none",
+      "fillOpacity":0.0,
+      "opacity":0.4,
+      "weight": 0.5,
+  }
+  var state_style = {
+      "color":"#F7F3F3",
+      "fillColor":"none",
+      "fillOpacity":0.0,
+      "opacity":0.9,
+      "weight": 0.9,
+  }
+
+
+  var district_boundary = new L.geoJson();
+  $.ajax({
+  dataType: "json",
+  url: "{% static '/geo/boundaries/uscounties.json' %}",
+  success: function(data) {
+      $(data.features).each(function(key, data) {
+          district_boundary.addData(data).setStyle(county_style);
+          //district_boundary.setStyle(county_style);
+      });
+  }
+  }).error(function() {});
+
+  var state_boundary = new L.geoJson();
+  $.ajax({
+  dataType: "json",
+  url: "{% static '/geo/boundaries/usstates.json' %}",
+  success: function(data) {
+      $(data.features).each(function(key, data) {
+          state_boundary.addData(data);
+          state_boundary.setStyle(state_style);
+      });
+  }
+  }).error(function() {});
+///////////////////////////////////////// MAP DEFINITION //////////////////////////////////////////////
+  var map = L.map(
+      "map_holder",
+      {
+          center: [40.0, -100.0],
+          crs: L.CRS.EPSG3857,
+          zoom: 5,
+          zoomControl: true,
+          cursor: true,
+          preferCanvas: true,
+          renderer: L.canvas(),
+          keyboard: false,
+          updateWhenIdle: true,
+          updateWhenZooming: false,
+      }
+  );
+  var obsCanvas = L.canvas(); // for surface observations
+
+  /////////////// BASE LAYERS /////////////////
+  var dark = L.tileLayer(
+      "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+      {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  ).addTo(map);
+
+  var light = L.tileLayer(
+      "https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+      {"attribution": "Map tiles by \u003ca href=\"http://stamen.com\"\u003eStamen Design\u003c/a\u003e, under \u003ca href=\"http://creativecommons.org/licenses/by/3.0\"\u003eCC BY 3.0\u003c/a\u003e. Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var osm = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var esri_phyiscal = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
+  });
+
+  var world_imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  });
+
+  var esri_map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Specialty/DeLorme_World_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Copyright: &copy;2012 DeLorme',
+  	minZoom: 1,
+  	maxZoom: 11
+  });
+
+  ////// Additional layers //////
+  var g16_conus_ch13 = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+      {"attribution": "", "format": "image/png", "layers": "conus_ch13", "opacity": 0.65, "styles": "", "time": radarTime(), "transparent": true, "zIndex": "10", "version": "1.1.1"}
+  );
+
+  var g16_conus_ch2 = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi?",
+      {"attribution": "", "format": "image/png", "layers": "conus_ch02", "opacity": 0.75, "styles": "", "time": radarTime(), "transparent": true, "zIndex":"10", "version": "1.1.1"}
+  );
+
+  var iem_conus_base_refl = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
+      {"attribution": "", "format": "image/png", "layers": "nexrad-n0q", "opacity": 0.55, "styles": "", "transparent": true, "zIndex":"10"}
+  );
+
+
+  /////////////// LAYER CONTROL ////////////////
+  var layer_control_1 = {
+      base_layers : {
+          "Dark (default)" : dark,
+          "Light" : light,
+          "Open Street Map" : osm,
+          "World Imagery": world_imagery,
+          "ESRI Map": esri_map,
+          "ESRI Physical": esri_phyiscal,
+      }, overlays : {
+        "States": state_boundary,
+        "Counties": district_boundary,
+      }
+  };
+  L.control.layers(layer_control_1.base_layers,
+                  layer_control_1.overlays,
+                  {"autoZIndex": true, "collapsed": true, "position": "topright"}
+                  ).addTo(map);
+
+
+  // initialize the state boundaries by default
+  state_boundary.addTo(map);
+  //district_boundary.addTo(map);
+  // initialize the mping markers
+  var mping_markers = new L.featureGroup();
+  mping_markers.addTo(map);
+///////////////////////////////// Turn on/off map layers //////////////////////////////////////////////
+  function toggleRadar(){
+    if (document.getElementById("radarcheckbox").checked){
+      iem_conus_base_refl.addTo(map);
+    } else {
+      iem_conus_base_refl.remove();
+    }
+  }
+  function toggleSat(){
+    if (document.getElementById("satcheckbox").checked){
+      g16_conus_ch2.addTo(map);
+      g16_conus_ch13.addTo(map);
+      g16_conus_ch13.setOpacity(0.20);
+    } else {
+      g16_conus_ch2.remove();
+      g16_conus_ch13.remove();
+    }
+  }
+///////////////////////////////// Toggle Local Mode //////////////////////////////////////////////
+  function toggleLocal(){
+    if (document.getElementById("localcheckbox").checked){
+      globalThis.localMode = true;
+      surface_stations.eachLayer(function(layer){
+        map.removeLayer(layer);
+      });
+      removeListDivs();
+      getBulkObs();
+      surface_stations.addTo(map);
+    }
+    else {
+      globalThis.localMode = false;
+      // add back obs and display
+      getBulkObs();
+      surface_stations.addTo(map);
+    }
+  }
+///////////////////////////////// Toggle Audio Alerts //////////////////////////////////////////////
+  function toggleAudio(){
+    if (document.getElementById("audiocheckbox").checked){
+      globalThis.audio = true;
+    }
+    else {
+      globalThis.audio = false;
+    }
+  }
+///////////////////////////////// audio alerts //////////////////////////////////////////////
+  function sendAudioAlert(){
+    if (audio){
+      console.log("Sending Audio Alert.");
+      var sound = document.getElementById("alertAudio");
+      sound.play();
+    }
+  }
+///////////////////////////////// SURFACE OBS //////////////////////////////////////////////
+  var surface_stations = new L.featureGroup();
+  var sfc_stns_obs = [];
+  var temp_threshold = 35; // deg F
+  var stations = {{ site_list | safe }}; // this is so we don't have to deal with stations outsite of the CONUS.
+////////////////////////////////////////////////////////////////////////////////////////////
+  function getBulkObs(){
+    var soundAlert = false;
+    globalThis.sfc_stns_obs = [];
+    var request = new XMLHttpRequest();
+    request.overrideMimeType("application/xml");
+    request.open("GET","{% static 'metars.cache.xml' %}", false);
+    //request.setRequestHeader("Content-Type","text/xml");
+    request.send(null);
+    var doc = request.responseXML;
+    var root = doc.childNodes[0];
+    var metars = root.children[6];
+    for (i=0;i<metars.children.length;i++){
+      let addToList = false;
+      let isVisible = false;
+      let stid = metars.children[i].getElementsByTagName("station_id")[0].textContent;
+      if (stations.includes(stid)){
+        try {
+
+          // determine if local mode is on, if so, see if the ob is visible
+          if (localMode) {
+            let lat = parseFloat(metars.children[i].getElementsByTagName("latitude")[0].textContent);
+            let lon = parseFloat(metars.children[i].getElementsByTagName("longitude")[0].textContent);
+            let point = L.latLng(lat,lon);
+            isVisible = map.getBounds().contains(point);
+          } else{ // if local mode is not on, show all obs
+            isVisible = true;
+          }
+
+          if (isVisible){
+
+            let tc = parseFloat(metars.children[i].getElementsByTagName("temp_c")[0].textContent);
+            let temp = C2F(tc);
+            let gust = 0.0; // initilize gust
+            let wx = ""; // initilize weather
+            let visb = 10.0 // initilize vis.
+            if (temp < temp_threshold){
+
+              try {
+                wx = metars.children[i].getElementsByTagName("wx_string")[0].textContent;
+              } catch {
+                //console.log("No wx found.");
+              }
+
+              try{
+                gust = parseFloat(metars.children[i].getElementsByTagName("wind_gust_kt")[0].textContent);
+              } catch{
+                //console.log("No gust found.");
+              }
+
+              try {
+                visb = parseFloat(metars.children[i].getElementsByTagName("visibility_statute_mi")[0].textContent);
+              } catch {
+                //console.log("No vis found.");
+              }
+
+              let obs_time = metars.children[i].getElementsByTagName("observation_time")[0].textContent;
+              let wspd = parseFloat(metars.children[i].getElementsByTagName("wind_speed_kt")[0].textContent);
+              let wdir = parseFloat(metars.children[i].getElementsByTagName("wind_dir_degrees")[0].textContent);
+              let text = metars.children[i].getElementsByTagName("raw_text")[0].textContent;
+              let lat = parseFloat(metars.children[i].getElementsByTagName("latitude")[0].textContent);
+              let lon = parseFloat(metars.children[i].getElementsByTagName("longitude")[0].textContent);
+              let elevation = parseFloat(metars.children[i].getElementsByTagName("elevation_m")[0].textContent);
+
+              // See if we meet blizzard/near-blizzard conditions. If so, add wind barb and circle
+              if (checkForBlizzard(temp,visb,wspd,gust)){
+                blizzColor = "#FF9CF6";
+                txt = wx + " " + temp.toString();
+                addSingleValue(lat,lon,txt,tempcolor,text);
+                createWindBarb(lat,lon,wspd,wdir);
+                addCircleMarker(lat,lon,blizzColor);
+                rptType = "BLIZZARD";
+                rptColor = blizzColor;
+                soundAlert = true;
+                addToList = true;
+              } // check for near-blizzard if no blizzard
+              else if (checkForNearBlizzard(temp,visb,wspd,gust)){
+                nearblizzColor = "#29CEFF";
+                txt = wx + " " + temp.toString();
+                addSingleValue(lat,lon,txt,tempcolor,text);
+                createWindBarb(lat,lon,wspd,wdir);
+                addCircleMarker(lat,lon,nearblizzColor);
+                rptType = "NEAR BLIZZARD";
+                rptColor = nearblizzColor;
+                soundAlert = true;
+                addToList = true;
+              }
+              else if (checkForBlowingSnow(temp,visb,wspd,gust,wx)){
+                color = "#B0F0FF";
+                txt = wx + " " + temp.toString();
+                addSingleValue(lat,lon,txt,tempcolor,text);
+                createWindBarb(lat,lon,wspd,wdir);
+                addCircleMarker(lat,lon,color);
+                rptType = "BLOWING SNOW";
+                rptColor = color;
+                addToList = true;
+              }
+              // See if it's snowing, raining, drizzling, etc...
+              else if (wx.includes("SN") || wx.includes("RA") || wx.includes("BR") || wx.includes("DZ") || wx.includes("FG")){
+                // set color based on temp
+                tempcolor = tempColor(temp);
+                txt = wx + " " + temp.toString();
+                rptType = wx2text(wx);
+                addSingleValue(lat,lon,txt,tempcolor,text);
+                createWindBarb(lat,lon,wspd,wdir);
+                if (temp <= 32.0){
+                  addToList = true;
+                  rptColor = getReportColor(rptType);
+                }
+                // do a final check for freezing rain and heavy snow, if so, set audio alert to true
+                if (rptType.includes("FREEZING RAIN") || rptType.includes("HEAVY SNOW")){
+                  soundAlert = true;
+                } // end if freezing rain
+              } else { // otherwise, just add the cold temp to the map
+                // tempcolor = tempColor(temp);
+                // addSingleValue(lat,lon,temp.toString(),tempcolor,text);
+              } // end if
+              if (addToList){ // add report to the list
+                addItemToList(stid,lat,lon,elevation,text,rptType,obs_time,rptColor);
+              }
+            } // end if temp threshold
+
+          } // end if isVisible
+
+        } catch {
+          //console.log("Error parsing METAR data.");
+        } // end try/catch
+      } // end if
+    } // end for
+    // if soundAlert is true, send an audio alert
+    if (soundAlert){
+      sendAudioAlert();
+    } // end if soundAlert
+  } // end function
+////////////////////////////////////////////////////////////////////////////////////////////
+  function createWindBarb(latitude,longitude,wspd,dir){
+    if (wspd < 5.0){
+      var calmwind = new L.circleMarker([latitude, longitude], {radius: 5, weight: 0.75, opacity: 1.0, color: "white", fillColor: "none", fillOpacity: 0.0, renderer: obsCanvas});
+      calmwind.addTo(surface_stations);
+    } else {
+      var icon = L.WindBarb.icon({lat: latitude, deg: dir, speed: wspd, pointRadius: 0, strokeWidth: 2, strokeLength: 18, barbSpaceing: 4, barbHeight: 10, fillColor: 'gray'});
+      var windbarb = L.marker([latitude,longitude], {icon: icon, renderer: obsCanvas});
+      windbarb.addTo(surface_stations);
+    }
+  }
+////////////////////////////////////////////////////////////////////////////////////////////
+  function addCircleMarker(latitude,longitude,color){
+    var textmarker = new L.circleMarker([latitude, longitude], {radius: 5, weight: 0.75, opacity: 0.8, color: "black", fillColor: color, fillOpacity: 1.0, renderer: obsCanvas});
+    textmarker.addTo(surface_stations);
+  }
+////////////////////////////////////////////////////////////////////////////////////////////
+  function addSingleValue(lat,lon,value,color,text){
+    if (value.length > 10){
+      width = 85;
+    } else if (value.length > 7) {
+      width = 75;
+    } else if (value.length > 2) {
+      width = 40;
+    } else {
+      width = 18;
+    }
+    var singleMarker = L.marker([lat,lon],{
+      icon: L.divIcon({
+        className: 'text-label',
+        html: `<p style="color:${color};">${value}</p>`,
+        iconSize: [width,18],
+        iconAnchor: [30,25]
+      })
+    });
+    singleMarker.addTo(surface_stations);
+    // Create a metar text pop up
+    var textholder = new L.marker([lat, lon], { opacity: 0.0, preferCanvas: true });
+    textholder.bindTooltip(
+        `<div>
+             ${text}
+        </div>`,
+        {direction:'center', permanent: false, offset:[0,0]}
+    );
+    textholder.addTo(surface_stations);
+  }
+////////////////////////////////////////////////////////////////////////////////////////////
+  function addItemToList(stid,lat,lon,elevation,text,rptType,time,color=""){
+    elevation = Math.round(elevation * 3.28084) // meters to feet conversion
+    // add the data to the list on the side
+    if (color == ""){
+      color = "#FFFFFF";
+    }
+    formatedTime = time.substring(11,13)+":"+time.substring(14,16)+":00 UTC "+time.substring(5,7)+"/"+time.substring(8,10)+"/"+time.substring(0,4);
+    var listing_info = `<p>${stid} reports <span style="color:${color}; font-weight: bold">${rptType}</span></br>Elevation: ${elevation} ft MSL</br>` + `Time: ${formatedTime}</br>` +  `METAR: ${text}</p>`;
+    var ob_listing = document.createElement('div');
+    ob_listing.className = "station_ob";
+    ob_listing.id = "station_obN"+i.toString();
+    ob_listing.innerHTML = listing_info;
+    document.getElementById("impact_list").appendChild(ob_listing);
+    document.getElementById("station_obN"+i.toString()).addEventListener('click',function(){
+      var center = L.latLng(lat, lon);
+      var zoom = 9;
+      map.setView(center,zoom);
+    });
+  }
+/////////////////////////////////// Functions to help with memory usage/////////////////////////////
+  map.on('dragend', function(){
+    if (localMode){
+      // update the displayed Info
+      // remove old obs
+      surface_stations.eachLayer(function(layer){
+        map.removeLayer(layer);
+      });
+      removeListDivs();
+      // add back obs and display
+      getBulkObs();
+      surface_stations.addTo(map);
+    }
+  })
+////////////////////////////////////////////////////////////////////////////////////////////
+  map.on('zoomend', function(){
+    if (localMode){
+      // update the displayed Info
+      // remove old obs
+      surface_stations.eachLayer(function(layer){
+        map.removeLayer(layer);
+      });
+      removeListDivs();
+      // add back obs and display
+      getBulkObs();
+      surface_stations.addTo(map);
+    }
+  })
+////////////////////////////////////////////////////////////////////////////////////////////
+  // get the initial obs
+  getBulkObs();
+  surface_stations.addTo(map);
+////////////////////////////////// MPING icons /////////////////////////////////////////////////////
+  function get_mping(){
+    $.ajax({
+    dataType: "json",
+    url: "{% static '/mping_winter.json' %}",
+    success: function(data) {
+        $(data.results).each(function(key, data) {
+            add_mping(data);
+        });
+    }
+    }).error(function() {
+      console.log("Loading mping data failed.");
+    });
+  }
+
+  function add_mping(data){
+    let latitude = data.geom.coordinates[1];
+    let longitude = data.geom.coordinates[0];
+    if (data.description.indexOf("Snow") >= 0) {
+      color = "#FFFFFF";
+    }
+    else if (data.description.indexOf("Ice") >= 0) {
+      color = "#FC57F6";
+    }
+    else if (data.description.indexOf("Freezing") >= 0) {
+      color = "#FC57F6";
+    } else {
+      color = "#57BAFC";
+    }
+
+    var mpingmarker = new L.circleMarker([latitude, longitude], {radius: 5, weight: 0.75, opacity: 0.75, color: "black", fillColor: color, fillOpacity: 0.75,});
+    mpingmarker.addTo(mping_markers);
+    // have to create a different marker because circleMarker is too buggy
+    let text = data.description + " @ " + data.obtime.substring(0,10) +" " + data.obtime.substring(11,16)+" UTC"
+    var mpingText = new L.marker([latitude, longitude], { opacity: 0.0 });
+    mpingText.bindTooltip(
+        `<div>
+             ${text}
+        </div>`,
+        {direction:'center', permanent: false, offset:[0,0]}
+    );
+    mpingText.addTo(mping_markers);
+
+  } // end function add_mping
+  get_mping();
+///////////////////////////////// Obs Update Function //////////////////////////////////////////////
+  function updateObs(){
+    // updating the observations
+    console.log("Updating Obs...");
+    // clear the old:
+    console.log("Removing List items...");
+    removeListDivs();
+
+    console.log("Removing map items...");
+    // remove surface stations
+    surface_stations.eachLayer(function(layer){
+      map.removeLayer(layer);
+    });
+
+    // remove mping mping markers
+    mping_markers.eachLayer(function(layer){
+      map.removeLayer(layer);
+    });
+
+    // clear the layers
+    surface_stations.clearLayers();
+    mping_markers.clearLayers();
+
+    // get the new:
+    console.log("Adding surface obs...");
+    getBulkObs();
+    surface_stations.addTo(map);
+    get_mping();
+
+    // update the time on the display:
+    console.log("Updating times...");
+    globalThis.times = createTimeArray(1); // create list of times
+    changeSFCtext(times);
+    console.log("Update complete!");
+  }// end function
+///////////////////////////////// List control //////////////////////////////////////////////
+  function removeListDivs(){
+    var all = $("#impact_list > div").map(function(){
+      this.parentNode.removeChild(this);
+    }).get();
+  }
+///////////////////////////////// MAP TEXT CONTROL //////////////////////////////////////////////
+  // Lat lon text
+  L.Control.textbox = L.Control.extend({
+    onAdd: function(map) {
+      var text = L.DomUtil.create('div');
+      text.id = "LatLonLabel";
+      text.innerHTML = "<p id='label' style='color: white; text-shadow: 1px 1px black; font-size:15px;'></p>";
+      return text;
+    },
+    onRemove: function(map) {
+      // nothing?
+    }
+  });
+  L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+  L.control.textbox({position: 'bottomright'}).addTo(map);
+
+  // time stamp text
+  L.Control.textbox = L.Control.extend({
+    onAdd: function(map) {
+      var text = L.DomUtil.create('div');
+      text.id = "info text";
+      sfctext = "<a id='sfctext' style='color: white; text-shadow: 1px 1px black; font-size:15px;'>Surface Obs: Off</a><br/>";
+      basetime = "<p id='timestamp' style='color: white; text-shadow: 1px 1px black; font-size:15px;'>Current Time:</p>";
+      text.innerHTML = sfctext+basetime;
+      return text;
+    },
+    onRemove: function(map) {
+      // nothing?
+    }
+  });
+  L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+  L.control.textbox({position: 'bottomleft'}).addTo(map);
+
+/////////////////////////////////////////////////////////////////////////////////
+  function changeSFCtext(times){
+    formatedTime = times[0].substring(4,6)+"/"+times[0].substring(6,8)+"/"+times[0].substring(0,4)+" "+times[0].substring(8,10)+":"+times[0].substring(10,12)+":00Z";
+    document.getElementById('sfctext').innerHTML = "Updated at: "+formatedTime;
+  }
+/////////////////////////////////////////////////////////////////////////////////
+  // set the intitial time displays
+  changeSFCtext(times);
+/////////////////////////////////////////////////////////////////////////////////
+function currentTime() {
+  time = new Date();
+  if (time.getSeconds() < 10) {
+    seconds = "0"+time.getSeconds().toString();
+  } else {
+    seconds = time.getSeconds().toString();
+  }
+  result = formatTime(time);
+  result = result.substring(0,(result.length-3))+seconds+"Z";
+  validTime = radarTime();
+
+  obj = document.getElementById('current_time');
+  obj.innerHTML = "Current Time: "+result;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+function startTimer(duration, display) {
+    var timer = duration, minutes, seconds;
+    setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        display.textContent = "Next Update: "+minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            //changeWxGroup(); // refresh the data
+            timer = duration;
+            updateObs();
+        }
+    }, 1000);
+} // end function startTimer
+
+var fiveMinutes = 300;
+var display = document.querySelector('#refresh_time');
+startTimer(fiveMinutes, display);
+// radar update
+setInterval(function(){iem_conus_base_refl.setParams({"time":radarTime()},false)}, (300*1000));
+// sat updates
+setInterval(function(){g16_conus_ch2.setParams({"time":radarTime()},false)}, (300*1000));
+setInterval(function(){g16_conus_ch13.setParams({"time":radarTime()},false)}, (300*1000));
+setInterval(function(){
+  clockAndLabel();
+  currentTime();
+},1000);
+///////////////////////////////////////////////////////////////////////////////
+
+</script>
+
+{% endblock %}

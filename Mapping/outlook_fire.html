@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Practice Fire Outlook</title>
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+    <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+    {% load static %}
+    <script type="text/javascript" src="{% static '/javascript/leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+    <script type="text/javascript" src="{% static '/javascript/dom-to-image-master/src/dom-to-image.js' %}"></script>
+    <script type="text/javascript" src="{% static '/javascript/shapefile-js/dist/shp.js' %}"></script>
+    <script type="text/javascript" src="{% static '/javascript/mapping_functions.js' %}"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- links for Leaflet draw -->
+    <link rel="stylesheet" href="{% static '/javascript/Leaflet.Draw/src/leaflet.draw.css' %}"/>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/Leaflet.draw.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/Leaflet.Draw.Event.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/Toolbar.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/Tooltip.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/GeometryUtil.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/LatLngUtil.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/LineUtil.Intersect.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/Polygon.Intersect.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/Polyline.Intersect.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/ext/TouchEvents.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/DrawToolbar.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Feature.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.SimpleShape.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Polyline.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Marker.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Circle.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.CircleMarker.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Polygon.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/draw/handler/Draw.Rectangle.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/EditToolbar.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/EditToolbar.Edit.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/EditToolbar.Delete.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/Control.Draw.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.Poly.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.SimpleShape.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.Rectangle.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.Marker.js' %}"></script>
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.CircleMarker.js' %}"></script>
+
+    <script src="{% static '/javascript/Leaflet.Draw/src/edit/handler/Edit.Circle.js' %}"></script>
+
+
+
+    <meta name="viewport" content="width=device-width,
+        initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+
+        #container {
+          position: absolute;
+          height: 100.0%;
+          width: 100.0%;
+          top: 0px;
+          z-index: 0;
+        }
+        #map_holder {
+            position: absolute;
+            width: 100.0%;
+            height: 100.0%;
+            left: 0.0%;
+            top: 0.0vh;
+        }
+
+        #CategorySelection{
+          position: relative;
+          z-index: 10;
+          left:50px;
+          top:12px;
+          height:50px;
+          width: 150px;
+          color: white;
+          background-color: rgba(80,78,78,0.9);
+        }
+
+
+        #save_div{
+          position: absolute;
+          z-index: 10;
+          left:310px;
+          top:12px;
+          height:50px;
+          width: 100px;
+          text-align: center;
+          color: white;
+          background-color: rgba(80,78,78,0.9);
+          border-style: solid;
+          border-width: 1px;
+          border-color: white;
+        }
+
+        #load_button{
+          position: absolute;
+          z-index: 10;
+          left: 205px;
+          top:12px;
+          height:50px;
+          width: 100px;
+          color: white;
+          background-color: rgba(80,78,78,0.9);
+        }
+
+        #save_button{
+          color: white;
+          text-align: center;
+          display: inline-block;
+          padding-top: 15%;
+        }
+
+        #image_button{
+          position: absolute;
+          z-index: 10;
+          left:415px;
+          top:12px;
+          height:50px;
+          width: 100px;
+          color: white;
+          background-color: rgba(80,78,78,0.9);
+        }
+
+    </style>
+
+</head>
+<body>
+{% block content %}
+  <form>
+    <select id="CategorySelection" onChange="setCategory(value)">
+      <option value="elevated" selected>Elevated</option>
+      <option value="critical">Critical</option>
+      <option value="extreme">Extremely Critical</option>
+    </select>
+  </form>
+
+  <div id="save_div">
+    <a href='#' id="save_button">Export geojson</a>
+  </div>
+
+  <input  id="loadfile" type="file" onchange="loadOutlook()" hidden/>
+  <button id="load_button">Load geojson</button>
+
+  <button id="image_button" onClick="exportImage()">Export JPEG</button>
+
+  <div id="container">
+    <div class="folium-map" id="map_holder"></div>
+  </div>
+
+  <div id="time_info">
+    <p id="current_time">Current Time: </p>
+  </div>
+
+</body>
+<script>
+///////////////////////////////////// DEFAULT CATEGORY COLOR VALUE ///////////////////////////////////////////
+  var category = "elevated";
+  var category_color = "#ff8b00";
+///////////////////////////////////// SET GLOBAL CATEGORY COLOR ON CHANGE ///////////////////////////////
+
+  function setCategory(value){
+    if (value == "elevated"){
+      globalThis.category = value;
+      globalThis.category_color = "#ff8b00";
+    }
+    else if (value == "critical") {
+      globalThis.category = value;
+      globalThis.category_color = "#e00707";
+    }
+    else if (value == "extreme") {
+      globalThis.category = value;
+      globalThis.category_color = "#bf0eca";
+    }
+  }
+
+///////////////////////////////////// SAVE OUTLOOK ///////////////////////////////
+  document.getElementById("save_button").onclick = function(e) {
+    console.log("Saving Outlook...")
+    var data = drawnItems.toGeoJSON();
+    var convertedData = 'text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data));
+    if (convertedData.length > 100){
+      document.getElementById('save_button').setAttribute('href', 'data:' + convertedData);
+      document.getElementById('save_button').setAttribute('download','fire_outlook.geojson');
+    } else{
+      console.log("No data to save!");
+      document.getElementById('save_button').setAttribute('href', '#');
+      document.getElementById('save_button').setAttribute('download','');
+    }
+  }
+///////////////////////////////////// LOAD OUTLOOK ///////////////////////////////
+  document.getElementById("load_button").onclick = function(e){
+    document.getElementById("loadfile").click();
+  }
+
+  function loadOutlook(){
+    var [file] = document.querySelector('input[type="file"]').files;
+    var fr = new FileReader();
+
+    fr.addEventListener("load",() => {
+      var json_data = JSON.parse(fr.result);
+      json_data.features.forEach(item => {
+        let cat = item.properties.title;
+        let style = loadOutlookColor(cat);
+        var new_layer = L.geoJSON(item,style);
+        addNonGroupLayers(new_layer,drawnItems);
+      })
+
+    },false);
+
+    var extension = file.name.split('.')[1]
+    if (file && extension == "geojson") {
+      fr.readAsText(file);
+    } else {
+      window.alert("ERROR: Invalid file input type. Must be geojson file.");
+    } // end if/else
+
+  } // end function
+///////////////////////////////////// LOAD OUTLOOK ///////////////////////////////
+  function loadOutlookColor(value){
+    if (value == "elevated"){
+      category_color = "#ff8b00";
+    }
+    else if (value == "critical") {
+      category_color = "#e00707";
+    }
+    else if (value == "extreme") {
+      category_color = "#bf0eca";
+    }
+    var style = {
+        "color":category_color,
+        "fillColor":"None",
+        "fillOpacity":0.0,
+        "opacity":1.0,
+        "weight": 3.0,
+    }
+    return style;
+  }
+///////////////////////////////// EXPORT IMAGE FUNCTION //////////////////////////////////////////////
+function exportImage(){
+  domtoimage.toJpeg(document.getElementById("container"), { quality: 1.0 })
+    .then(function(dataurl){
+      var link = document.createElement('a');
+      link.download = 'fire_outlook.jpeg';
+      link.href = dataurl;
+      link.click();
+    });
+}
+
+///////////////////////////////// ADD LAYER FUNCTION //////////////////////////////////////////////
+  function addNonGroupLayers(sourceLayer,targetGroup){
+    if (sourceLayer instanceof L.LayerGroup){
+      sourceLayer.eachLayer(function(layer){
+        addNonGroupLayers(layer,targetGroup);
+      });
+    } else {
+      targetGroup.addLayer(sourceLayer);
+    }
+  } // end function
+
+///////////////////////////////// MOUSE LAT/LON FUNCTIONS //////////////////////////////////////////////
+
+  L.CursorHandler = L.Handler.extend({
+      addHooks: function () {
+          this._map.on('mousemove', this._update, this);
+      },
+      _update: function (e) {
+        document.getElementById('label').innerHTML = e.latlng.lat.toFixed(4).toString()+", "+e.latlng.lng.toFixed(4).toString();
+      }
+  });
+  L.Map.addInitHook('addHandler', 'cursor', L.CursorHandler);
+
+
+/////////////////////////////////////// BOUNDARY CONTROL //////////////////////////////////////////////
+  var county_style = {
+      "color":"#F7F3F3",
+      "fillColor":"none",
+      "fillOpacity":0.0,
+      "opacity":0.4,
+      "weight": 0.5,
+  }
+  var state_style = {
+      "color":"#F7F3F3",
+      "fillColor":"none",
+      "fillOpacity":0.0,
+      "opacity":0.9,
+      "weight": 0.9,
+  }
+
+
+  // var district_boundary = new L.geoJson();
+  // $.ajax({
+  // dataType: "json",
+  // url: "{% static '/geo/boundaries/uscounties.json' %}",
+  // success: function(data) {
+  //     $(data.features).each(function(key, data) {
+  //         district_boundary.addData(data).setStyle(county_style);
+  //         //district_boundary.setStyle(county_style);
+  //     });
+  // }
+  // }).error(function() {});
+
+  var state_boundary = new L.geoJson();
+  $.ajax({
+  dataType: "json",
+  url: "{% static '/geo/boundaries/usstates.json' %}",
+  success: function(data) {
+      $(data.features).each(function(key, data) {
+          state_boundary.addData(data);
+          state_boundary.setStyle(state_style);
+      });
+  }
+  }).error(function() {});
+
+
+///////////////////////////////////////// MAP DEFINITION //////////////////////////////////////////////
+  var map = L.map(
+      "map_holder",
+      {
+          center: [40.0, -100.0],
+          crs: L.CRS.EPSG3857,
+          zoom: 5,
+          zoomControl: true,
+          cursor: true,
+          preferCanvas: true,
+          renderer: L.canvas(),
+          keyboard: false,
+          updateWhenIdle: true,
+          updateWhenZooming: false,
+          attributionControl: false,
+      }
+  );
+  var obsCanvas = L.canvas(); // for surface observations
+  /////////////// BASE LAYERS /////////////////
+  var dark = L.tileLayer(
+      "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+      {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  ).addTo(map);
+
+  var light = L.tileLayer(
+      "https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
+      {"attribution": "Map tiles by \u003ca href=\"http://stamen.com\"\u003eStamen Design\u003c/a\u003e, under \u003ca href=\"http://creativecommons.org/licenses/by/3.0\"\u003eCC BY 3.0\u003c/a\u003e. Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var osm = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  );
+
+  var esri_phyiscal = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Source: US National Park Service',
+  });
+
+  var world_imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  });
+
+  var esri_map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Specialty/DeLorme_World_Base_Map/MapServer/tile/{z}/{y}/{x}', {
+  	attribution: 'Tiles &copy; Esri &mdash; Copyright: &copy;2012 DeLorme',
+  	minZoom: 1,
+  	maxZoom: 11
+  });
+
+
+
+/////////////// LAYER CONTROL ////////////////
+  var layer_control_1 = {
+      base_layers : {
+          "Dark (default)" : dark,
+          "Light" : light,
+          "Open Street Map" : osm,
+          "World Imagery": world_imagery,
+          "ESRI Map": esri_map,
+          "ESRI Physical": esri_phyiscal,
+      }, overlays : {
+        States: state_boundary,
+        // Counties: district_boundary,
+      }
+  };
+  L.control.layers(layer_control_1.base_layers,
+                  layer_control_1.overlays,
+                  {"autoZIndex": true, "collapsed": true, "position": "topright"}
+                  ).addTo(map);
+
+
+  // initialize the state boundaries by default
+  state_boundary.addTo(map);
+  //district_boundary.addTo(map);
+  // initialize the LSR markers
+
+////////// Drawing Tools //////////////
+
+  var drawnItems = new L.featureGroup();
+  map.addLayer(drawnItems);
+
+  map.addControl(new L.Control.Draw({
+      edit: {
+          featureGroup: drawnItems,
+          poly: {
+              allowIntersection: false
+          }
+      },
+      draw: {
+          polygon: {
+              allowIntersection: false,
+              showArea: true,
+          },
+          polyline: false,
+          marker: false,
+          circle: false,
+          rectangle: false,
+          circlemarker: false,
+      }
+  }));
+
+  map.on(L.Draw.Event.CREATED, function (event) {
+    var layer = event.layer,
+      feature = layer.feature = layer.feature || {};
+    feature.type = feature.type || "Feature";
+    var props = feature.properties = feature.properties || {};
+    props.title = category;
+    layer.options.color = category_color;
+    layer.options.fillOpacity = 0.0;
+    layer.options.weight = 3.0;
+    layer.options.opacity = 1.0;
+      // var layer = event.layer;
+    drawnItems.addLayer(layer);
+  });
+
+///////////////////////////////// MAP TEXT CONTROL //////////////////////////////////////////////
+  // Lat lon text
+  L.Control.textbox = L.Control.extend({
+    onAdd: function(map) {
+      var text = L.DomUtil.create('div');
+      text.id = "LatLonLabel";
+      text.innerHTML = "<p id='label' style='color: white; text-shadow: 1px 1px black; font-size:15px;'></p>";
+      return text;
+    },
+    onRemove: function(map) {
+      // nothing?
+    }
+  });
+  L.control.textbox = function(opts) { return new L.Control.textbox(opts);}
+  L.control.textbox({position: 'bottomright'}).addTo(map);
+///////////////////////////////////////////////////////////////////////////////
+</script>
+
+{% endblock %}

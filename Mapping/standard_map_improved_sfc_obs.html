@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Wx Map</title>
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.flexmonster.com/flexmonster.js"></script>
+    <!-- Link to example I'm following: https://jsfiddle.net/flexmonster/vnc2h7s8/ -->
+    {% load static %}
+    <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+    <script type="text/javascript" src="{% static 'leaflet.shapefile/leaflet.shpfile.js' %}"></script>
+    <script type="text/javascript" src="{% static 'shapefile-js/dist/shp.js' %}"></script>
+    <script type="text/javascript" src="{% static 'mapping_functions.js' %}"></script>
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+
+
+                #container {
+                  position: absolute;
+                  height: 100.0%;
+                  width: 100.0%;
+                  top: 0px;
+                  z-index: 0;
+                }
+                #map_holder {
+                    position: absolute;
+                    width: 100.0vw;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0vh;
+                }
+                #layerOps {
+                  position: absolute;
+                  width: 10.0vw;
+                  height: 48.0vh;
+                  left: 0.0%;
+                  top: 4.0vh;
+                  background-color:red;
+                }
+                #actLayers {
+                  position: absolute;
+                  width: 10.0vw;
+                  height: 48.0vh;
+                  left: 0.0%;
+                  top: 50.0vh;
+                  background-color:blue;
+                }
+                #toolbar {
+                  display: none;
+                  z-index: 10;
+                  position: absolute;
+                  width: 40vw;
+                  height: 50px;
+                  left: 30.0vw;
+                  top: 12px;
+                  background-color:rgba(80,78,78,0.9);
+                  text-align: center;
+                  border-color: black;
+                  border-width: 2px;
+                  border-style: solid;
+                  min-width: 500px;
+                  overflow: hidden;
+                }
+
+                .glm_strike {
+                    position: absolute;
+                    width:0px;
+                    height:0px;
+                    color: White;
+                    background-color: rgba(0,0,0,0.0);
+                    border-color: rgba(0,0,0,0.0);
+                    border: 0px;
+                    font-size:10px;
+                    font-weight: bold;
+                    text-shadow: 1px 1px 2px Black;
+                    box-shadow: none;
+                }
+
+                #MapView {
+                  text-align: center;
+                }
+                #RadarSelect {
+                  text-align: center;
+                }
+                #SatSelect {
+                  text-align: center;
+                }
+                #HazSelect {
+                  text-align: center;
+                }
+                #SfcSelect {
+                  text-align: center;
+                }
+                .spc_box{
+                  top: 10px;
+                }
+                .fire_box{
+                  top: 30px;
+                }
+                .text-label {
+                    position: absolute;
+                    width:0px;
+                    height:0px;
+                    background-color: rgba(0,0,0,0.0);
+                    border-color: rgba(0,0,0,0.0);
+                    border: 0px;
+                    font-size:12px;
+                    font-weight: bold;
+                    text-shadow: 0 0 4px Black;
+                    box-shadow: none;
+                }
+                .leaflet-tooltip-top:before,
+                .leaflet-tooltip-bottom:before,
+                .leaflet-tooltip-left:before,
+                .leaflet-tooltip-right:before {
+                  background-color: rgba(0,0,0,0.0);
+                  border:none;
+                  box-shadow:none;
+                }
+
+                #menu_button{
+                  position: relative;
+                  z-index: 10;
+                  left:50px;
+                  top:12px;
+                  height:50px;
+                  width: 75px;
+                  color: white;
+                  background-color: rgba(80,78,78,0.9);
+                }
+
+                .menu_option{
+                  height: 100.0%;
+                  width: 100.0%;
+                  border-color: black;
+                  border-width: 0px;
+                  border-style: solid;
+                }
+
+                /* ---- Map Button ---- */
+                #mapmenu{
+                  display: inline-block;
+                  position: absolute;
+                  height: 100.0%;
+                  width: 10.0%;
+                  left: 6.0%;
+                }
+                #map_button{
+                  background: url({% static 'icons/worldwide.png' %}) no-repeat top;
+                  background-color: transparent;
+                  background-size: 100.0% 100.0%;
+                }
+
+                .mapcontent{
+                  position: fixed;
+                  display: none;
+                  z-index: 11;
+                  width:200px;
+                  height:150px;
+                }
+
+                .mapcontent a {
+                  color: white;
+                  display: block;
+                  background-color: rgba(80,78,78,0.9);
+                  cursor: pointer;
+                }
+
+                .mapcontent a:hover {background-color: gray;}
+                #mapmenu:hover .mapcontent {display: block;}
+                #mapmenu:hover #map_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+                /* ---- Satellite Button ---- */
+                #satmenu{
+                  display: inline-block;
+                  position: absolute;
+                  height: 100.0%;
+                  width: 10.0%;
+                  left: 19.0%;
+                }
+                #sat_button{
+                  background: url({% static 'icons/satellite.png' %}) no-repeat top;
+                  background-color: transparent;
+                  background-size: 100.0% 100.0%;
+                }
+
+                .satcontent{
+                  position: fixed;
+                  display: none;
+                  z-index: 11;
+                  width:200px;
+                  height:150px;
+                }
+
+                .satcontent a {
+                  color: white;
+                  display: block;
+                  width: 300px;
+                  background-color: rgba(80,78,78,0.9);
+                  cursor: pointer;
+                }
+
+                .satcontent a:hover {background-color: gray;}
+                #satmenu:hover .satcontent {display: block;}
+                #satmenu:hover #sat_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+
+                /* ---- GLM Button ---- */
+                #glmmenu{
+                  display: inline-block;
+                  position: absolute;
+                  height: 100.0%;
+                  width: 10.0%;
+                  left: 32.0%;
+                }
+                #glm_button{
+                  background: url({% static 'icons/flash.png' %}) no-repeat top;
+                  background-color: transparent;
+                  background-size: 98.0% 98.0%;
+                }
+
+                .glmcontent{
+                  position: fixed;
+                  display: none;
+                  z-index: 11;
+                  width:200px;
+                  height:150px;
+                }
+
+                .glmcontent a {
+                  color: white;
+                  display: block;
+                  background-color: rgba(80,78,78,0.9);
+                  cursor: pointer;
+                }
+
+                .glmcontent a:hover {background-color: gray;}
+                #glmmenu:hover .glmcontent {display: block;}
+                #glmmenu:hover #glm_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+
+
+                /* ---- Radar Button ---- */
+                #radmenu{
+                  display: inline-block;
+                  position: absolute;
+                  height: 100.0%;
+                  width: 10.0%;
+                  left: 45.0%;
+                }
+                #rad_button{
+                  background: url({% static 'icons/radar2.png' %}) no-repeat top;
+                  background-color: transparent;
+                  background-size: 100.0% 100.0%;
+                }
+
+                .radcontent{
+                  position: fixed;
+                  display: none;
+                  z-index: 11;
+                  width:200px;
+                  height:150px;
+                }
+
+                .radcontent a {
+                  color: white;
+                  display: block;
+                  background-color: rgba(80,78,78,0.9);
+                  cursor: pointer;
+                }
+
+                .radcontent a:hover {background-color: gray;}
+                #radmenu:hover .radcontent {display: block;}
+                #radmenu:hover #rad_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+
+                /* ---- Hazard Button ---- */
+                #hazmenu{
+                  display: inline-block;
+                  position: absolute;
+                  height: 100.0%;
+                  width: 10.0%;
+                  left: 58.0%;
+                }
+                #haz_button{
+                  background: url({% static 'icons/warning.png' %}) no-repeat top;
+                  background-color: transparent;
+                  background-size: 100.0% 100.0%;
+                }
+
+                .hazcontent{
+                  position: fixed;
+                  display: none;
+                  z-index: 11;
+                  width:200px;
+                  height:150px;
+                }
+
+                .hazcontent a {
+                  color: white;
+                  display: block;
+                  background-color: rgba(80,78,78,0.9);
+                  cursor: pointer;
+                }
+
+                .hazcontent a:hover {background-color: gray;}
+                #hazmenu:hover .hazcontent {display: block;}
+                #hazmenu:hover #haz_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+                /* ---- Surface Button ---- */
+                #sfcmenu{
+                  display: inline-block;
+                  position: absolute;
+                  height: 100.0%;
+                  width: 10.0%;
+                  left: 71.0%;
+                }
+                #sfc_button{
+                  background: url({% static 'icons/windsock.png' %}) no-repeat top;
+                  background-color: transparent;
+                  background-size: 100.0% 100.0%;
+                }
+
+                .sfccontent{
+                  position: fixed;
+                  display: none;
+                  z-index: 11;
+                  width:200px;
+                  height:150px;
+                }
+
+                .sfccontent a {
+                  color: white;
+                  display: block;
+                  background-color: rgba(80,78,78,0.9);
+                  cursor: pointer;
+                }
+
+                .sfccontent a:hover {background-color: gray;}
+                #sfcmenu:hover .sfccontent {display: block;}
+                #sfcmenu:hover #sfc_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+                /* ---- Outlook Button ---- */
+                #outmenu{
+                  display: inline-block;
+                  position: absolute;
+                  height: 100.0%;
+                  width: 10.0%;
+                  left: 84.0%;
+                }
+                #out_button{
+                  background: url({% static 'icons/storm.png' %}) no-repeat top;
+                  background-color: transparent;
+                  background-size: 100.0% 100.0%;
+                }
+
+                .outcontent{
+                  position: fixed;
+                  display: none;
+                  z-index: 11;
+                  width:200px;
+                  height:150px;
+                }
+
+                .outcontent a {
+                  color: white;
+                  display: block;
+                  background-color: rgba(80,78,78,0.9);
+                  cursor: pointer;
+                }
+
+                .outcontent a:hover {background-color: gray;}
+                #outmenu:hover .outcontent {display: block;}
+                #outmenu:hover #out_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+
+            </style>
+
+</head>
+<body>
+{% block content %}
+  <button id="menu_button" onclick="showToolbar()">Show Menu</button>
+
+  <div class="toolBar" id="toolbar">
+
+    <div id="mapmenu">
+      <button type="button" class="menu_option" id="map_button"></button>
+      <div class="mapcontent">
+        <a onclick="changeMapView(map,'WORLD')">World</a>
+        <a onclick="changeMapView(map,'NORTHAM')">North America</a>
+        <a onclick="changeMapView(map,'CONUS')">CONUS</a>
+        <a onclick="changeMapView(map,'NW')">Northwest</a>
+        <a onclick="changeMapView(map,'NP')">Northern Plains</a>
+        <a onclick="changeMapView(map,'NE')">Northeast</a>
+        <a onclick="changeMapView(map,'CP')">Central Plains</a>
+        <a onclick="changeMapView(map,'CR')">Central Rockies</a>
+        <a onclick="changeMapView(map,'SW')">Southwest</a>
+        <a onclick="changeMapView(map,'SP')">Southern Plains</a>
+        <a onclick="changeMapView(map,'SE')">Southeast</a>
+        <a onclick="changeMapView(map,'MW')">Midwest</a>
+
+      </div>
+    </div>
+
+    <div id="satmenu">
+      <button type="button" class="menu_option" id="sat_button"></button>
+      <div class="satcontent">
+        <a onclick="changeSat(map,'NONE')">NONE</a>
+        <a>------- CONUS (non-looping) -------</a>
+        <a onclick="changeSat(map,'G16ch2')">GOES-16 CONUS Ch. 2 Visible</a>
+        <!-- <a onclick="changeSat(map,'G16ch3')">GOES-16 CONUS Ch. 3 Near-IR</a> -->
+        <a onclick="changeSat(map,'G16ch5')">GOES-16 CONUS Ch. 5 Snow/Ice</a>
+        <!-- <a onclick="changeSat(map,'G16ch7')">GOES-16 CONUS Ch. 7 Shortwave IR</a> -->
+        <a onclick="changeSat(map,'G16ch8')">GOES-16 CONUS Ch. 8 Upper-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch9')">GOES-16 CONUS Ch. 9 Mid-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch10')">GOES-16 CONUS Ch. 10 Low-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch13')">GOES-16 CONUS Ch. 13 Clean IR</a>
+        <a onclick="changeSat(map,'G16IRsand')">GOES-16 CONUS Vis/IR Sandwich</a>
+        <a>------- MESO 1 (non-looping) -------</a>
+        <a onclick="changeSat(map,'G16ch2m1')">GOES-16 MESO 1 Ch. 2 Visible</a>
+        <a onclick="changeSat(map,'G16ch5m1')">GOES-16 MESO 1 Ch. 5 Snow/Ice</a>
+        <a onclick="changeSat(map,'G16ch8m1')">GOES-16 MESO 1 Ch. 8 Upper-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch9m1')">GOES-16 MESO 1 Ch. 9 Mid-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch10m1')">GOES-16 MESO 1 Ch. 10 Low-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch13m1')">GOES-16 MESO 1 Ch. 13 IR</a>
+        <a onclick="changeSat(map,'G16IRsandm1')">GOES-16 MESO 1 Vis/IR Sandwich</a>
+        <a>------- MESO 2 (non-looping) -------</a>
+        <a onclick="changeSat(map,'G16ch2m2')">GOES-16 MESO 2 Ch. 2 Visible</a>
+        <a onclick="changeSat(map,'G16ch5m2')">GOES-16 MESO 2 Ch. 5 Snow/Ice</a>
+        <a onclick="changeSat(map,'G16ch8m2')">GOES-16 MESO 2 Ch. 8 Upper-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch9m2')">GOES-16 MESO 2 Ch. 9 Mid-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch10m2')">GOES-16 MESO 2 Ch. 10 Low-Level W.V.</a>
+        <a onclick="changeSat(map,'G16ch13m2')">GOES-16 MESO 2 Ch. 13 IR</a>
+        <a onclick="changeSat(map,'G16IRsandm2')">GOES-16 MESO 2 Vis/IR Sandwich</a>
+      </div>
+    </div>
+
+    <div id="glmmenu">
+      <button type="button" class="menu_option" id="glm_button"></button>
+      <div class="glmcontent">
+        <a onclick="showGLM(map,false)">None</a>
+        <a onclick="showGLM(map,true)">GLM Flash Events</a>
+      </div>
+    </div>
+
+    <div id="radmenu">
+      <button type="button" class="menu_option" id="rad_button"></button>
+      <div class="radcontent">
+        <a onclick="changeRadar(map,'NONE')">NONE</a>
+        <a onclick="changeRadar(map,'MRMS')">MRMS Composite Reflectivity</a>
+        <a onclick="changeRadar(map,'conus_base_refl')">IEM Base Reflectivity</a>
+      </div>
+    </div>
+
+    <div id="sfcmenu">
+      <button type="button" class="menu_option" id="sfc_button"></button>
+      <div class="sfccontent">
+        <a onclick="updateSFC('NONE')">NONE</a>
+        <a onclick="updateSFC('standard')">Standard</a>
+        <a onclick="updateSFC('RLT')">RLT Obs</a>
+        <a onclick="updateSFC('TEMP')">Temperature</a>
+        <a onclick="updateSFC('DEWP')">Dewpoint</a>
+        <a onclick="updateSFC('WIND')">Winds</a>
+        <a onclick="updateSFC('FIRE')">RH + Winds</a>
+        <a onclick="updateSFC('VISB')">Visibility</a>
+        <a onclick="updateSFC('AVIATION')">Flight Categories</a>
+      </div>
+    </div>
+
+    <div id="hazmenu">
+      <button type="button" class="menu_option" id="haz_button"></button>
+      <div class="hazcontent">
+        <a onclick="changeHaz(map,'NONE')">NONE</a>
+        <a onclick="changeHaz(map,'all')">All Hazards</a>
+        <a onclick="changeHaz(map,'long')">Long-Duration Hazards</a>
+        <a onclick="changeHaz(map,'short')">Convective Warnings</a>
+        <a onclick="changeHaz(map,'watch')">Convective Watches</a>
+        <a onclick="changeHaz(map,'convective')">Convective Watch/Warnings</a>
+      </div>
+    </div>
+
+    <div id="outmenu">
+      <button type="button" class="menu_option" id="out_button"></button>
+      <div class="outcontent">
+        <a onclick="changeOut(map,'NONE')">NONE</a>
+        <a onclick="changeOut(map,'spcd1cat')">SPC Day 1 Categorical</a>
+        <a onclick="changeOut(map,'spcd1fire')">SPC Day 1 Fire</a>
+      </div>
+    </div>
+
+  </div>
+
+
+  <div id="container">
+
+    <div class="folium-map" id="map_holder"></div>
+
+  </div>
+
+</body>
+<script>
+
+
+///////////////////////////////// Sat, Rad, GLM, sfc obs, Time settings //////////////////////////////////////////////
+  var update = 10; // seconds
+  var interval = 10; // number of frames
+  var times = createTimeArray(interval); // create list of times
+  // this is the initial creation. The update timer is at the end of the script
+  globalThis.satType = ''; // initialize the satellite type
+///////////////////////////////// Handles hiding/showing the toolbar //////////////////////////////////////////////
+
+  var showMenu = false;
+  function showToolbar() {
+    if (!showMenu){
+      $('#menu_button').text("Hide Menu");
+      showMenu = true;
+      $('#toolbar').css({display: "block"});
+      $('#menu_button').css({"background-color": "rgba(56,82,142,1.0)", color: "white"});
+    } else {
+      $('#menu_button').text("Show Menu");
+      $('#menu_button').css({"background-color": "rgba(80,78,78,0.9)", color: "white"});
+      showMenu = false;
+      $('#toolbar').css({display: "none"});
+    } // end else
+  } // end showToolbar function
+
+///////////////////////////////// Handles centering the toolbar //////////////////////////////////////////////
+  window.addEventListener('resize', function(){
+    var width = window.innerWidth;
+    var tbwidth = width * 0.4;
+    var left = width * 0.3;
+    $('#toolbar').css({width: `"${tbwidth}"`, left: `"${left}"`});
+  });
+
+///////////////////////////////// MOUSE LAT/LON //////////////////////////////////////////////
+
+///////////////////////////////// MAP DEFINITION //////////////////////////////////////////////
+  var map = L.map(
+      "map_holder",
+      {
+          center: [40.0, -100.0],
+          crs: L.CRS.EPSG3857,
+          zoom: 5,
+          zoomControl: true,
+          cursor: true,
+          preferCanvas: true,
+          // renderer: L.canvas(),
+          keyboard: false,
+          updateWhenIdle: true,
+          updateWhenZooming: false,
+      }
+  );
+
+///////////////////////////////// LAYER CONTROL //////////////////////////////////////////////
+  var tile_layer_31680ca70d5c4ed09d82b9a00869ad62 = L.tileLayer(
+      "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+      {"attribution": "\u0026copy; \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"http://cartodb.com/attributions\"\u003eCartoDB\u003c/a\u003e, CartoDB \u003ca href =\"http://cartodb.com/attributions\"\u003eattributions\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+  ).addTo(map);
+
+  // declare the surface stations layer
+  var surface_stations = L.featureGroup();
+
+
+
+  /////////////// LAYER CONTROL ////////////////
+  var layer_control_3726261c4cbf42db93c15e02377a96a7 = {
+      base_layers : {
+          "Dark (default)" : tile_layer_31680ca70d5c4ed09d82b9a00869ad62,
+      },
+      overlays :  {
+      },
+  };
+  L.control.layers(
+      layer_control_3726261c4cbf42db93c15e02377a96a7.base_layers,
+      layer_control_3726261c4cbf42db93c15e02377a96a7.overlays,
+      {"autoZIndex": true, "collapsed": true, "position": "topright"}
+  ).addTo(map);
+
+///////////////////////////////// TEXT CONTROL //////////////////////////////////////////////
+
+
+///////////////////////////////// SURFACE OBS //////////////////////////////////////////////
+
+
+  function getBulkObs(type){
+    // REQUEST SECTION
+    var stations = {{ site_list | safe }};
+    var request = new XMLHttpRequest();
+    request.overrideMimeType("application/xml");
+    request.open("GET","{% static 'metars.cache.xml' %}", false);
+    //request.setRequestHeader("Content-Type","text/xml");
+    request.send(null);
+    var doc = request.responseXML;
+    var root = doc.childNodes[0];
+    var metars = root.children[6];
+    for (i=0;i<metars.children.length;i++){
+      var stid = metars.children[i].getElementsByTagName("station_id")[0].textContent;
+      if (stations.includes(stid)){
+        try {
+          let flightCat = metars.children[i].getElementsByTagName("flight_category")[0].textContent;
+          let tc = parseFloat(metars.children[i].getElementsByTagName("temp_c")[0].textContent);
+          let tdc = parseFloat(metars.children[i].getElementsByTagName("dewpoint_c")[0].textContent);
+          let temp = C2F(tc);
+          let dewp = C2F(tdc);
+          let relh = RH(tc,tdc);
+          let wspd = parseFloat(metars.children[i].getElementsByTagName("wind_speed_kt")[0].textContent);
+          let wdir = parseFloat(metars.children[i].getElementsByTagName("wind_dir_degrees")[0].textContent);
+          let visb = parseFloat(metars.children[i].getElementsByTagName("visibility_statute_mi")[0].textContent);
+          let text = metars.children[i].getElementsByTagName("raw_text")[0].textContent;
+          let lat = parseFloat(metars.children[i].getElementsByTagName("latitude")[0].textContent);
+          let lon = parseFloat(metars.children[i].getElementsByTagName("longitude")[0].textContent);
+          var data = [lat,lon,temp,dewp,wspd,wdir,text,relh,visb,flightCat];
+          // addStation(data,type);
+
+
+          if (type =="standard"){
+            let temp_color = "red";
+            let dewp_color = "green";
+            addTempDewpPair(data[0],data[1],data[2],data[3],temp_color,dewp_color);
+            addMETARText(data[0],data[1],data[6]);
+            createWindBarb(data[0],data[1],data[4],data[5]);
+          }
+          else if (type == "RLT") {
+            let temp_color = tempColor(data[2]);
+            let dewp_color = dewpColor(data[3]);
+            addTempDewpPair(data[0],data[1],data[2],data[3],temp_color,dewp_color);
+            addMETARText(data[0],data[1],data[6]);
+            createWindBarb(data[0],data[1],data[4],data[5]);
+          }
+          else if (type == "TEMP") {
+            let temp_color = tempColor(data[2]);
+            addSingleValue(data[0],data[1],data[2],temp_color);
+            addMETARText(data[0],data[1],data[6]);
+          }
+          else if (type == "DEWP") {
+            let dewp_color = dewpColor(data[3]);
+            addSingleValue(data[0],data[1],data[3],dewp_color);
+            addMETARText(data[0],data[1],data[6]);
+          }
+          else if (type == "WIND") {
+            createWindBarb(data[0],data[1],data[4],data[5]);
+            addMETARText(data[0],data[1],data[6]);
+          }
+          else if (type == "FIRE") {
+            let relh_color = relhColor(data[7]);
+            createWindBarb(data[0],data[1],data[4],data[5]);
+            addSingleValue(data[0],data[1],data[7],relh_color);
+            addMETARText(data[0],data[1],data[6]);
+          }
+          else if (type == "VISB") {
+            let visb_color = visbColor(data[8]);
+            addSingleValue(data[0],data[1],data[8],visb_color);
+            addMETARText(data[0],data[1],data[6]);
+          }
+          else if (type == "AVIATION") {
+            let cat_color = flightCatColor(data[9]);
+            addCircleMarker(data[0],data[1],cat_color);
+            addMETARText(data[0],data[1],data[6]);
+          }
+
+
+        } catch {
+          console.log("Error parsing METAR data.");
+        } // end try/catch
+      } // end if
+    } // end for
+    // display the data
+    surface_stations.eachLayer(function(layer){
+      map.addLayer(layer);
+    }); // end for each layer in surface_stations
+  } // end function
+
+
+  function createWindBarb(latitude,longitude,wspd,dir){
+    var icon = L.WindBarb.icon({lat: latitude, deg: dir, speed: wspd, pointRadius: 0, strokeWidth: 2, strokeLength: 18, barbSpaceing: 4, barbHeight: 10, fillColor: 'gray'});
+    var windbarb = L.marker([latitude,longitude], {icon: icon});
+    windbarb.addTo(surface_stations);
+  }
+
+  function addMETARText(latitude,longitude,text){
+    var textmarker = new L.marker([latitude, longitude], { opacity: 0.0 });
+    textmarker.bindTooltip(
+        `<div>
+             ${text}
+        </div>`,
+        {direction:'center', permanent: false, offset:[0,0]}
+    );
+    textmarker.addTo(surface_stations);
+  }
+
+  function addTempDewpPair(lat,lon,temp,dewp,temp_color,dewp_color){
+    var doubleMarker = L.marker([lat,lon],{
+      icon: L.divIcon({
+        className: 'text-label',
+        html: `<p style="color:${temp_color}; margin-bottom:0;">${temp}</p><p style="color:${dewp_color}; margin-top:0;">${dewp}</p>`,
+        iconSize: [18,40]
+      })
+    });
+    doubleMarker.addTo(surface_stations);
+
+  }
+
+  function addSingleValue(lat,lon,value,value_color){
+    var singleMarker = L.marker([lat,lon],{
+      icon: L.divIcon({
+        className: 'text-label',
+        html: `<p style="color:${value_color}; margin-bottom:0;">${value}</p>`,
+        iconSize: [18,18]
+      })
+    });
+    singleMarker.addTo(surface_stations);
+  }
+
+  function addCircleMarker(lat,lon,circle_color){
+    var marker = new L.circleMarker([lat, lon], { radius: 7, color: "black", weight: 2, opacity: 1.0, fillColor: circle_color, fillOpacity: 0.75 }); //opacity may be set to zero
+    marker.addTo(surface_stations);
+  }
+
+
+  // Way to add a station via JS!
+  function addStation(data,type){
+    if (type =="standard"){
+      let temp_color = "red";
+      let dewp_color = "green";
+      addTempDewpPair(data[0],data[1],data[2],data[3],temp_color,dewp_color);
+      addMETARText(data[0],data[1],data[6]);
+      createWindBarb(data[0],data[1],data[4],data[5]);
+    }
+    else if (type == "RLT") {
+      let temp_color = tempColor(data[2]);
+      let dewp_color = dewpColor(data[3]);
+      addTempDewpPair(data[0],data[1],data[2],data[3],temp_color,dewp_color);
+      addMETARText(data[0],data[1],data[6]);
+      createWindBarb(data[0],data[1],data[4],data[5]);
+    }
+    else if (type == "TEMP") {
+      let temp_color = tempColor(data[2]);
+      addSingleValue(data[0],data[1],data[2],temp_color);
+      addMETARText(data[0],data[1],data[6]);
+    }
+    else if (type == "DEWP") {
+      let dewp_color = dewpColor(data[3]);
+      addSingleValue(data[0],data[1],data[3],dewp_color);
+      addMETARText(data[0],data[1],data[6]);
+    }
+    else if (type == "WIND") {
+      createWindBarb(data[0],data[1],data[4],data[5]);
+      addMETARText(data[0],data[1],data[6]);
+    }
+    else if (type == "FIRE") {
+      let relh_color = relhColor(data[7]);
+      createWindBarb(data[0],data[1],data[4],data[5]);
+      addSingleValue(data[0],data[1],data[7],relh_color);
+      addMETARText(data[0],data[1],data[6]);
+    }
+    else if (type == "VISB") {
+      let visb_color = visbColor(data[8]);
+      addSingleValue(data[0],data[1],data[8],visb_color);
+      addMETARText(data[0],data[1],data[6]);
+    }
+    else if (type == "AVIATION") {
+      let cat_color = flightCatColor(data[9]);
+      addCircleMarker(data[0],data[1],cat_color);
+      addMETARText(data[0],data[1],data[6]);
+    }
+  } // end addStation function
+
+
+  function updateSFC(obsType){
+    console.log("Removed surface obs.");
+    surface_stations.eachLayer(function(layer){
+      map.removeLayer(layer);
+    });
+    surface_stations.clearLayers();
+    if (obsType == "NONE"){ // if NONE, just remove all obs
+      // continue
+    }
+    else {
+      getBulkObs(obsType);
+    }
+  }
+
+///////////////////////////////// Sat, Rad, GLM, sfc obs, Updates //////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// attributions
+// <div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+//<div>Icons made by <a href="https://www.flaticon.com/authors/roundicons" title="Roundicons">Roundicons</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+//<div>Icons made by <a href="https://www.flaticon.com/authors/turkkub" title="turkkub">turkkub</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+//<div>Icons made by <a href="https://www.flaticon.com/authors/gregor-cresnar" title="Gregor Cresnar">Gregor Cresnar</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+//<div>Icons made by <a href="https://www.flaticon.com/authors/icongeek26" title="Icongeek26">Icongeek26</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+//<div>Icons made by <a href="https://www.flaticon.com/authors/those-icons" title="Those Icons">Those Icons</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+
+</script>
+
+{% endblock %}

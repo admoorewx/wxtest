@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html>
+
+<title>Blowing Snow Table</title>
+
+<style>
+    /* Style the tab */
+    .tab {
+        position:relative;
+        top: 10px;
+        width: 275px;
+        height: 95px;
+        left: 750px;
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+
+    /* Style the buttons inside the tab */
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 17px;
+    }
+
+    /* Change background color of buttons on hover */
+    .tab button:hover {
+        background-color: #ddd;
+    }
+
+    /* Create an active/current tablink class */
+    .tab button.active {
+        background-color: #ccc;
+    }
+
+    /* Style the tab content */
+    .tabcontent {
+        display: none;
+        padding: 6px 12px;
+        border-top: none;
+    }
+
+    /* Style the main holder div - need it to be centered*/
+    .mainholder {
+        border: 2px solid #ccc;
+        width: 1300px;
+        height: 93vh;
+        margin: auto;
+    }
+
+</style>
+<body>
+<!-- was 1275 and 860 -->
+<!-- this div holds everything so that it can all be centered in the page
+<fieldset style="position:absolute; padding-top:80px; float:left; padding-right:940px;">
+-->
+<div class="mainholder">
+
+	<fieldset style="position:absolute; padding-top:80px; float:left; padding-right:940px;">
+	  <legend>Input Data</legend>
+
+	  <form id="inputdata" style="top:10px;">
+
+			<div style="position:absolute; margin: auto; left:100px; top:0px;">
+			  Enter the Temperature (F): <input type="number" name="temp" max="36" width="50px"><br>
+			  <br>
+			  Enter the Wind Speed (knots): <input type="number" name="wspd" min="0" width="50px"><br>
+			</div>
+
+			<div class="slidecontainer" style="position:absolute; left:500px; top:-20px;">
+			  <br>Enter Snowfall Rate (in/hr): <span id="demo"></span></br>
+			  <input type="range" min="0.05" max="0.5" value="0.25" step="0.05" class="slider" id="myRange">
+			</div>
+
+	  </form>
+
+	  <div style="position:absolute; left:500px; top:30px;">
+		  <br><button onclick="BSmodel()">RUN BLSN MODEL</button>
+	  </div>
+
+	</fieldset>
+
+
+	<!-- This controls the visibility tabs/buttons -->
+	<div class="tab">
+	  <p style="float:left; padding-left:10px;"><b>Probability of Visibility Less Than:</b></p><br>
+	  <button id="defaultOpen" style="margin-left:5px" class="tablinks" onclick="openTAB(event, 'half','LegendTable1')">1/2 Mile</button>
+	  <button class="tablinks" onclick="openTAB(event, 'one','LegendTable2')">1 Mile</button>
+	  <button class="tablinks" onclick="openTAB(event, 'three','LegendTable3')">3 Miles</button>
+	</div>
+
+
+
+
+	<!-- This controls the 1/2 mile table legend -->
+	<div id="half" class="tabcontent">
+
+
+	<!-- This controls the Crust Breaker Table -->
+	  <div id="Crusty" style="position:relative; width:240px; overflow:hidden; top:-80px; left:1025px;">
+		<table border="1">
+
+			<tr> <!-- header row -->
+				<th colspan="2">Probability of Snow Crust Break</th>
+			</tr>
+
+			<tr> <!-- Row 1 -->
+				<td align="center">Wind Speed (knts)</td>
+			<td>Probability</td>
+			</tr>
+
+			<tr> <!-- Row 2 -->
+				<td id="crustWind" align="center">--</td>
+			<td id="crustProb" align="center">--</td>
+			</tr>
+
+		</table>
+	  </div>
+
+	  <div style="position:relative; width:1000px; top:520px; left:90px;">
+		<table border="1">
+
+			<tr> <!-- header row -->
+				<th colspan="2">Impact Potential</th>
+			</tr>
+
+			<tr> <!-- Row 1 -->
+				<td align="center">None</td>
+			<td>Minimal Impacts</td>
+			</tr>
+
+			<tr> <!-- Row 2 -->
+				<td align="center" bgColor="yellow">Low</td>
+			<td>Advisory or Isolated Blizzard Conditions (Ok in town, bad in the more prone rural areas)</td>
+			</tr>
+
+			<tr> <!-- Row 3 -->
+			   <td align="center" bgColor="orange">Moderate</td>
+		   <td>Isolated to Scattered Blizzard Conditions (Ok in town, periodically bad in rural areas)</td>
+			</tr>
+
+			<tr> <!-- Row 4 -->
+				<td align="center" bgColor="red">High</td>
+			<td>Scattered to Widespread Blizzard Conditions (Bad in rural areas, periodically bad in town)</td>
+			</tr>
+
+			<tr> <!-- Row 5 -->
+				<td align="center" bgColor="#FF33F9">Very High</td>
+			<td>Widespread Blizzard Conditions (Bad in town and rural areas)</td>
+			</tr>
+
+		</table>
+	  </div>
+
+	  <!-- This controls the ForecastBuilder legend -->
+	  <div style="position:relative; width:480px;top:380px; left:780px;">
+		<table border="1">
+
+			<tr> <!-- header row -->
+				<th colspan="3">ForecastBuilder - Wx Grids</th>
+			</tr>
+
+			<tr> <!-- Row 1 -->
+				<td align="center">Blowing Snow </br> Model Output </br> (1/2 SM Threshold)</td>
+			<td align="center">PotBlowingSnow</td>
+			<td align="center">Wx Grid</td>
+			</tr>
+
+			<tr> <!-- Row 2 -->
+				<td align="center" bgColor="orange">60-79%</td>
+				<td align="center" bgColor="orange">70%</td>
+				<td align="center" bgColor="orange">Def</td>
+			</tr>
+
+			<tr> <!-- Row 3 -->
+				<td align="center" bgColor="red">80-100%</td>
+				<td align="center" bgColor="red">100%</td>
+				<td align="center" bgColor="red">Def [1/4 SM]</td>
+			</tr>
+
+		</table>
+	  </div>
+
+
+	  <!-- This controls the 1/2 mile tables -->
+	  <!-- Note: The letters & numbers in the "id" of each cell are needed to help the blowing snow -->
+	  <!-- script determine where to put the correct probability value. Do Not Change These! -->
+
+	  <div style="position:relative; left: 100px; top:-330px;">
+		<!-- Beginning of the 1/2 mile wind speed table -->
+
+		<table id="WStable" border="1" style="float: left;margin-left:15px;margin-right:20px">
+
+		  <tr> <!-- header row -->
+			  <th id="ctemp1" colspan="2"><font color="blue">Constant Temperature = </font></th>
+			  <th colspan="7">No Falling Snow (Snow Age)</th>
+		  </tr>
+
+		  <tr> <!-- header row -->
+			  <th>Wind Speed</th>
+			  <th>Falling Snow</th>
+			  <th>0-3 hrs</th>
+			  <th>3-6 hrs</th>
+			  <th>6-12 hrs</th>
+			  <th>12-24 hrs</th>
+			  <th>24 + hrs</th>
+		  </tr>
+
+		  <tr> <!-- Row 1 -->
+			  <td id="11" align="center">--</td>
+			  <td id="12" align="center">--</td>
+			  <td id="13" align="center">--</td>
+			  <td id="14" align="center">--</td>
+			  <td id="15" align="center">--</td>
+			 <td id="16" align="center">--</td>
+			 <td id="17" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 2 -->
+			  <td id="21" align="center">--</td>
+			  <td id="22" align="center">--</td>
+			  <td id="23" align="center">--</td>
+			  <td id="24" align="center">--</td>
+			  <td id="25" align="center">--</td>
+			  <td id="26" align="center">--</td>
+			  <td id="27" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 3 -->
+			  <td id="31" align="center">--</td>
+			  <td id="32" align="center">--</td>
+			  <td id="33" align="center">--</td>
+			  <td id="34" align="center">--</td>
+			  <td id="35" align="center">--</td>
+			  <td id="36" align="center">--</td>
+			  <td id="37" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 4 -->
+			  <td id="41" align="center">--</td>
+			  <td id="42" align="center">--</td>
+			  <td id="43" align="center">--</td>
+			  <td id="44" align="center">--</td>
+			  <td id="45" align="center">--</td>
+			  <td id="46" align="center">--</td>
+			  <td id="47" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 5 -->
+			  <td id="51" align="center">--</td>
+			  <td id="52" align="center">--</td>
+			  <td id="53" align="center">--</td>
+			  <td id="54" align="center">--</td>
+			  <td id="55" align="center">--</td>
+			  <td id="56" align="center">--</td>
+			  <td id="57" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 6 -->
+			  <td id="61" align="center">--</td>
+			  <td id="62" align="center">--</td>
+			  <td id="63" align="center">--</td>
+			  <td id="64" align="center">--</td>
+			  <td id="65" align="center">--</td>
+			  <td id="66" align="center">--</td>
+			  <td id="67" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 7 -->
+			  <td id="71" align="center">--</td>
+			  <td id="72" align="center">--</td>
+			  <td id="73" align="center">--</td>
+			  <td id="74" align="center">--</td>
+			  <td id="75" align="center">--</td>
+			  <td id="76" align="center">--</td>
+			  <td id="77" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 8 -->
+			  <td id="81" align="center">--</td>
+			  <td id="82" align="center">--</td>
+			  <td id="83" align="center">--</td>
+			  <td id="84" align="center">--</td>
+			  <td id="85" align="center">--</td>
+			  <td id="86" align="center">--</td>
+			  <td id="87" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 9 -->
+			  <td id="91" align="center">--</td>
+			  <td id="92" align="center">--</td>
+			  <td id="93" align="center">--</td>
+			  <td id="94" align="center">--</td>
+			  <td id="95" align="center">--</td>
+			  <td id="96" align="center">--</td>
+			  <td id="97" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 10 -->
+			  <td id="101" align="center">--</td>
+			  <td id="102" align="center">--</td>
+			  <td id="103" align="center">--</td>
+			  <td id="104" align="center">--</td>
+			  <td id="105" align="center">--</td>
+			  <td id="106" align="center">--</td>
+			  <td id="107" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 11 -->
+			  <td id="111" align="center">--</td>
+			  <td id="112" align="center">--</td>
+			  <td id="113" align="center">--</td>
+			  <td id="114" align="center">--</td>
+			  <td id="115" align="center">--</td>
+			  <td id="116" align="center">--</td>
+			  <td id="117" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 12 -->
+			  <td id="121" align="center">--</td>
+			  <td id="122" align="center">--</td>
+			  <td id="123" align="center">--</td>
+			  <td id="124" align="center">--</td>
+			  <td id="125" align="center">--</td>
+			  <td id="126" align="center">--</td>
+			  <td id="127" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 13 -->
+			  <td id="131" align="center">--</td>
+			  <td id="132" align="center">--</td>
+			  <td id="133" align="center">--</td>
+			  <td id="134" align="center">--</td>
+			  <td id="135" align="center">--</td>
+			  <td id="136" align="center">--</td>
+			  <td id="137" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 14 -->
+			  <td id="141" align="center">--</td>
+			  <td id="142" align="center">--</td>
+			  <td id="143" align="center">--</td>
+			  <td id="144" align="center">--</td>
+			  <td id="145" align="center">--</td>
+			  <td id="146" align="center">--</td>
+			  <td id="147" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 15 -->
+			  <td id="151" align="center">--</td>
+			  <td id="152" align="center">--</td>
+			  <td id="153" align="center">--</td>
+			  <td id="154" align="center">--</td>
+			  <td id="155" align="center">--</td>
+			  <td id="156" align="center">--</td>
+			  <td id="157" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 16 -->
+			  <td id="161" align="center">--</td>
+			  <td id="162" align="center">--</td>
+			  <td id="163" align="center">--</td>
+			  <td id="164" align="center">--</td>
+			  <td id="165" align="center">--</td>
+			  <td id="166" align="center">--</td>
+			  <td id="167" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 17 -->
+			  <td id="171" align="center">--</td>
+			  <td id="172" align="center">--</td>
+			  <td id="173" align="center">--</td>
+			  <td id="174" align="center">--</td>
+			  <td id="175" align="center">--</td>
+			  <td id="176" align="center">--</td>
+			  <td id="177" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 18 -->
+			  <td id="181" align="center">--</td>
+			  <td id="182" align="center">--</td>
+			  <td id="183" align="center">--</td>
+			  <td id="184" align="center">--</td>
+			  <td id="185" align="center">--</td>
+			  <td id="186" align="center">--</td>
+			  <td id="187" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 19 -->
+			  <td id="191" align="center">--</td>
+			  <td id="192" align="center">--</td>
+			  <td id="193" align="center">--</td>
+			  <td id="194" align="center">--</td>
+			  <td id="195" align="center">--</td>
+			  <td id="196" align="center">--</td>
+			  <td id="197" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 20 -->
+			  <td id="201" align="center">--</td>
+			  <td id="202" align="center">--</td>
+			  <td id="203" align="center">--</td>
+			  <td id="204" align="center">--</td>
+			  <td id="205" align="center">--</td>
+			  <td id="206" align="center">--</td>
+			  <td id="207" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 21 -->
+			  <td id="211" align="center">--</td>
+			  <td id="212" align="center">--</td>
+			  <td id="213" align="center">--</td>
+			  <td id="214" align="center">--</td>
+			  <td id="215" align="center">--</td>
+			  <td id="216" align="center">--</td>
+			  <td id="217" align="center">--</td>
+		  </tr>
+
+		</table>
+
+
+
+		<!-- Beginning of the 1/2 mile temperature table -->
+		<table id="Ttable" border="1" style="float: left">
+
+		  <tr> <!-- header row -->
+			  <th id="cwspd1" colspan="2"><font color="blue">Constant Wind Speed = </font></th>
+			  <th colspan="7">No Falling Snow (Snow Age)</th>
+		  </tr>
+
+
+		  <tr> <!-- header row -->
+			  <th>Temperature</th>
+			  <th>Falling Snow</th>
+			  <th>0-3 hrs</th>
+			  <th>3-6 hrs</th>
+			  <th>6-12 hrs</th>
+			  <th>12-24 hrs</th>
+			  <th>24 + hrs</th>
+		  </tr>
+
+		  <tr> <!-- Row 1 -->
+			  <td id="T11" align="center">--</td>
+			  <td id="T12" align="center">--</td>
+			  <td id="T13" align="center">--</td>
+			  <td id="T14" align="center">--</td>
+			  <td id="T15" align="center">--</td>
+			  <td id="T16" align="center">--</td>
+			  <td id="T17" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 2 -->
+			  <td id="T21" align="center">--</td>
+			  <td id="T22" align="center">--</td>
+			  <td id="T23" align="center">--</td>
+			  <td id="T24" align="center">--</td>
+			  <td id="T25" align="center">--</td>
+			  <td id="T26" align="center">--</td>
+			  <td id="T27" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 3 -->
+			  <td id="T31" align="center">--</td>
+			  <td id="T32" align="center">--</td>
+			  <td id="T33" align="center">--</td>
+			  <td id="T34" align="center">--</td>
+			  <td id="T35" align="center">--</td>
+			  <td id="T36" align="center">--</td>
+			  <td id="T37" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 4 -->
+			  <td id="T41" align="center">--</td>
+			  <td id="T42" align="center">--</td>
+			  <td id="T43" align="center">--</td>
+			  <td id="T44" align="center">--</td>
+			  <td id="T45" align="center">--</td>
+			  <td id="T46" align="center">--</td>
+			  <td id="T47" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 5 -->
+			  <td id="T51" align="center">--</td>
+			  <td id="T52" align="center">--</td>
+			  <td id="T53" align="center">--</td>
+			  <td id="T54" align="center">--</td>
+			  <td id="T55" align="center">--</td>
+			  <td id="T56" align="center">--</td>
+			  <td id="T57" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 6 -->
+			  <td id="T61" align="center">--</td>
+			  <td id="T62" align="center">--</td>
+			  <td id="T63" align="center">--</td>
+			  <td id="T64" align="center">--</td>
+			  <td id="T65" align="center">--</td>
+			  <td id="T66" align="center">--</td>
+			  <td id="T67" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 7 -->
+			  <td id="T71" align="center">--</td>
+			  <td id="T72" align="center">--</td>
+			  <td id="T73" align="center">--</td>
+			  <td id="T74" align="center">--</td>
+			  <td id="T75" align="center">--</td>
+			  <td id="T76" align="center">--</td>
+			  <td id="T77" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 8 -->
+			  <td id="T81" align="center">--</td>
+			  <td id="T82" align="center">--</td>
+			  <td id="T83" align="center">--</td>
+			  <td id="T84" align="center">--</td>
+			   <td id="T85" align="center">--</td>
+			  <td id="T86" align="center">--</td>
+			  <td id="T87" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 9 -->
+			  <td id="T91" align="center">--</td>
+			  <td id="T92" align="center">--</td>
+			  <td id="T93" align="center">--</td>
+			  <td id="T94" align="center">--</td>
+			  <td id="T95" align="center">--</td>
+			  <td id="T96" align="center">--</td>
+			  <td id="T97" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 10 -->
+			  <td id="T101" align="center">--</td>
+			  <td id="T102" align="center">--</td>
+			  <td id="T103" align="center">--</td>
+			  <td id="T104" align="center">--</td>
+			  <td id="T105" align="center">--</td>
+			  <td id="T106" align="center">--</td>
+			  <td id="T107" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 11 -->
+			  <td id="T111" align="center">--</td>
+			  <td id="T112" align="center">--</td>
+			  <td id="T113" align="center">--</td>
+			  <td id="T114" align="center">--</td>
+			  <td id="T115" align="center">--</td>
+			  <td id="T116" align="center">--</td>
+			  <td id="T117" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 12 -->
+			  <td id="T121" align="center">--</td>
+			  <td id="T122" align="center">--</td>
+			  <td id="T123" align="center">--</td>
+			  <td id="T124" align="center">--</td>
+			  <td id="T125" align="center">--</td>
+			  <td id="T126" align="center">--</td>
+			  <td id="T127" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 13 -->
+			  <td id="T131" align="center">--</td>
+			  <td id="T132" align="center">--</td>
+			  <td id="T133" align="center">--</td>
+			  <td id="T134" align="center">--</td>
+			  <td id="T135" align="center">--</td>
+			  <td id="T136" align="center">--</td>
+			  <td id="T137" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 14 -->
+			  <td id="T141" align="center">--</td>
+			  <td id="T142" align="center">--</td>
+			  <td id="T143" align="center">--</td>
+			  <td id="T144" align="center">--</td>
+			  <td id="T145" align="center">--</td>
+			  <td id="T146" align="center">--</td>
+			  <td id="T147" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 15 -->
+			  <td id="T151" align="center">--</td>
+			  <td id="T152" align="center">--</td>
+			  <td id="T153" align="center">--</td>
+			  <td id="T154" align="center">--</td>
+			  <td id="T155" align="center">--</td>
+			  <td id="T156" align="center">--</td>
+			  <td id="T157" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 16 -->
+			  <td id="T161" align="center">--</td>
+			  <td id="T162" align="center">--</td>
+			  <td id="T163" align="center">--</td>
+			  <td id="T164" align="center">--</td>
+			  <td id="T165" align="center">--</td>
+			  <td id="T166" align="center">--</td>
+			  <td id="T167" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 17 -->
+			  <td id="T171" align="center">--</td>
+			  <td id="T172" align="center">--</td>
+			  <td id="T173" align="center">--</td>
+			  <td id="T174" align="center">--</td>
+			  <td id="T175" align="center">--</td>
+			  <td id="T176" align="center">--</td>
+			  <td id="T177" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 18 -->
+			  <td id="T181" align="center">--</td>
+			  <td id="T182" align="center">--</td>
+			  <td id="T183" align="center">--</td>
+			  <td id="T184" align="center">--</td>
+			  <td id="T185" align="center">--</td>
+			  <td id="T186" align="center">--</td>
+			  <td id="T187" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 19 -->
+			  <td id="T191" align="center">--</td>
+			  <td id="T192" align="center">--</td>
+			  <td id="T193" align="center">--</td>
+			  <td id="T194" align="center">--</td>
+			  <td id="T195" align="center">--</td>
+			  <td id="T196" align="center">--</td>
+			  <td id="T197" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 20 -->
+			  <td id="T201" align="center">--</td>
+			  <td id="T202" align="center">--</td>
+			  <td id="T203" align="center">--</td>
+			  <td id="T204" align="center">--</td>
+			  <td id="T205" align="center">--</td>
+			  <td id="T206" align="center">--</td>
+			  <td id="T207" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 21 -->
+			  <td id="T211" align="center">--</td>
+			  <td id="T212" align="center">--</td>
+			  <td id="T213" align="center">--</td>
+			  <td id="T214" align="center">--</td>
+			  <td id="T215" align="center">--</td>
+			  <td id="T216" align="center">--</td>
+			  <td id="T217" align="center">--</td>
+		  </tr>
+
+
+		</table>
+	  </div>
+
+	</div>
+
+	<!-- This controls the 1 mile table legend -->
+	<div id="one" class="tabcontent">
+
+
+	<!-- This controls the Crust Breaker Table -->
+	  <div id="Crusty2" style="position:relative; overflow:hidden; top:-80px; left:1025px;">
+		<table border="1">
+
+			<tr> <!-- header row -->
+				<th colspan="2">Probability of Snow Crust Break</th>
+			</tr>
+
+			<tr> <!-- Row 1 -->
+				<td align="center">Wind Speed (knts)</td>
+			<td>Probability</td>
+			</tr>
+
+			<tr> <!-- Row 2 -->
+				<td id="crustWind2" align="center">--</td>
+			<td id="crustProb2" align="center">--</td>
+			</tr>
+
+		</table>
+	  </div>
+
+
+	  <div style="position:relative; top:550px; left:350px;">
+		<table border="1">
+
+			<tr> <!-- header row -->
+				<th colspan="3">ForecastBuilder - Wx Grids</th>
+			</tr>
+
+			<tr> <!-- Row 1 -->
+				<td align="center">Blowing Snow Model Output (1 SM Threshold)</td>
+			<td align="center">PotBlowingSnow</td>
+			<td align="center">Wx Grid</td>
+			</tr>
+
+			<tr> <!-- Row 2 -->
+				<td align="center" bgColor="yellow">30-100%</td>
+				<td align="center" bgColor="yellow">40%</td>
+				<td align="center" bgColor="yellow">Areas</td>
+			</tr>
+
+		</table>
+	  </div>
+
+
+	  <div style="position:relative; left: 100px; top:-120px;">
+
+		<!-- Beginning of the 1 mile wind speed table -->
+		<table id="WStable2" border="1" style="float: left;margin-left:15px;margin-right:20px">
+
+		  <tr> <!-- header row -->
+			  <th id="ctemp2" colspan="2"><font color="blue">Constant Temperature = </font></th>
+			  <th colspan="7">No Falling Snow (Snow Age)</th>
+		  </tr>
+
+		  <tr> <!-- header row -->
+			  <th>Wind Speed</th>
+			  <th>Falling Snow</th>
+			  <th>0-3 hrs</th>
+			  <th>3-6 hrs</th>
+			  <th>6-12 hrs</th>
+			  <th>12-24 hrs</th>
+			  <th>24 + hrs</th>
+		  </tr>
+
+		  <tr> <!-- Row 1 -->
+			  <td id="WW11" align="center">--</td>
+			  <td id="WW12" align="center">--</td>
+			  <td id="WW13" align="center">--</td>
+			  <td id="WW14" align="center">--</td>
+			  <td id="WW15" align="center">--</td>
+			  <td id="WW16" align="center">--</td>
+			  <td id="WW17" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 2 -->
+			  <td id="WW21" align="center">--</td>
+			  <td id="WW22" align="center">--</td>
+			  <td id="WW23" align="center">--</td>
+			  <td id="WW24" align="center">--</td>
+			  <td id="WW25" align="center">--</td>
+			  <td id="WW26" align="center">--</td>
+			  <td id="WW27" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 3 -->
+			  <td id="WW31" align="center">--</td>
+			  <td id="WW32" align="center">--</td>
+			  <td id="WW33" align="center">--</td>
+			  <td id="WW34" align="center">--</td>
+			  <td id="WW35" align="center">--</td>
+			  <td id="WW36" align="center">--</td>
+			  <td id="WW37" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 4 -->
+			  <td id="WW41" align="center">--</td>
+			  <td id="WW42" align="center">--</td>
+			  <td id="WW43" align="center">--</td>
+			  <td id="WW44" align="center">--</td>
+			  <td id="WW45" align="center">--</td>
+			  <td id="WW46" align="center">--</td>
+			  <td id="WW47" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 5 -->
+			  <td id="WW51" align="center">--</td>
+			  <td id="WW52" align="center">--</td>
+			  <td id="WW53" align="center">--</td>
+			  <td id="WW54" align="center">--</td>
+			  <td id="WW55" align="center">--</td>
+			  <td id="WW56" align="center">--</td>
+			  <td id="WW57" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 6 -->
+			  <td id="WW61" align="center">--</td>
+			  <td id="WW62" align="center">--</td>
+			  <td id="WW63" align="center">--</td>
+			  <td id="WW64" align="center">--</td>
+			  <td id="WW65" align="center">--</td>
+			  <td id="WW66" align="center">--</td>
+			  <td id="WW67" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 7 -->
+			  <td id="WW71" align="center">--</td>
+			  <td id="WW72" align="center">--</td>
+			  <td id="WW73" align="center">--</td>
+			  <td id="WW74" align="center">--</td>
+			  <td id="WW75" align="center">--</td>
+			  <td id="WW76" align="center">--</td>
+			  <td id="WW77" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 8 -->
+			  <td id="WW81" align="center">--</td>
+			  <td id="WW82" align="center">--</td>
+			  <td id="WW83" align="center">--</td>
+			  <td id="WW84" align="center">--</td>
+			  <td id="WW85" align="center">--</td>
+			  <td id="WW86" align="center">--</td>
+			  <td id="WW87" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 9 -->
+			  <td id="WW91" align="center">--</td>
+			  <td id="WW92" align="center">--</td>
+			  <td id="WW93" align="center">--</td>
+			  <td id="WW94" align="center">--</td>
+			  <td id="WW95" align="center">--</td>
+			  <td id="WW96" align="center">--</td>
+			  <td id="WW97" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 10 -->
+			  <td id="WW101" align="center">--</td>
+			  <td id="WW102" align="center">--</td>
+			  <td id="WW103" align="center">--</td>
+			  <td id="WW104" align="center">--</td>
+			  <td id="WW105" align="center">--</td>
+			  <td id="WW106" align="center">--</td>
+			  <td id="WW107" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 11 -->
+			  <td id="WW111" align="center">--</td>
+			  <td id="WW112" align="center">--</td>
+			  <td id="WW113" align="center">--</td>
+			  <td id="WW114" align="center">--</td>
+			  <td id="WW115" align="center">--</td>
+			  <td id="WW116" align="center">--</td>
+			  <td id="WW117" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 12 -->
+			  <td id="WW121" align="center">--</td>
+			  <td id="WW122" align="center">--</td>
+			  <td id="WW123" align="center">--</td>
+			  <td id="WW124" align="center">--</td>
+			  <td id="WW125" align="center">--</td>
+			  <td id="WW126" align="center">--</td>
+			  <td id="WW127" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 13 -->
+			  <td id="WW131" align="center">--</td>
+			  <td id="WW132" align="center">--</td>
+			  <td id="WW133" align="center">--</td>
+			  <td id="WW134" align="center">--</td>
+			  <td id="WW135" align="center">--</td>
+			  <td id="WW136" align="center">--</td>
+			  <td id="WW137" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 14 -->
+			  <td id="WW141" align="center">--</td>
+			  <td id="WW142" align="center">--</td>
+			  <td id="WW143" align="center">--</td>
+			  <td id="WW144" align="center">--</td>
+			  <td id="WW145" align="center">--</td>
+			  <td id="WW146" align="center">--</td>
+			  <td id="WW147" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 15 -->
+			  <td id="WW151" align="center">--</td>
+			  <td id="WW152" align="center">--</td>
+			  <td id="WW153" align="center">--</td>
+			  <td id="WW154" align="center">--</td>
+			  <td id="WW155" align="center">--</td>
+			  <td id="WW156" align="center">--</td>
+			  <td id="WW157" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 16 -->
+			  <td id="WW161" align="center">--</td>
+			  <td id="WW162" align="center">--</td>
+			  <td id="WW163" align="center">--</td>
+			  <td id="WW164" align="center">--</td>
+			  <td id="WW165" align="center">--</td>
+			  <td id="WW166" align="center">--</td>
+			  <td id="WW167" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 17 -->
+			  <td id="WW171" align="center">--</td>
+			  <td id="WW172" align="center">--</td>
+			  <td id="WW173" align="center">--</td>
+			  <td id="WW174" align="center">--</td>
+			  <td id="WW175" align="center">--</td>
+			  <td id="WW176" align="center">--</td>
+			  <td id="WW177" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 18 -->
+			  <td id="WW181" align="center">--</td>
+			  <td id="WW182" align="center">--</td>
+			  <td id="WW183" align="center">--</td>
+			  <td id="WW184" align="center">--</td>
+			  <td id="WW185" align="center">--</td>
+			  <td id="WW186" align="center">--</td>
+			  <td id="WW187" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 19 -->
+			  <td id="WW191" align="center">--</td>
+			  <td id="WW192" align="center">--</td>
+			  <td id="WW193" align="center">--</td>
+			  <td id="WW194" align="center">--</td>
+			  <td id="WW195" align="center">--</td>
+			  <td id="WW196" align="center">--</td>
+			  <td id="WW197" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 20 -->
+			  <td id="WW201" align="center">--</td>
+			  <td id="WW202" align="center">--</td>
+			  <td id="WW203" align="center">--</td>
+			  <td id="WW204" align="center">--</td>
+			  <td id="WW205" align="center">--</td>
+			  <td id="WW206" align="center">--</td>
+			  <td id="WW207" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 21 -->
+			  <td id="WW211" align="center">--</td>
+			  <td id="WW212" align="center">--</td>
+			  <td id="WW213" align="center">--</td>
+			  <td id="WW214" align="center">--</td>
+			  <td id="WW215" align="center">--</td>
+			  <td id="WW216" align="center">--</td>
+			  <td id="WW217" align="center">--</td>
+		  </tr>
+
+		</table>
+
+
+
+
+		<!-- Beginning of the 1 mile temperature table -->
+		<table id="Ttable2" border="1" style="float: left">
+
+		  <tr> <!-- header row -->
+			  <th id="cwspd2" colspan="2"><font color="blue">Constant Wind Speed = </font></th>
+			  <th colspan="7">No Falling Snow (Snow Age)</th>
+		  </tr>
+
+
+		  <tr> <!-- header row -->
+			  <th>Temperature</th>
+			  <th>Falling Snow</th>
+			  <th>0-3 hrs</th>
+			  <th>3-6 hrs</th>
+			  <th>6-12 hrs</th>
+			  <th>12-24 hrs</th>
+			  <th>24 + hrs</th>
+		  </tr>
+
+		  <tr> <!-- Row 1 -->
+			  <td id="TT11" align="center">--</td>
+			  <td id="TT12" align="center">--</td>
+			  <td id="TT13" align="center">--</td>
+			  <td id="TT14" align="center">--</td>
+			  <td id="TT15" align="center">--</td>
+			  <td id="TT16" align="center">--</td>
+			  <td id="TT17" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 2 -->
+			  <td id="TT21" align="center">--</td>
+			  <td id="TT22" align="center">--</td>
+			  <td id="TT23" align="center">--</td>
+			  <td id="TT24" align="center">--</td>
+			  <td id="TT25" align="center">--</td>
+			  <td id="TT26" align="center">--</td>
+			  <td id="TT27" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 3 -->
+			  <td id="TT31" align="center">--</td>
+			  <td id="TT32" align="center">--</td>
+			  <td id="TT33" align="center">--</td>
+			  <td id="TT34" align="center">--</td>
+			  <td id="TT35" align="center">--</td>
+			  <td id="TT36" align="center">--</td>
+			  <td id="TT37" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 4 -->
+			  <td id="TT41" align="center">--</td>
+			  <td id="TT42" align="center">--</td>
+			  <td id="TT43" align="center">--</td>
+			  <td id="TT44" align="center">--</td>
+			  <td id="TT45" align="center">--</td>
+			  <td id="TT46" align="center">--</td>
+			  <td id="TT47" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 5 -->
+			  <td id="TT51" align="center">--</td>
+			  <td id="TT52" align="center">--</td>
+			  <td id="TT53" align="center">--</td>
+			  <td id="TT54" align="center">--</td>
+			  <td id="TT55" align="center">--</td>
+			  <td id="TT56" align="center">--</td>
+			  <td id="TT57" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 6 -->
+			  <td id="TT61" align="center">--</td>
+			  <td id="TT62" align="center">--</td>
+			  <td id="TT63" align="center">--</td>
+			  <td id="TT64" align="center">--</td>
+			  <td id="TT65" align="center">--</td>
+			  <td id="TT66" align="center">--</td>
+			  <td id="TT67" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 7 -->
+			  <td id="TT71" align="center">--</td>
+			  <td id="TT72" align="center">--</td>
+			  <td id="TT73" align="center">--</td>
+			  <td id="TT74" align="center">--</td>
+			  <td id="TT75" align="center">--</td>
+			  <td id="TT76" align="center">--</td>
+			  <td id="TT77" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 8 -->
+			  <td id="TT81" align="center">--</td>
+			  <td id="TT82" align="center">--</td>
+			  <td id="TT83" align="center">--</td>
+			  <td id="TT84" align="center">--</td>
+			  <td id="TT85" align="center">--</td>
+			  <td id="TT86" align="center">--</td>
+			  <td id="TT87" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 9 -->
+			  <td id="TT91" align="center">--</td>
+			  <td id="TT92" align="center">--</td>
+			  <td id="TT93" align="center">--</td>
+			  <td id="TT94" align="center">--</td>
+			  <td id="TT95" align="center">--</td>
+			  <td id="TT96" align="center">--</td>
+			  <td id="TT97" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 10 -->
+			  <td id="TT101" align="center">--</td>
+			  <td id="TT102" align="center">--</td>
+			  <td id="TT103" align="center">--</td>
+			  <td id="TT104" align="center">--</td>
+			  <td id="TT105" align="center">--</td>
+			  <td id="TT106" align="center">--</td>
+			  <td id="TT107" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 11 -->
+			  <td id="TT111" align="center">--</td>
+			  <td id="TT112" align="center">--</td>
+			  <td id="TT113" align="center">--</td>
+			  <td id="TT114" align="center">--</td>
+			  <td id="TT115" align="center">--</td>
+			  <td id="TT116" align="center">--</td>
+			  <td id="TT117" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 12 -->
+			  <td id="TT121" align="center">--</td>
+			  <td id="TT122" align="center">--</td>
+			  <td id="TT123" align="center">--</td>
+			  <td id="TT124" align="center">--</td>
+			  <td id="TT125" align="center">--</td>
+			  <td id="TT126" align="center">--</td>
+			  <td id="TT127" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 13 -->
+			  <td id="TT131" align="center">--</td>
+			  <td id="TT132" align="center">--</td>
+			  <td id="TT133" align="center">--</td>
+			  <td id="TT134" align="center">--</td>
+			  <td id="TT135" align="center">--</td>
+			  <td id="TT136" align="center">--</td>
+			  <td id="TT137" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 14 -->
+			  <td id="TT141" align="center">--</td>
+			  <td id="TT142" align="center">--</td>
+			  <td id="TT143" align="center">--</td>
+			  <td id="TT144" align="center">--</td>
+			  <td id="TT145" align="center">--</td>
+			  <td id="TT146" align="center">--</td>
+			  <td id="TT147" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 15 -->
+			  <td id="TT151" align="center">--</td>
+			  <td id="TT152" align="center">--</td>
+			  <td id="TT153" align="center">--</td>
+			  <td id="TT154" align="center">--</td>
+			  <td id="TT155" align="center">--</td>
+			  <td id="TT156" align="center">--</td>
+			  <td id="TT157" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 16 -->
+			  <td id="TT161" align="center">--</td>
+			  <td id="TT162" align="center">--</td>
+			  <td id="TT163" align="center">--</td>
+			  <td id="TT164" align="center">--</td>
+			  <td id="TT165" align="center">--</td>
+			  <td id="TT166" align="center">--</td>
+			  <td id="TT167" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 17 -->
+			  <td id="TT171" align="center">--</td>
+			  <td id="TT172" align="center">--</td>
+			  <td id="TT173" align="center">--</td>
+			  <td id="TT174" align="center">--</td>
+			  <td id="TT175" align="center">--</td>
+			  <td id="TT176" align="center">--</td>
+			  <td id="TT177" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 18 -->
+			  <td id="TT181" align="center">--</td>
+			  <td id="TT182" align="center">--</td>
+			  <td id="TT183" align="center">--</td>
+			  <td id="TT184" align="center">--</td>
+			  <td id="TT185" align="center">--</td>
+			  <td id="TT186" align="center">--</td>
+			  <td id="TT187" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 19 -->
+			  <td id="TT191" align="center">--</td>
+			  <td id="TT192" align="center">--</td>
+			  <td id="TT193" align="center">--</td>
+			  <td id="TT194" align="center">--</td>
+			  <td id="TT195" align="center">--</td>
+			  <td id="TT196" align="center">--</td>
+			  <td id="TT197" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 20 -->
+			  <td id="TT201" align="center">--</td>
+			  <td id="TT202" align="center">--</td>
+			  <td id="TT203" align="center">--</td>
+			  <td id="TT204" align="center">--</td>
+			  <td id="TT205" align="center">--</td>
+			  <td id="TT206" align="center">--</td>
+			  <td id="TT207" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 21 -->
+			  <td id="TT211" align="center">--</td>
+			  <td id="TT212" align="center">--</td>
+			  <td id="TT213" align="center">--</td>
+			  <td id="TT214" align="center">--</td>
+			  <td id="TT215" align="center">--</td>
+			  <td id="TT216" align="center">--</td>
+			  <td id="TT217" align="center">--</td>
+		  </tr>
+
+
+		</table>
+	  </div>
+
+	</div>
+
+
+	<!-- This controls the 3 mile table legend -->
+	<div id="three" class="tabcontent">
+
+
+
+	<!-- This controls the Crust Breaker Table -->
+	  <div id="Crusty3" style="position:relative; overflow:hidden; top:-80px; left:1025px;">
+		<table border="1">
+
+			<tr> <!-- header row -->
+				<th colspan="2">Probability of Snow Crust Break</th>
+			</tr>
+
+			<tr> <!-- Row 1 -->
+				<td align="center">Wind Speed (knts)</td>
+			<td>Probability</td>
+			</tr>
+
+			<tr> <!-- Row 2 -->
+				<td id="crustWind3" align="center">--</td>
+			<td id="crustProb3" align="center">--</td>
+			</tr>
+
+		</table>
+	  </div>
+
+
+	  <div style="position:relative; top:550px; left:350px;">
+		<table border="1">
+
+			<tr> <!-- header row -->
+				<th colspan="3">ForecastBuilder - Wx Grids</th>
+			</tr>
+
+			<tr> <!-- Row 1 -->
+				<td align="center">Blowing Snow Model Output (3 SM Threshold)</td>
+			<td align="center">PotBlowingSnow</td>
+			<td align="center">Wx Grid</td>
+			</tr>
+
+			<tr> <!-- Row 2 -->
+				<td align="center" bgColor="yellow">10-100%</td>
+				<td align="center" bgColor="yellow">20%</td>
+				<td align="center" bgColor="yellow">Patchy</td>
+			</tr>
+
+		</table>
+	  </div>
+
+
+
+	  <div style="position:relative; left: 100px; top:-120px;">
+
+		<!-- Beginning of the 3 mile wind speed table -->
+		<table id="WStable3" border="1" style="float: left;margin-left:15px;margin-right:20px">
+
+		  <tr> <!-- header row -->
+			  <th id="ctemp3" colspan="2"><font color="blue">Constant Temperature = </font></th>
+			  <th colspan="7">No Falling Snow (Snow Age)</th>
+		  </tr>
+
+		  <tr> <!-- header row -->
+			  <th>Wind Speed</th>
+			  <th>Falling Snow</th>
+			  <th>0-3 hrs</th>
+			  <th>3-6 hrs</th>
+			  <th>6-12 hrs</th>
+			  <th>12-24 hrs</th>
+			  <th>24 + hrs</th>
+		  </tr>
+
+		  <tr> <!-- Row 1 -->
+			  <td id="WWW11" align="center">--</td>
+			  <td id="WWW12" align="center">--</td>
+			  <td id="WWW13" align="center">--</td>
+			  <td id="WWW14" align="center">--</td>
+			  <td id="WWW15" align="center">--</td>
+			  <td id="WWW16" align="center">--</td>
+			  <td id="WWW17" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 2 -->
+			  <td id="WWW21" align="center">--</td>
+			  <td id="WWW22" align="center">--</td>
+			  <td id="WWW23" align="center">--</td>
+			  <td id="WWW24" align="center">--</td>
+			  <td id="WWW25" align="center">--</td>
+			  <td id="WWW26" align="center">--</td>
+			  <td id="WWW27" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 3 -->
+			  <td id="WWW31" align="center">--</td>
+			  <td id="WWW32" align="center">--</td>
+			  <td id="WWW33" align="center">--</td>
+			  <td id="WWW34" align="center">--</td>
+			  <td id="WWW35" align="center">--</td>
+			  <td id="WWW36" align="center">--</td>
+			  <td id="WWW37" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 4 -->
+			  <td id="WWW41" align="center">--</td>
+			  <td id="WWW42" align="center">--</td>
+			  <td id="WWW43" align="center">--</td>
+			  <td id="WWW44" align="center">--</td>
+			  <td id="WWW45" align="center">--</td>
+			  <td id="WWW46" align="center">--</td>
+			  <td id="WWW47" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 5 -->
+			  <td id="WWW51" align="center">--</td>
+			  <td id="WWW52" align="center">--</td>
+			  <td id="WWW53" align="center">--</td>
+			  <td id="WWW54" align="center">--</td>
+			  <td id="WWW55" align="center">--</td>
+			  <td id="WWW56" align="center">--</td>
+			  <td id="WWW57" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 6 -->
+			  <td id="WWW61" align="center">--</td>
+			  <td id="WWW62" align="center">--</td>
+			  <td id="WWW63" align="center">--</td>
+			  <td id="WWW64" align="center">--</td>
+			  <td id="WWW65" align="center">--</td>
+			  <td id="WWW66" align="center">--</td>
+			  <td id="WWW67" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 7 -->
+			  <td id="WWW71" align="center">--</td>
+			  <td id="WWW72" align="center">--</td>
+			  <td id="WWW73" align="center">--</td>
+			  <td id="WWW74" align="center">--</td>
+			  <td id="WWW75" align="center">--</td>
+			  <td id="WWW76" align="center">--</td>
+			  <td id="WWW77" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 8 -->
+			  <td id="WWW81" align="center">--</td>
+			  <td id="WWW82" align="center">--</td>
+			  <td id="WWW83" align="center">--</td>
+			  <td id="WWW84" align="center">--</td>
+			  <td id="WWW85" align="center">--</td>
+			  <td id="WWW86" align="center">--</td>
+			  <td id="WWW87" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 9 -->
+			  <td id="WWW91" align="center">--</td>
+			  <td id="WWW92" align="center">--</td>
+			  <td id="WWW93" align="center">--</td>
+			  <td id="WWW94" align="center">--</td>
+			  <td id="WWW95" align="center">--</td>
+			  <td id="WWW96" align="center">--</td>
+			  <td id="WWW97" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 10 -->
+			  <td id="WWW101" align="center">--</td>
+			  <td id="WWW102" align="center">--</td>
+			  <td id="WWW103" align="center">--</td>
+			  <td id="WWW104" align="center">--</td>
+			  <td id="WWW105" align="center">--</td>
+			  <td id="WWW106" align="center">--</td>
+			  <td id="WWW107" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 11 -->
+			  <td id="WWW111" align="center">--</td>
+			  <td id="WWW112" align="center">--</td>
+			  <td id="WWW113" align="center">--</td>
+			  <td id="WWW114" align="center">--</td>
+			  <td id="WWW115" align="center">--</td>
+			  <td id="WWW116" align="center">--</td>
+			  <td id="WWW117" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 12 -->
+			  <td id="WWW121" align="center">--</td>
+			  <td id="WWW122" align="center">--</td>
+			  <td id="WWW123" align="center">--</td>
+			  <td id="WWW124" align="center">--</td>
+			  <td id="WWW125" align="center">--</td>
+			  <td id="WWW126" align="center">--</td>
+			  <td id="WWW127" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 13 -->
+			  <td id="WWW131" align="center">--</td>
+			  <td id="WWW132" align="center">--</td>
+			  <td id="WWW133" align="center">--</td>
+			  <td id="WWW134" align="center">--</td>
+			  <td id="WWW135" align="center">--</td>
+			  <td id="WWW136" align="center">--</td>
+			  <td id="WWW137" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 14 -->
+			  <td id="WWW141" align="center">--</td>
+			  <td id="WWW142" align="center">--</td>
+			  <td id="WWW143" align="center">--</td>
+			  <td id="WWW144" align="center">--</td>
+			  <td id="WWW145" align="center">--</td>
+			  <td id="WWW146" align="center">--</td>
+			  <td id="WWW147" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 15 -->
+			  <td id="WWW151" align="center">--</td>
+			  <td id="WWW152" align="center">--</td>
+			  <td id="WWW153" align="center">--</td>
+			  <td id="WWW154" align="center">--</td>
+			  <td id="WWW155" align="center">--</td>
+			  <td id="WWW156" align="center">--</td>
+			  <td id="WWW157" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 16 -->
+			  <td id="WWW161" align="center">--</td>
+			  <td id="WWW162" align="center">--</td>
+			  <td id="WWW163" align="center">--</td>
+			  <td id="WWW164" align="center">--</td>
+			  <td id="WWW165" align="center">--</td>
+			  <td id="WWW166" align="center">--</td>
+			  <td id="WWW167" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 17 -->
+			  <td id="WWW171" align="center">--</td>
+			  <td id="WWW172" align="center">--</td>
+			  <td id="WWW173" align="center">--</td>
+			  <td id="WWW174" align="center">--</td>
+			  <td id="WWW175" align="center">--</td>
+			  <td id="WWW176" align="center">--</td>
+			  <td id="WWW177" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 18 -->
+			  <td id="WWW181" align="center">--</td>
+			  <td id="WWW182" align="center">--</td>
+			  <td id="WWW183" align="center">--</td>
+			  <td id="WWW184" align="center">--</td>
+			  <td id="WWW185" align="center">--</td>
+			  <td id="WWW186" align="center">--</td>
+			  <td id="WWW187" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 19 -->
+			  <td id="WWW191" align="center">--</td>
+			  <td id="WWW192" align="center">--</td>
+			  <td id="WWW193" align="center">--</td>
+			  <td id="WWW194" align="center">--</td>
+			  <td id="WWW195" align="center">--</td>
+			  <td id="WWW196" align="center">--</td>
+			  <td id="WWW197" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 20 -->
+			  <td id="WWW201" align="center">--</td>
+			  <td id="WWW202" align="center">--</td>
+			  <td id="WWW203" align="center">--</td>
+			  <td id="WWW204" align="center">--</td>
+			  <td id="WWW205" align="center">--</td>
+			  <td id="WWW206" align="center">--</td>
+			  <td id="WWW207" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 21 -->
+			  <td id="WWW211" align="center">--</td>
+			  <td id="WWW212" align="center">--</td>
+			  <td id="WWW213" align="center">--</td>
+			  <td id="WWW214" align="center">--</td>
+			  <td id="WWW215" align="center">--</td>
+			  <td id="WWW216" align="center">--</td>
+			  <td id="WWW217" align="center">--</td>
+		  </tr>
+
+		</table>
+
+
+		<!-- Beginning of the 3 mile temperature table -->
+		<table id="Ttable3" border="1" style="float: left">
+
+		  <tr> <!-- header row -->
+			  <th id="cwspd3" colspan="2"><font color="blue">Constant Wind Speed = </font></th>
+			  <th colspan="7">No Falling Snow (Snow Age)</th>
+		  </tr>
+
+
+		  <tr> <!-- header row -->
+			  <th>Temperature</th>
+			  <th>Falling Snow</th>
+			  <th>0-3 hrs</th>
+			  <th>3-6 hrs</th>
+			  <th>6-12 hrs</th>
+			  <th>12-24 hrs</th>
+			  <th>24 + hrs</th>
+		  </tr>
+
+		  <tr> <!-- Row 1 -->
+			  <td id="TTT11" align="center">--</td>
+			  <td id="TTT12" align="center">--</td>
+			  <td id="TTT13" align="center">--</td>
+			  <td id="TTT14" align="center">--</td>
+			  <td id="TTT15" align="center">--</td>
+			  <td id="TTT16" align="center">--</td>
+			  <td id="TTT17" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 2 -->
+			  <td id="TTT21" align="center">--</td>
+			  <td id="TTT22" align="center">--</td>
+			  <td id="TTT23" align="center">--</td>
+			  <td id="TTT24" align="center">--</td>
+			  <td id="TTT25" align="center">--</td>
+			  <td id="TTT26" align="center">--</td>
+			  <td id="TTT27" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 3 -->
+			  <td id="TTT31" align="center">--</td>
+			  <td id="TTT32" align="center">--</td>
+			  <td id="TTT33" align="center">--</td>
+			  <td id="TTT34" align="center">--</td>
+			  <td id="TTT35" align="center">--</td>
+			  <td id="TTT36" align="center">--</td>
+			  <td id="TTT37" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 4 -->
+			  <td id="TTT41" align="center">--</td>
+			  <td id="TTT42" align="center">--</td>
+			  <td id="TTT43" align="center">--</td>
+			  <td id="TTT44" align="center">--</td>
+			  <td id="TTT45" align="center">--</td>
+			  <td id="TTT46" align="center">--</td>
+			  <td id="TTT47" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 5 -->
+			  <td id="TTT51" align="center">--</td>
+			  <td id="TTT52" align="center">--</td>
+			  <td id="TTT53" align="center">--</td>
+			  <td id="TTT54" align="center">--</td>
+			  <td id="TTT55" align="center">--</td>
+			  <td id="TTT56" align="center">--</td>
+			  <td id="TTT57" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 6 -->
+			  <td id="TTT61" align="center">--</td>
+			  <td id="TTT62" align="center">--</td>
+			  <td id="TTT63" align="center">--</td>
+			  <td id="TTT64" align="center">--</td>
+			  <td id="TTT65" align="center">--</td>
+			  <td id="TTT66" align="center">--</td>
+			  <td id="TTT67" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 7 -->
+			  <td id="TTT71" align="center">--</td>
+			  <td id="TTT72" align="center">--</td>
+			  <td id="TTT73" align="center">--</td>
+			  <td id="TTT74" align="center">--</td>
+			  <td id="TTT75" align="center">--</td>
+			  <td id="TTT76" align="center">--</td>
+			  <td id="TTT77" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 8 -->
+			  <td id="TTT81" align="center">--</td>
+			  <td id="TTT82" align="center">--</td>
+			  <td id="TTT83" align="center">--</td>
+			  <td id="TTT84" align="center">--</td>
+			  <td id="TTT85" align="center">--</td>
+			  <td id="TTT86" align="center">--</td>
+			  <td id="TTT87" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 9 -->
+			  <td id="TTT91" align="center">--</td>
+			  <td id="TTT92" align="center">--</td>
+			  <td id="TTT93" align="center">--</td>
+			  <td id="TTT94" align="center">--</td>
+			  <td id="TTT95" align="center">--</td>
+			  <td id="TTT96" align="center">--</td>
+			  <td id="TTT97" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 10 -->
+			  <td id="TTT101" align="center">--</td>
+			  <td id="TTT102" align="center">--</td>
+			  <td id="TTT103" align="center">--</td>
+			  <td id="TTT104" align="center">--</td>
+			  <td id="TTT105" align="center">--</td>
+			  <td id="TTT106" align="center">--</td>
+			  <td id="TTT107" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 11 -->
+			  <td id="TTT111" align="center">--</td>
+			  <td id="TTT112" align="center">--</td>
+			  <td id="TTT113" align="center">--</td>
+			  <td id="TTT114" align="center">--</td>
+			  <td id="TTT115" align="center">--</td>
+			  <td id="TTT116" align="center">--</td>
+			  <td id="TTT117" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 12 -->
+			  <td id="TTT121" align="center">--</td>
+			  <td id="TTT122" align="center">--</td>
+			  <td id="TTT123" align="center">--</td>
+			  <td id="TTT124" align="center">--</td>
+			  <td id="TTT125" align="center">--</td>
+			  <td id="TTT126" align="center">--</td>
+			  <td id="TTT127" align="center">--</td>
+		  </tr>
+
+
+		  <tr> <!-- Row 13 -->
+			  <td id="TTT131" align="center">--</td>
+			  <td id="TTT132" align="center">--</td>
+			  <td id="TTT133" align="center">--</td>
+			  <td id="TTT134" align="center">--</td>
+			  <td id="TTT135" align="center">--</td>
+			  <td id="TTT136" align="center">--</td>
+			  <td id="TTT137" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 14 -->
+			  <td id="TTT141" align="center">--</td>
+			  <td id="TTT142" align="center">--</td>
+			  <td id="TTT143" align="center">--</td>
+			  <td id="TTT144" align="center">--</td>
+			  <td id="TTT145" align="center">--</td>
+			  <td id="TTT146" align="center">--</td>
+			  <td id="TTT147" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 15 -->
+			  <td id="TTT151" align="center">--</td>
+			  <td id="TTT152" align="center">--</td>
+			  <td id="TTT153" align="center">--</td>
+			  <td id="TTT154" align="center">--</td>
+			  <td id="TTT155" align="center">--</td>
+			  <td id="TTT156" align="center">--</td>
+			  <td id="TTT157" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 16 -->
+			  <td id="TTT161" align="center">--</td>
+			  <td id="TTT162" align="center">--</td>
+			  <td id="TTT163" align="center">--</td>
+			  <td id="TTT164" align="center">--</td>
+			  <td id="TTT165" align="center">--</td>
+			  <td id="TTT166" align="center">--</td>
+			  <td id="TTT167" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 17 -->
+			  <td id="TTT171" align="center">--</td>
+			  <td id="TTT172" align="center">--</td>
+			  <td id="TTT173" align="center">--</td>
+			  <td id="TTT174" align="center">--</td>
+			  <td id="TTT175" align="center">--</td>
+			  <td id="TTT176" align="center">--</td>
+			  <td id="TTT177" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 18 -->
+			  <td id="TTT181" align="center">--</td>
+			  <td id="TTT182" align="center">--</td>
+			  <td id="TTT183" align="center">--</td>
+			  <td id="TTT184" align="center">--</td>
+			  <td id="TTT185" align="center">--</td>
+			  <td id="TTT186" align="center">--</td>
+			  <td id="TTT187" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 19 -->
+			  <td id="TTT191" align="center">--</td>
+			  <td id="TTT192" align="center">--</td>
+			  <td id="TTT193" align="center">--</td>
+			  <td id="TTT194" align="center">--</td>
+			  <td id="TTT195" align="center">--</td>
+			  <td id="TTT196" align="center">--</td>
+			  <td id="TTT197" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 20 -->
+			  <td id="TTT201" align="center">--</td>
+			  <td id="TTT202" align="center">--</td>
+			  <td id="TTT203" align="center">--</td>
+			  <td id="TTT204" align="center">--</td>
+			  <td id="TTT205" align="center">--</td>
+			  <td id="TTT206" align="center">--</td>
+			  <td id="TTT207" align="center">--</td>
+		  </tr>
+
+		  <tr> <!-- Row 21 -->
+			  <td id="TTT211" align="center">--</td>
+			  <td id="TTT212" align="center">--</td>
+			  <td id="TTT213" align="center">--</td>
+			  <td id="TTT214" align="center">--</td>
+			  <td id="TTT215" align="center">--</td>
+			  <td id="TTT216" align="center">--</td>
+			  <td id="TTT217" align="center">--</td>
+		  </tr>
+
+
+		</table>
+	  </div>
+
+	</div>
+
+</div> <!-- end of the mainholder div -->
+
+<!-- This controls the disclaimer -->
+<div style="position:absolute; top:870px; width:100vw; height:20px; text-align: center;">
+  <p><font color='red'>NOTE: this table assumes unglazed, blowable (2+") snow is on the ground.</font></p>
+</div>
+
+
+<!-- This javascript controls clicking on/off the different visibility tabs -->
+<!-- I borrowed this from online and it happened to work, so good luck if you want to edit this.-->
+<!-- I"m not 100% sure how it works! -->
+
+<script>
+function openTAB(evt, cityName,legendName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent")
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(cityName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
+
+// Get the element with id="defaultOpen" and click on it
+document.getElementById("defaultOpen").click();
+
+</script>
+
+
+
+<!-- This points to the actual blowing snow model script. -->
+<!-- Make sure the BlowingSnow.js script is in the same  -->
+<!-- directory as the BlowingSnowSite.html script. -->
+
+{% load static %}
+<script src="{% static 'blsn_model.js' %}" type="text/javascript"></script>
+
+</body>
+</html>

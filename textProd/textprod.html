@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  {% block content %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <!--<meta http-equiv="refresh" content="300" >-->
+
+  <title>NWS Text Products</title>
+
+  <!-- Bootstrap core CSS -->
+  {% load static %}
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+
+  <!-- Non-Template sytles and JS links -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"/>
+  <link rel="stylesheet" href="{% static 'textProd.css'  %}" />
+  <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet-src.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+  <script type="text/javascript" src="{% static 'textProd.js' %}"></script>
+  <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+  <style>
+/*
+  body{
+    background-color: rgba(0,0,0,1.0);
+  } */
+
+  body::after {
+    content: "";
+    background-image: url("{% static 'raindrops.jpg' %}");
+    background-size: cover;
+    opacity: 0.9;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    z-index: -1;
+    height: 100%;
+    min-height: 900px;
+  }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div id="container">
+    <div class="mapholder">
+      <div id="map" style="width: 100%; height: 100%;">
+      </div><!-- End imageholder -->
+      <!--<a href="https://weather.gov"> <img class="USwwa" id="usWWA" src="https://forecast.weather.gov/wwamap/png/US.png" alt="MesoImage" border="2"></a>-->
+    </div><!-- End imageholder -->
+
+    <div class="mesoholder">
+      <form id="officeType">
+        <input type="radio" id="wfo" value="WFO" checked=true/>
+        <label for="wfo">WFOs</label></br>
+        <input type="radio" id="ncep" value="NCEP" />
+        <label for="ncep">National Centers</label>
+      </form>
+      <p id="currentOffice" src="OUN" style="color:white">Current Office: OUN</p>
+      <form id="productSelect">
+        Select Text Product:
+        <select id="ProductSelection" onChange="changeProduct()">
+        </select>
+      </form>
+      <br />
+      <form id="textSearch" style="color: white;">
+        Search For Text:<br />
+        <input type="text" id="fname" name="fname">
+        <button type="button" onclick="searchForText()">Search</button>
+      </form>
+      <p id="TextNotFound"></p>
+      <button id="read">Read Discussion</button>
+      <!-- <p id="volumeText">Volume: 5</p>
+      <input type="range" min="0" max="10" value="5" values="[0,5,10]" id="volume" onChange="controlVolume()"> -->
+
+    </div><!-- End mesoholder -->
+
+    <div class="textholder" contenteditable="false">
+      <p id="textarea"></p>
+    </div>
+  </div> <!-- end of contianer div -->
+
+  <script>
+
+    // ------------- Map and Markers ------------------
+    var map = L.map("map").setView([40.0, -96.0], 4);
+    var osmAttribution ='Map data &copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+
+    L.tileLayer(
+            "https://tile-{s}.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+            {
+              attribution: [
+                  osmAttribution
+              ].join(" | ")
+            }
+    ).addTo(map);
+
+    var location_markers = new L.featureGroup();
+
+    function add_markers(url){
+      location_markers.clearLayers();
+      map.removeLayer(location_markers);
+      $.ajax({
+      dataType: "json",
+      url: url,
+      success: function(data) {
+          $.each(data, function(key,info){
+            let lat = info[0];
+            let lon = info[1];
+            var marker = new L.circleMarker([lat, lon], { radius: 9, color: "black", weight: 2, opacity: 1.0, fillColor: "blue", fillOpacity: 0.4 }); //opacity may be set to zero
+            marker.on('click',function(){
+                document.getElementById("currentOffice").innerHTML = "Current Office: "+key;
+                markerClicked();
+            });
+            marker.addTo(location_markers);
+          });
+      }
+      }).fail(function() {
+        console.log("Error updating locations.");
+      });
+      location_markers.addTo(map);
+    } // end add_wfos
+
+    // --- initialize with wfos
+    var url = "{% static 'wfos.json' %}";
+    add_markers(url);
+    wfoOptions();
+
+    // ------------- Option Controls ------------------
+    var wfo_button = document.getElementById("wfo");
+    var ncep_button = document.getElementById("ncep");
+    wfo_button.addEventListener("click",function(){
+      var url = "{% static 'wfos.json' %}";
+      add_markers(url);
+      wfoOptions();
+      ncep_button.checked = false;
+    });
+    ncep_button.addEventListener("click",function(){
+      var url = "{% static 'ncep.json' %}";
+      add_markers(url);
+      spcOptions();
+      wfo_button.checked = false;
+    });
+
+    //---------- Check for Mobile ---------------------------
+    window.onload = function(){
+      var viewport_width = window.innerWidth;
+      if (viewport_width <= 1080){
+        console.log("Mobile detected");
+        $('#container').css('left', '0px');
+        $('#container').css('top', '0px');
+        $('#container').css('width', '100vw');
+        $('#container').css('overflow', 'auto');
+        $('.mapholder').css('width', '100%');
+        $('.mapholder').css('left', '0%');
+        $('.textholder').css('position', 'relative');
+        $('.textholder').css('left', '0px');
+        $('.textholder').css('width', '100%');
+        $('.textholder').css('top', '95%');
+        $('#container').css('display', 'inline-block');
+        map.invalidateSize()
+      }
+    }
+
+    //--------------- Read Functionality --------------------
+    var playing = false;
+    const readButton = document.getElementById("read");
+    readButton.addEventListener("click",function(){
+      playing = !playing;
+      if (playing){
+        play();
+      } else {
+        stop();
+      }
+    });
+
+  </script>
+
+  <!-- Bootstrap core JavaScript -->
+  <!-- vendor/jquery/jquery.min.js -->
+  <!-- vendor/bootstrap/js/bootstrap.bundle.min.js -->
+
+
+
+{% endblock %}
+</body>
+
+</html>

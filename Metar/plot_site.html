@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+{% block content %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Meteogram</title>
+
+    <style>
+
+      body{
+        {% load static %}
+        background-image: url("{% static 'analysis.png' %}");
+        background-size: cover;
+        background-opacity: 0.5;
+      }
+
+      #container{
+        position: relative;
+        width: 1200px;
+        height: 900px;
+        top: 0px;
+        border-style: solid;
+        border-width: 2px;
+        border-color: black;
+        background-color: white;
+      }
+
+      #form{
+        position: relative;
+        width: 15%;
+        left: 10px;
+        top: 5%;
+        min-width: 15%;
+      }
+
+      #submit{
+        width:200px;
+      }
+
+      #meteogram{
+        position: absolute;
+        width: 85%;
+        height:100%;
+        right: 0px;
+        top: 0px;
+        min-width: 85%;
+      }
+
+      #placeholder{
+        position: relative;
+        height:100%;
+        width:100%;
+      }
+
+    </style>
+</head>
+<body>
+  <div id="container">
+
+    <div id="form">
+        <form action="." method="POST"> {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Plot Meteogram">
+        </form>
+    </div>
+
+    <div id="meteogram">
+        {% if default %}
+          {% load static %}
+          <img id="placeholder" src="{% static 'Meteogram_plotter_openImage.jpg' %}">
+          {{ image | safe }}
+        {% else %}
+          {{ image | safe }}
+        {% endif %}
+    </div>
+
+  </div>
+
+{% endblock %}
+</body>
+<script>
+
+  // quick function for centering the meteogram/form container
+  function center(){
+    var width = window.innerWidth;
+    var container = document.getElementById("container");
+    var container_width = container.offsetWidth;
+    var left = (width - container_width) / 2.0;
+    container.style.left = `${left}px`;
+  }
+  window.onload = center;
+  window.addEventListener('resize',function(){
+    center();
+  });
+
+</script>
+</html>

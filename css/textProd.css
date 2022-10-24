@@ -1,0 +1,103 @@
+
+#container{
+  position: absolute;
+  left: 20vw;
+  top: 5vh;
+  width: 1050px;
+  min-height: 800px;
+  height: 90vh;
+  background-color: rgba(80,78,78,1.0);
+  border: 2px solid black;
+}
+
+.mapholder {
+  position: absolute;
+  top: 3%;
+  left: 3%;
+  height: 50%;
+  width: 40%;
+  border: 1px solid black;
+}
+
+.mesoholder {
+  position: absolute;
+  top: 55%;
+  left: 3%;
+  height: 5%;
+  width: 30%;
+}
+
+
+.textholder {
+  position: absolute;
+  overflow: auto;
+  top: 3%;
+  left: 45%;
+  height: 95%;
+  width: 52%;
+  background-color: rgba(60,54,54,1.0);
+  color: white;
+  border-style: solid;
+  border-radius: 1px;
+  border-color: black;
+}
+
+.show {display: block;}
+
+mark {
+  background-color: yellow;
+}
+
+
+#officeType{
+  position: absolute;
+  left: 10px;
+  color: white;
+}
+
+#productSelect{
+  position: absolute;
+  top: 70px;
+  width: 200px;
+  color: white;
+}
+
+#textSearch{
+  position: absolute;
+  top: 150px;
+  width: 300px;
+  color: white;
+}
+
+#TextNotFound{
+  position: absolute;
+  float: right;
+  top: 210px;
+  width: 300px;
+  color: white;
+}
+
+#read{
+  position: absolute;
+  top: 250px;
+  /* width: 250px; */
+}
+
+#volumeText{
+  position: absolute;
+  top: 290px;
+  color: white;
+}
+
+#volume{
+  position: absolute;
+  top: 330px;
+  color: white;
+}
+
+#currentOffice{
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  color: white;
+}

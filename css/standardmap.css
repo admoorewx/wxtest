@@ -1,0 +1,412 @@
+#colorPicker{
+  position: relative;
+  z-index: 10;
+  height: 33px;
+  width: 33px;
+  left: -67px;
+  top: 33vh;
+}
+
+/* Chrome version 29 and above */
+@media screen and (-webkit-min-device-pixel-ratio:0)
+and (min-resolution:.001dpcm) {
+  #colorPicker{ top:30vh; }
+}
+/* for firefox */
+@-moz-document url-prefix() {
+  #colorPicker {
+    top: 38vh;
+  }
+}
+
+#container {
+  position: absolute;
+  height: 100.0%;
+  width: 100.0%;
+  top: 0px;
+  z-index: 0;
+}
+#map_holder {
+    position: absolute;
+    width: 100.0vw;
+    height: 100.0%;
+    left: 0.0%;
+    top: 0.0vh;
+}
+#layerOps {
+  position: absolute;
+  width: 10.0vw;
+  height: 48.0vh;
+  left: 0.0%;
+  top: 4.0vh;
+  background-color:red;
+}
+#actLayers {
+  position: absolute;
+  width: 10.0vw;
+  height: 48.0vh;
+  left: 0.0%;
+  top: 50.0vh;
+  background-color:blue;
+}
+#toolbar {
+  display: none;
+  z-index: 10;
+  position: absolute;
+  width: 40vw;
+  height: 50px;
+  left: 30.0vw;
+  top: 12px;
+  background-color:rgba(80,78,78,0.9);
+  text-align: center;
+  border-color: black;
+  border-width: 2px;
+  border-style: solid;
+  min-width: 500px;
+  overflow: hidden;
+}
+
+.glm_strike {
+    position: absolute;
+    width:0px;
+    height:0px;
+    color: White;
+    background-color: rgba(0,0,0,0.0);
+    border-color: rgba(0,0,0,0.0);
+    border: 0px;
+    font-size:10px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px Black;
+    box-shadow: none;
+}
+
+#MapView {
+  text-align: center;
+}
+#RadarSelect {
+  text-align: center;
+}
+#SatSelect {
+  text-align: center;
+}
+#HazSelect {
+  text-align: center;
+}
+#SfcSelect {
+  text-align: center;
+}
+.spc_box{
+  top: 10px;
+}
+.fire_box{
+  top: 30px;
+}
+.text-label {
+    position: absolute;
+    width:0px;
+    height:0px;
+    background-color: rgba(0,0,0,0.0);
+    border-color: rgba(0,0,0,0.0);
+    border: 0px;
+    font-size:12px;
+    font-weight: bold;
+    text-shadow: 0 0 4px Black;
+    box-shadow: none;
+}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+  background-color: rgba(0,0,0,0.0);
+  border:none;
+  box-shadow:none;
+}
+.popup{
+  max-width: 175px;
+}
+
+#menu_button{
+  position: relative;
+  z-index: 10;
+  left:50px;
+  top:12px;
+  height:50px;
+  width: 75px;
+  color: white;
+  background-color: rgba(80,78,78,0.9);
+}
+
+.menu_option{
+  height: 100.0%;
+  width: 100.0%;
+  border-color: black;
+  border-width: 0px;
+  border-style: solid;
+}
+
+/* ---- Map Button ---- */
+#mapmenu{
+  display: inline-block;
+  position: absolute;
+  height: 100.0%;
+  width: 10.0%;
+  left: 6.0%;
+}
+.mapcontent{
+  position: fixed;
+  display: none;
+  z-index: 11;
+  width:200px;
+  height:150px;
+}
+
+.mapcontent a {
+  color: white;
+  display: block;
+  background-color: rgba(80,78,78,0.9);
+  cursor: pointer;
+}
+
+.mapcontent a:hover {background-color: gray;}
+#mapmenu:hover .mapcontent {display: block;}
+#mapmenu:hover #map_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+/* ---- Satellite Button ---- */
+#satmenu{
+  display: inline-block;
+  position: absolute;
+  height: 100.0%;
+  width: 10.0%;
+  left: 19.0%;
+}
+
+
+.satcontent{
+  position: fixed;
+  display: none;
+  z-index: 11;
+  width:200px;
+  height:150px;
+}
+
+.satcontent a {
+  color: white;
+  display: block;
+  width: 300px;
+  background-color: rgba(80,78,78,0.9);
+  cursor: pointer;
+}
+
+.satcontent a:hover {background-color: gray;}
+#satmenu:hover .satcontent {display: block;}
+#satmenu:hover #sat_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+
+/* ---- GLM Button ---- */
+#glmmenu{
+  display: inline-block;
+  position: absolute;
+  height: 100.0%;
+  width: 10.0%;
+  left: 32.0%;
+}
+
+.glmcontent{
+  position: fixed;
+  display: none;
+  z-index: 11;
+  width:200px;
+  height:150px;
+}
+
+.glmcontent a {
+  color: white;
+  display: block;
+  background-color: rgba(80,78,78,0.9);
+  cursor: pointer;
+}
+
+.glmcontent a:hover {background-color: gray;}
+#glmmenu:hover .glmcontent {display: block;}
+#glmmenu:hover #glm_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+
+
+/* ---- Radar Button ---- */
+#radmenu{
+  display: inline-block;
+  position: absolute;
+  height: 100.0%;
+  width: 10.0%;
+  left: 45.0%;
+}
+
+
+.radcontent{
+  position: fixed;
+  display: none;
+  z-index: 11;
+  width:200px;
+  height:150px;
+}
+
+.radcontent a {
+  color: white;
+  display: block;
+  background-color: rgba(80,78,78,0.9);
+  cursor: pointer;
+}
+
+.radcontent a:hover {background-color: gray;}
+#radmenu:hover .radcontent {display: block;}
+#radmenu:hover #rad_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+
+/* ---- Hazard Button ---- */
+#hazmenu{
+  display: inline-block;
+  position: absolute;
+  height: 100.0%;
+  width: 10.0%;
+  left: 58.0%;
+}
+
+
+.hazcontent{
+  position: fixed;
+  display: none;
+  z-index: 11;
+  width:200px;
+  height:150px;
+}
+
+.hazcontent a {
+  color: white;
+  display: block;
+  background-color: rgba(80,78,78,0.9);
+  cursor: pointer;
+}
+
+.hazcontent a:hover {background-color: gray;}
+#hazmenu:hover .hazcontent {display: block;}
+#hazmenu:hover #haz_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+/* ---- Surface Button ---- */
+#sfcmenu{
+  display: inline-block;
+  position: absolute;
+  height: 100.0%;
+  width: 10.0%;
+  left: 71.0%;
+}
+
+
+.sfccontent{
+  position: fixed;
+  display: none;
+  z-index: 11;
+  width:200px;
+  height:150px;
+}
+
+.sfccontent a {
+  color: white;
+  display: block;
+  background-color: rgba(80,78,78,0.9);
+  cursor: pointer;
+}
+
+.sfccontent a:hover {background-color: gray;}
+#sfcmenu:hover .sfccontent {display: block;}
+#sfcmenu:hover #sfc_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+/* ---- Outlook Button ---- */
+#outmenu{
+  display: inline-block;
+  position: absolute;
+  height: 100.0%;
+  width: 10.0%;
+  left: 84.0%;
+}
+
+
+.outcontent{
+  position: fixed;
+  display: none;
+  z-index: 11;
+  width:200px;
+  height:150px;
+}
+
+.outcontent a {
+  color: white;
+  display: block;
+  background-color: rgba(80,78,78,0.9);
+  cursor: pointer;
+}
+
+.outcontent a:hover {background-color: gray;}
+#outmenu:hover .outcontent {display: block;}
+#outmenu:hover #out_button {background-color: rgba(56,82,142,1.0); border-width: 1px;}
+
+#selection {
+    position: absolute;
+    z-index: 10;
+    background: #e0eaf1;
+    border: 1px solid #0c65a5;
+}
+
+#selection.complete {
+    background: #E0F1E4;
+    border-color: #0CA50E;
+}
+
+#contextMenu{
+  position: fixed;
+  z-index: 100;
+  width: 220px;
+  color: "white";
+  border-radius: 3px;
+  background: rgba(80,78,78,0.9);
+  border-color: "black";
+  display: none;
+}
+#contextMenu .item{
+  padding: 8px 10px;
+  font-size: 15px;
+  color: "white";
+  cursor: pointer;
+  border-radius: inherit;
+}
+#contextMenu .item:hover{
+  background: #343434;
+}
+#contextMenu.visible{
+  cursor: pointer;
+  display: block;
+}
+
+#metarDataHolder{
+  position: fixed;
+  z-index: 100;
+  width: 215px;
+  height: 250px;
+  top: 65vh;
+  left: 8px;
+  border-radius: 15px;
+  display: none;
+}
+#metarDataHolder.visible{
+  display: block;
+}
+
+#metardata{
+  height: 100%;
+  width: 94%;
+  padding-left: 3%;
+  color: white;
+  border-width: 3px;
+  border-color: black;
+  background: rgba(0,0,0,0.7);
+  border-radius: 15px;
+}

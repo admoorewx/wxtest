@@ -1,0 +1,45 @@
+
+#container{
+  position: absolute;
+  background: #3A3D5A;
+  top: 30px;
+  /* width: 1100px; 
+  height: 600px; */
+  width: 85vw;
+  height: 80vh;
+  border: 2px solid black;
+
+}
+.mapholder {
+  position: absolute;
+  top: 2%;
+  left: 3%;
+  height: 50%;
+  width: 30%;
+  border: 1px solid black;
+}
+
+#optsHolder {
+  position: absolute;
+  top: 55%;
+  left: 3%;
+  height: 5%;
+  width: 30%;
+}
+
+
+#plotHolder {
+  position: absolute;
+  top: 2%;
+  left: 35%;
+  height: 95%;
+  width: 63%;
+  background-color: white;
+}
+
+#CurrentConditionTable {
+  color: white;
+  width: 100%;
+}
+
+.show {display: block;}

@@ -1,0 +1,505 @@
+body {
+ overflow-x: hidden;
+ overflow-y: hidden;
+}
+
+#current_time {
+  padding-left: 2%;
+  padding-top: 10px;
+  display: inline-block;
+}
+
+#menu_button{
+  position: absolute;
+  z-index: 10;
+  left:-50px;
+  top:50vh;
+  height:40px;
+  width: 125px;
+  color: white;
+  font-weight: bold;
+  background-color: rgba(80,78,78,0.9);
+  transform: rotate(-90deg);
+  cursor: pointer;
+}
+
+#legend_bar{
+  position: absolute;
+  bottom: 0px;
+  left: 45vw;
+  height: 50px;
+  width: 200px;
+  z-index: 11;
+  display: none;
+}
+
+.legend_block_image{
+  height: 100%;
+  width: 100%;
+}
+
+#nohrsc_depth_legend{
+  position: absolute;
+  top: 55vh;
+  right: 1vw;
+  height: 40vh;
+  width: 10vw;
+  z-index: 10;
+  border-style: solid;
+  border-width: 2px;
+  border-color: black;
+  display: none;
+}
+
+#nohrsc_swe_legend{
+  position: absolute;
+  top: 55vh;
+  right: 1vw;
+  height: 40vh;
+  width: 10vw;
+  z-index: 10;
+  border-style: solid;
+  border-width: 2px;
+  border-color: black;
+  display: none;
+}
+
+#qpf_legend{
+  position: absolute;
+  top: 55vh;
+  right: 1vw;
+  height: 40vh;
+  width: 10vw;
+  z-index: 10;
+  border-style: solid;
+  border-width: 2px;
+  border-color: black;
+  display: none;
+}
+
+#ffg_legend{
+  position: absolute;
+  top: 55vh;
+  right: 1vw;
+  height: 40vh;
+  width: 15vw;
+  z-index: 10;
+  border-style: solid;
+  border-width: 2px;
+  border-color: black;
+  display: none;
+}
+
+#soilsat_legend{
+  position: absolute;
+  top: 55vh;
+  right: 1vw;
+  height: 40vh;
+  width: 15vw;
+  z-index: 10;
+  border-style: solid;
+  border-width: 2px;
+  border-color: black;
+  display: none;
+}
+
+#colorPickerState{
+  position: absolute;
+  left: 200px;
+  top: -5px;
+}
+
+#colorPickerCounty{
+  position: absolute;
+  left: 200px;
+  top: 20px;
+}
+
+#colorPickerCWA{
+  position: absolute;
+  left: 200px;
+  top: 45px;
+}
+
+#colorPickerWind{
+  position: absolute;
+  left: 200px;
+  top: 70px;
+}
+
+#mapholder{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  height: 100vh;
+  width: 100vw;
+  z-index: 5;
+  border-style: solid;
+  border-width: 2px;
+  border-color: black;
+}
+
+/* For the Left Menu Options */
+#left_menu{
+ position: absolute;
+ left: 0px;
+ top: 0px;
+ height: 100vh;
+ width: 400px;
+ z-index: 10;
+ color: white;
+ font-size: 20px;
+ background-color: rgba(80,78,78,1.0);
+ border-style: solid;
+ border-width: 2px;
+ border-color: black;
+ display: none;
+ overflow-y: scroll;
+ overflow-x: hidden;
+}
+/* Satellite Menu Settings */
+#sat_menu{
+  position: relative;
+  top: 10px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  border-style: solid;
+  border-width: 1px;
+  border-color: black;
+}
+
+#sat_menu_label{
+  position: relative;
+  top: -30px;
+  left: 10px;
+  font-size: 20px;
+}
+
+#sat_options{
+  position: relative;
+  top: -50px;
+  left: 10px;
+  display: none;
+}
+
+.sat_menu_option{
+  display: block;
+}
+
+#g16_conus_menu{
+  position: relative;
+  top: -45px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  display: none;
+  /* border-style: solid;
+  border-width: 1px;
+  border-color: black; */
+}
+
+#g16conus_menu_label{
+  position: relative;
+  top: -10px;
+  left: 15px;
+  font-size: 16px;
+}
+
+#g16conus_options{
+  position: relative;
+  top: -15px;
+  left: 20px;
+  font-size: 16px;
+  display: none;
+}
+
+.g16conus_menu_option{
+  display: block;
+}
+
+#g16_meso1_menu{
+  position: relative;
+  top: -65px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  display: none;
+}
+
+#g16meso1_menu_label{
+  position: relative;
+  top: -10px;
+  left: 15px;
+  font-size: 16px;
+}
+
+#g16meso1_options{
+  position: relative;
+  top: -15px;
+  left: 20px;
+  font-size: 16px;
+  display: none;
+}
+
+.g16meso1_menu_option{
+  display: block;
+}
+
+#g16_meso2_menu{
+  position: relative;
+  top: -80px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  display: none;
+}
+
+#g16meso2_menu_label{
+  position: relative;
+  top: -10px;
+  left: 15px;
+  font-size: 16px;
+}
+
+#g16meso2_options{
+  position: relative;
+  top: -15px;
+  left: 20px;
+  font-size: 16px;
+  display: none;
+}
+
+.g16meso2_menu_option{
+  display: block;
+}
+
+/* Radar Menu Settings */
+#radar_menu{
+  position: relative;
+  top: 10px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  border-style: solid;
+  border-width: 1px;
+  border-color: black;
+}
+
+#radar_menu_label{
+  position: relative;
+  top: -30px;
+  left: 10px;
+  font-size: 20px;
+}
+
+#radar_options{
+  position: relative;
+  top: -50px;
+  left: 10px;
+  display: none;
+}
+
+.radar_menu_option{
+  display: block;
+}
+
+/* Observations Menu Settings */
+#obs_menu{
+  position: relative;
+  top: 10px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  border-style: solid;
+  border-width: 1px;
+  border-color: black;
+}
+
+#obs_menu_label{
+  position: relative;
+  top: -30px;
+  left: 10px;
+  font-size: 20px;
+}
+
+#obs_options{
+  position: relative;
+  top: -50px;
+  left: 10px;
+  display: none;
+}
+
+.obs_menu_option{
+  display: block;
+}
+
+/* NWS Alerts Menu Settings */
+#alerts_menu{
+  position: relative;
+  top: 10px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  border-style: solid;
+  border-width: 1px;
+  border-color: black;
+}
+
+#alerts_menu_label{
+  position: relative;
+  top: -30px;
+  left: 10px;
+  font-size: 20px;
+}
+
+#alerts_options{
+  position: relative;
+  top: -50px;
+  left: 10px;
+  display: none;
+}
+
+.alerts_menu_option{
+  display: block;
+}
+
+/* NCEP Menu Settings */
+#ncep_menu{
+  position: relative;
+  top: 10px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  border-style: solid;
+  border-width: 1px;
+  border-color: black;
+}
+
+#ncep_menu_label{
+  position: relative;
+  top: -30px;
+  left: 10px;
+  font-size: 20px;
+}
+
+#ncep_options{
+  position: relative;
+  top: -50px;
+  left: 10px;
+  display: none;
+}
+
+.ncep_menu_option{
+  display: block;
+}
+
+/* Report menu settings */
+#report_menu{
+  position: relative;
+  top: 10px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  border-style: solid;
+  border-width: 1px;
+  border-color: black;
+}
+
+#report_menu_label{
+  position: relative;
+  top: -30px;
+  left: 10px;
+  font-size: 20px;
+}
+
+#report_options{
+  position: relative;
+  top: -50px;
+  left: 10px;
+  display: none;
+}
+
+.report_menu_option{
+  display: block;
+}
+
+/* Settings menu settings */
+#settings_menu{
+  position: relative;
+  top: 10px;
+  height: 30px;
+  width: 100%;
+  cursor: pointer;
+  border-style: solid;
+  border-width: 1px;
+  border-color: black;
+}
+
+#settings_menu_label{
+  position: relative;
+  top: -30px;
+  left: 10px;
+  font-size: 20px;
+}
+
+#settings_options{
+  position: relative;
+  top: -50px;
+  left: 10px;
+  display: none;
+}
+
+.settings_menu_option{
+  display: block;
+}
+
+.text-label {
+    position: absolute;
+    width:0px;
+    height:0px;
+    left: 0px;
+    top: 4px;
+    background-color: rgba(0,0,0,0.0);
+    border-color: rgba(0,0,0,0.0);
+    border: 0px;
+    font-size: 13px;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px Black;
+    box-shadow: none;
+    opacity: 0.75;
+}
+.fire-text-label {
+    position: absolute;
+    width:0px;
+    height:0px;
+    left: -15px;
+    top: 4px;
+    background-color: rgba(0,0,0,0.0);
+    border-color: rgba(0,0,0,0.0);
+    border: 0px;
+    font-size: 13px;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px Black;
+    box-shadow: none;
+    opacity: 0.75;
+}
+.station-text-label {
+    position: absolute;
+    width:0px;
+    height:0px;
+    top: -10px;
+    left: -5px;
+    background-color: rgba(0,0,0,0.0);
+    border-color: rgba(0,0,0,0.0);
+    border: 0px;
+    font-size: 13px;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px Black;
+    box-shadow: none;
+    opacity: 0.75;
+}
+
+.lsr_tag{
+  overflow-wrap: break-word;
+}

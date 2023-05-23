@@ -21,12 +21,11 @@
   <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet-src.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <!-- local scripts -->
-  <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
-  <script type="text/javascript" src="{% static 'plotly-2.4.2.min.js' %}"></script>
-  <script type="text/javascript" src="{% static 'skewt.js' %}"></script>
-  <script type="text/javascript" src="{% static 'sounding_functions.js' %}"></script>
-  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'skewt.css' %}">
+  <script type="text/javascript" src="{% static '/javascript/Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
+  <script type="text/javascript" src="{% static '/javascript/plotly-2.4.2.min.js' %}"></script>
+  <script type="text/javascript" src="{% static '/javascript/skewt.js' %}"></script>
+  <link href="{% static '/javascript/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link rel="stylesheet" href="{% static '/css/skewt.css' %}">
 
 </head>
 
@@ -256,7 +255,7 @@
     var location_markers = new L.featureGroup();
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     function add_observed_markers(){
-      var url = "{% static 'soundings/sounding_locations.json' %}";
+      var url = "{% static '/data/soundings/sounding_locations.json' %}";
       obs_location_markers.clearLayers();
       map.removeLayer(obs_location_markers);
       $.ajax({
@@ -284,7 +283,7 @@
     } // end add_markers
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     function add_forecast_markers(){
-      var url = "{% static 'soundings/sounding_locations.json' %}";
+      var url = "{% static '/data/soundings/sounding_locations.json' %}";
       forc_location_markers.clearLayers();
       forcmap.removeLayer(forc_location_markers);
       $.ajax({
@@ -346,7 +345,7 @@
       var colors = [];
       $.getJSON(tor_events_url, function(data){
         Object.entries(data).forEach(function(event){
-          ratings.push(`Rating: EF-${event[1][0]}, CAPE: ${roundTo(event[1][6],0)}, SRH: ${roundTo(event[1][5],0)}`);
+          ratings.push(event[1][0]);
           shears.push(event[1][5]);
           capes.push(event[1][6]);
           if (event[1][0] == 5){
@@ -356,11 +355,11 @@
           } else if (event[1][0] == 3){
             colors.push('rgba(254,50,26,0.5)');
           } else if (event[1][0] == 2){
-            colors.push('rgba(26,43,254,0.5)');
+            colors.push('rgba(26,43,254,0.4)');
           } else if (event[1][0] == 1){
-            colors.push('rgba(104,249,209,0.5)');
+            colors.push('rgba(104,249,209,0.3)');
           } else {
-            colors.push('rgba(209,207,20,0.5)');
+            colors.push('rgba(209,207,20,0.2)');
           }
         });
       }) // end getJSON
@@ -377,11 +376,11 @@
           plotSkewt(station,tor_events_data);
       } else {
         if (type == "Forecast"){
-          //var url = `/static/data/soundings/forecast_soundings/${station}_${index}.json`;
-          var url = "{% static '/soundings/forecast_soundings/ktxk_0.json' %}";
+          var url = `/static/data/soundings/forecast_soundings/${station}_${index}.json`;
+          //var url = "{% static '/soundings/forecast_soundings/OUN_12.json' %}";
         } else {
-          //var url = `/static/data/soundings/observed_soundings/${station}.json`;
-          var url = "{% static '/soundings/observed_soundings/OUN.json' %}";
+          var url = `/static/data/soundings/observed_soundings/${station}.json`;
+          //var url = "{% static '/soundings/observed_soundings/OUN.json' %}";
         }
         console.log(url);
         $.getJSON(url, function(data){
@@ -404,7 +403,7 @@
     } // end read sounding
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    var tor_events_url = "{% static 'tor_events.json' %}";
+    var tor_events_url = "{% static '/data/tor_events.json' %}";
     var tor_events_data = get_tor_events(tor_events_url);
     plot_sounding_from_json(null,"None");
     add_observed_markers();
@@ -416,7 +415,7 @@
     forcmapcontainer.style.display = "none";
   </script>
   <!-- vendor/bootstrap/js/bootstrap.bundle.min.js -->
-  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static '/javascript/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 
 {% endblock %}
 </body>

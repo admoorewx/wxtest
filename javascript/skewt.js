@@ -1,4 +1,37 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function updateStation(station){
+  globalThis.plot_station = station;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function updateSoundingType(type){
+  globalThis.plot_type = type;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function initializeArrowKeys(){
+  // For now, I'm assuming that we're ONLY dealing with RAP soundings, in which
+  // case there will be 50 individual soundings per station. This function will
+  // create an evetn listener for the arrow keys and increment an index value
+  // accordingly, then send a 'plot' signal to the plotting function
+  const FRCST_LENGTH = 20;
+  document.addEventListener("keydown", function(e) {
+    switch (e.keyCode) {
+        case 37:
+            globalThis.index = index - 1;
+            if (index < 0){
+              globalThis.index = FRCST_LENGTH;
+            }
+            break;
+        case 39:
+            globalThis.index = index + 1;
+            if (index > FRCST_LENGTH){
+              globalThis.index = 0
+            }
+            break;
+    }
+    plot_sounding_from_json();
+  });
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function arange(start,end,inc){
   array = [];
   val = start;
@@ -11,153 +44,6 @@ function arange(start,end,inc){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function temp_transform(temp,stnd_pres,pres,slope){
   return temp + (slope*Math.log(stnd_pres/pres));
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function create_dry_adiabat(start_temp,pres_grid){
-  // find initial pot temp at 1000 hPa
-  var theta = C2K(start_temp);
-  // declare relevant variables
-  const k = 0.285; // Poisson constant for dry air
-  const p0 = 100000.0;// 1000 hPa in Pa
-  var adiabat = [];
-  // loop through the pressure grid and find each temp value
-  // since theta must remain the same along an adiabat.
-  for (i=0;i<pres_grid.length;i++){
-    let pres = hPa2Pa(pres_grid[i]);
-    temp = theta * Math.pow((pres/p0),k);
-    adiabat.push(K2C(temp));
-  } // end for loop
-  return adiabat;
-} // end function
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function create_moist_adiabat(temp,stnd_pres,pres_grid){
-  const cp = 1005.0;
-  // get the base theta-e
-  var adiabat = [];
-  var theta_e = equivalent_potential_temperature(temp,stnd_pres);
-  pres_grid.forEach(function(pres){
-    // find theta
-    let theta = poisson_equation(temp,pres);
-    let termA = (theta_e - theta)/cp;
-    let termB = Math.log(theta)/Math.log(theta_e);
-    let t = termA * termB;
-    adiabat.push(K2C(t));
-  });
-  return adiabat;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function equivalent_potential_temperature(temp,pres){
-  // assign constants
-  const l = 2500000.0;
-  const cp = 1005.0;
-  // find sat vapor pressure
-  var es = sat_vapor_pres(temp);
-  // find mixing ratio
-  var w = mixing_ratio(es,pres);
-  // find theta
-  var theta = poisson_equation(temp,pres);
-  // find theta-e
-  var temp = C2K(temp);
-  var power = (l*w)/(cp*temp);
-  // return theta*Math.pow(10,power);
-  return theta*Math.exp(power);
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function sat_vapor_pres(temp){
-  // input temp must be in deg C!
-  //var power = (17.67*temp)/(243.5+temp);
-  //return Math.pow(611.2,power);
-  var power = (7.5 * temp)/(237.5 + temp);
-  //return hPa2Pa(6.11 * Math.pow(10,power));
-  return hPa2Pa(6.11 * Math.exp(power));
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function mixing_ratio(es,pres){
-  pres = hPa2Pa(pres);
-  return (0.622*es)/pres;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function create_isotherm(temp,stnd_pres,pres_grid,slope){
-  var isotherm = [];
-  pres_grid.forEach(function(pres){
-    let t = temp_transform(temp,stnd_pres,pres,slope)
-    isotherm.push(t);
-  });
-  return isotherm;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function poisson_equation(temp,pres){
-  // Return the potential temperature of a temperature value at a given
-  // pressure level. Assumes input temp is in C and input pres in hPa
-  const k = 0.285; // Poisson constant for dry air
-  const p0 = 100000.0;// 1000 hPa in Pa
-  // Do conversions
-  pres = pres * 100.0; // hPa to Pa
-  temp = C2K(temp); // F to Kelvin
-  // Do the calculation
-  var pres_term = pres/p0;
-  pres_term = Math.pow(pres_term,-k);
-  return temp * pres_term;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function F2C(temp){
-  // convert temperature in F to C
-  return (temp - 32.0) * (5.0/9.0)
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function C2K(temp){
-  // convert temperature in C to Kelvin
-  return temp + 273.15
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function C2F(temp){
-  // convert temperature in C to F
-  return (temp * (9.0/5.0)) + 32.0
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function F2K(temp){
-  // convert temp in F to Kelvin
-  return C2K(F2C(temp))
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function K2F(temp){
-  // convert temperature in Kelvin to F
-  return C2F(temp - 273.15);
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function K2C(temp){
-  // convert temperature in Kelvin to C
-  return temp - 273.15;
-}
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-function roundTo(n, digits) {
-  // I stole this from here: https://stackoverflow.com/questions/15762768/javascript-math-round-to-two-decimal-places
-  if (digits === undefined) {
-    digits = 0;
-  }
-
-  var multiplicator = Math.pow(10, digits);
-  n = parseFloat((n * multiplicator).toFixed(11));
-  var test =(Math.round(n) / multiplicator);
-  return +(test.toFixed(digits));
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function relh_from_temp_dewp(temp,dewp){
-  // Assumes temp/dewp are in deg C.
-  // Based off the formula here: http://bmcnoldy.rsmas.miami.edu/Humidity.html
-  // 100 * (EXP((17.625*TD) / (243.04+TD)) / EXP((17.625*T) / (243.04+T))
-  //           Term 1           term 2           term 3          term 4
-  var term1 = 17.625 * dewp;
-  var term2 = 243.04 + dewp;
-  var term3 = 17.625 * temp;
-  var term4 = 243.04 + temp;
-  relh = 100.0 * (Math.exp(term1/term2) / Math.exp(term3/term4));
-  return relh;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function hPa2Pa(pres){
-  // convert pressure in hPa to Pa
-  return pres * 100.0;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function color_by_threshold(value,thresholds){
@@ -182,6 +68,35 @@ function color_by_threshold(value,thresholds){
   return thres_color;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function color_by_type(ptype){
+  if (ptype.includes("Freezing")){
+    return "rgb(245,70,237)";
+  } else if (ptype.includes("Rain")){
+    return "rgb(19,180,0)";
+  } else if (ptype.includes("Mix")){
+    return "rgb(159,108,229)";
+  } else if (ptype.includes("Snow")){
+    return "rgb(27,255,220)";
+  }
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+function binary_to_string(value){
+  var result = "True";
+  if (value === 0){
+    result = "False";
+  }
+  return result;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+function color_by_binary(value){
+  // return green if true/1, return white if false/0.
+  var color = "rgb(19,180,0)";
+  if (value === 0){
+    color = "rgb(255,255,255)";
+  }
+  return color;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function wind_speed_direction(u,v){
   u2 = u * u;
   v2 = v * v;
@@ -202,7 +117,7 @@ function create_circle(radius){
   return [x,y_pos,y_neg];
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function plotSkewt(sounding=null){
+function plotSkewt(sounding=null,tor_events_data){
 
   ////////////////// SKEW-T //////////////////
   // define the grid to plot on
@@ -271,8 +186,13 @@ function plotSkewt(sounding=null){
     ml_parcel_profile = [];
     mu_parcel_profile = [];
     display_strings = [];
+    theta_e_profile = [];
+    mixing_ratio_profile = [];
+
+    //console.log(sounding);
     for (i=0;i<sounding.pressure.length;i++){
       if (sounding.pressure[i] >= 100.0){
+        // Base plotting parameters
         sounding_pressure.push(sounding.pressure[i]);
         adjusted_temp = temp_transform(sounding.temperature[i],standard_pressure,sounding.pressure[i],slope);
         adjusted_dewp = temp_transform(sounding.dewpoint[i],standard_pressure,sounding.pressure[i],slope);
@@ -286,10 +206,24 @@ function plotSkewt(sounding=null){
         sb_parcel_profile.push(adjusted_sb_temp);
         // ml_parcel_profile.push(adjusted_ml_temp);
         // mu_parcel_profile.push(adjusted_mu_temp);
-        let text = `Pres: ${sounding.pressure[i].toString()} hPa<br />Height: ${roundTo(height_agl,1)} m<br />Temp: ${sounding.temperature[i].toString()} C<br />Dewp: ${sounding.dewpoint[i].toString()} C<br />Relh: ${Math.round(layer_relh)}%`
+        // additional parameters
+
+        theta_e_profile.push(equivalent_potential_temperature(sounding.temperature[i],sounding.dewpoint[i],sounding.pressure[i]));
+        mixing_ratio_profile.push(mixing_ratio_from_dewpoint(sounding.dewpoint[i],sounding.pressure[i]));
+
+        let text = `Pres: ${sounding.pressure[i].toString()} hPa<br />Height: ${roundTo(height_agl,1)} m<br />Temp: ${roundTo(sounding.temperature[i],1).toString()} C<br />Dewp: ${roundTo(sounding.dewpoint[i],1).toString()} C<br />Relh: ${Math.round(layer_relh)}%`;
+        if (i==0){
+          // display the surface temp/dewp in F instead of C.
+          text = `Pres: ${sounding.pressure[i].toString()} hPa<br />Height: ${roundTo(height_agl,1)} m<br />Temp: ${roundTo(C2F(sounding.temperature[i]),1).toString()} F<br />Dewp: ${roundTo(C2F(sounding.dewpoint[i]),1).toString()} F<br />Relh: ${Math.round(layer_relh)}%`;
+        }
         display_strings.push(text);
       } // end if
     } // end for loop
+
+    // check params
+    parcel_trace(sounding.temperature,sounding.dewpoint,sounding.pressure,sounding.height,theta_e_profile,"most_unstable")
+
+
     var temp_profile = {
       x: sounding_temperature,
       y: sounding_pressure,
@@ -342,7 +276,7 @@ function plotSkewt(sounding=null){
     // } // end mu parcel profile
     var plotData = [].concat(temp_lines,dry_adiabats,temp_profile,dewp_profile,sb_profile);
   }
-  console.log(lowest_plot_pressure);
+
   var layout = {
     xaxis: {
       range: [-40,50],
@@ -353,7 +287,9 @@ function plotSkewt(sounding=null){
       //tickangle: 10,
       showgrid: false,
       zeroline: false,
-      showline: false
+      showline: false,
+      anchor: 'free',
+      position: 0.04,
     },
     yaxis: {
       type: 'log',
@@ -369,8 +305,8 @@ function plotSkewt(sounding=null){
       gridwidth: 2,
     },
     margin: {
-      b: 70,
-      t: 40,
+      b: 30,
+      t: 30,
       l: 70,
       r: 10,
     },
@@ -413,7 +349,7 @@ function plotSkewt(sounding=null){
   } else{
     sounding_hodograph = [];
     hodograph_levels = arange(0.0,15000.0,3000.0);
-    var max_height_to_plot = 12000.0 // km
+    var max_height_to_plot = 15000.0 // km
     // read in and plot the data
     hodograph_levels.forEach(function(level){
       let u = [];
@@ -506,6 +442,7 @@ function plotSkewt(sounding=null){
   // hodograph layout
   var hodograph_layout = {
     xaxis: {
+      autorange: false,
       range: [-60,60],
       dtick: 20,
       showgrid: false,
@@ -515,6 +452,7 @@ function plotSkewt(sounding=null){
       gridwidth: 2,
     },
     yaxis: {
+      autorange: false,
       range: [-60,60],
       dtick: 20,
       showgrid: false,
@@ -533,12 +471,236 @@ function plotSkewt(sounding=null){
   };
   Plotly.newPlot('hodograph',hodograph_data,hodograph_layout);
 
+
+
+  ////////////////// RELH Profile/Cloud Plot //////////////////
+  // 11/06/2022 - I'm commenting this section out to reduce processing time
+  // and because I've replaced this plot with the cape/shear tornado events plot.
+  //
+  // if (sounding == null){
+  //   var relh_profile_data = [];
+  // } else{
+  //   // find the height of the freezing level and -10 C level.
+  //   // While we're at it, find the relh profile
+  //   let relh_profile = [];
+  //   let height_profile = [];
+  //   let text_profile = [];
+  //   let freezing_level = 0;
+  //   let minus_10_level = 0;
+  //   let minus_20_level = 0;
+  //   let profile_lines = [];
+  //   for (i=0;i < sounding.temperature.length;i++){
+  //     if (sounding.temperature[i] > 0.0){
+  //       freezing_level = i;
+  //     }
+  //     if (sounding.temperature[i] > -10.0){
+  //       minus_10_level = i;
+  //     }
+  //     if (sounding.temperature[i] > -20.0){
+  //       minus_20_level = i;
+  //     }
+  //     // find relh
+  //     let temp_rh = relh_from_temp_dewp(sounding.temperature[i],sounding.dewpoint[i])
+  //     relh_profile.push(temp_rh);
+  //     let temp_height = sounding.height[i] - sounding.height[0];
+  //     height_profile.push(temp_height);
+  //     text_profile.push(`${temp_height} m: ${Math.round(temp_rh)}%`);
+  //     temp_color = 'rgba(0,0,0,0.0)';
+  //     if (temp_rh >= 90.0){
+  //       temp_color = 'rgba(151,73,157,0.5)';
+  //     } else if (temp_rh >= 75){
+  //       temp_color = 'rgba(13,127,17,0.2)';
+  //     } else if (temp_rh < 20){
+  //       temp_color = 'rgba(252,115,51,0.2)';
+  //     } else if (temp_rh < 10){
+  //       temp_color = 'rgba(255,78,137,0.5)';
+  //     }
+  //     var rh_seg = {
+  //       x: [0,100],
+  //       y: [temp_height,temp_height],
+  //       mode: 'lines',
+  //       hoverinfo: 'skip',
+  //       fill: 'tonexty',
+  //       fillcolor: temp_color,
+  //       line: {
+  //         color: temp_color,
+  //         width: 0,
+  //       } // end line
+  //     } // end segment
+  //     profile_lines.push(rh_seg);
+  //   } // end for loop
+  //   // add one to each index to guarantee we're at or below these temperatures.
+  //   freezing_level = freezing_level + 1;
+  //   minus_10_level = minus_10_level + 1;
+  //   minus_20_level = minus_20_level + 1;
+  //   var segment = {
+  //     x: relh_profile,
+  //     y: height_profile,
+  //     mode: 'lines',
+  //     hovertext: text_profile,
+  //     hoverinfo: 'text',
+  //     line: {
+  //       color: 'black',
+  //       width: 2,
+  //     } // end line
+  //   } // end segment
+  //   var freezing_line = {
+  //     x: [0,100],
+  //     y: [height_profile[freezing_level],height_profile[freezing_level]],
+  //     mode: 'lines',
+  //     hoverinfo: 'text',
+  //     hovertext: ["0 C","0 C"],
+  //     line: {
+  //       color: 'rgba(0,0,255,0.9)',
+  //       width: 3,
+  //     }
+  //   } // end freezing line
+  //   var minus_10_line = {
+  //     x: [0,100],
+  //     y: [height_profile[minus_10_level],height_profile[minus_10_level]],
+  //     mode: 'lines',
+  //     hoverinfo: 'text',
+  //     hovertext: ["-10 C","-10 C"],
+  //     line: {
+  //       color: 'rgba(41,0,108,0.9)',
+  //       width: 3,
+  //     }
+  //   } // end minus_10_line
+  //   var minus_20_line = {
+  //     x: [0,100],
+  //     y: [height_profile[minus_20_level],height_profile[minus_20_level]],
+  //     mode: 'lines',
+  //     hoverinfo: 'text',
+  //     hovertext: ["-20 C","-20 C"],
+  //     line: {
+  //       color: 'rgba(255,0,255,0.9)',
+  //       width: 3,
+  //     }
+  //   } // end minus_20_line
+  //   var relh_data = [].concat(profile_lines,segment,freezing_line,minus_10_line,minus_20_line);
+  // } // end else
+  // // layout
+  // var relh_layout = {
+  //   xaxis: {
+  //     range: [0,100],
+  //     dtick: 20,
+  //     showgrid: true,
+  //     zeroline: false,
+  //     showline: false,
+  //     gridcolor: 'rgba(34,23,34,0.4)',
+  //     gridwidth: 1,
+  //     title: 'Relative Humidity (%)',
+  //   },
+  //   yaxis: {
+  //     range: [0,15000],
+  //     dtick: 1000,
+  //     showgrid: true,
+  //     zeroline: false,
+  //     showline: false,
+  //     gridcolor: 'rgba(34,23,34,0.4)',
+  //     gridwidth: 1,
+  //     title: 'Height AGL (m)',
+  //   },
+  //   margin: {
+  //     b: 30,
+  //     t: 20,
+  //     l: 40,
+  //     r: 20,
+  //   },
+  //   showlegend: false
+  // };
+  //Plotly.newPlot('plot2',relh_data,relh_layout);
+
+
+  ////////////////// CAPE/Shear Tornado Events Plot //////////////////
+  var sounding_srh = 0.0;
+  var sounding_cape = 0.0;
+  var sounding_color = 'rgba(38,39,70,0.0)';
+  if (sounding != null){
+    sounding_srh = sounding.srh_01km;
+    sounding_cape = sounding.MLCAPE;
+    sounding_color = 'rgba(38,39,70,1.0)';
+  }
+  var capes = tor_events_data[0];
+  var shears = tor_events_data[1];
+  var colors = tor_events_data[2];
+  var ratings = tor_events_data[3];
+
+  var events = {
+    x: shears,
+    y: capes,
+    mode: 'markers',
+    type: 'scatter',
+    hoverinfo: 'text',
+    hovertext: ratings,
+    marker: {
+      size: 8,
+      color: colors,
+      symbol: "cirlce",
+    } // end marker
+  } // end mean-mover
+
+  sounding_env = {
+    x: [sounding_srh],
+    y: [sounding_cape],
+    mode: 'markers',
+    type: 'scatter',
+    hoverinfo: 'skip',
+    hovertext: 'Sounding CAPE/Shear',
+    marker: {
+      size: 14,
+      color: sounding_color,
+      symbol: 'circle',
+    }
+  } // end sounding_env marker
+  var tor_events_data = [].concat(events,sounding_env);
+
+  // layout
+  var tor_events_layout = {
+    xaxis: {
+      range: [0,700],
+      dtick: 100,
+      showgrid: false,
+      zeroline: false,
+      showline: false,
+      gridcolor: 'rgba(34,23,34,0.4)',
+      gridwidth: 1,
+      title: '0-1 km SRH (m2/s2)',
+    },
+    yaxis: {
+      range: [0,6000],
+      dtick: 1000,
+      showgrid: false,
+      zeroline: false,
+      showline: false,
+      gridcolor: 'rgba(34,23,34,0.4)',
+      gridwidth: 1,
+      title: 'MLCAPE (J/kg)',
+    },
+    margin: {
+      b: 50,
+      t: 10,
+      l: 50,
+      r: 10,
+    },
+    showlegend: false
+  };
+  Plotly.newPlot('plot2',tor_events_data,tor_events_layout);
 } // end plotSkewT function
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function add_sounding_text(sounding=null){
   if (sounding == null){
     console.log("No data to fill in.");
   } else {
+    var dewp_depress = dewpoint_depression(sounding);
+    var bwd1km = bulk_wind_difference(sounding.u_wind,sounding.v_wind,sounding.height,0.0,1000.0);
+    var bwd3km = bulk_wind_difference(sounding.u_wind,sounding.v_wind,sounding.height,0.0,3000.0);
+    var bwd6km = bulk_wind_difference(sounding.u_wind,sounding.v_wind,sounding.height,0.0,6000.0);
+    var lr3km = lapse_rate(sounding.temperature,sounding.height,0.0,3000.0,pressures=null);
+    var lr75  = lapse_rate(sounding.temperature,sounding.height,700.0,500.0,pressures=sounding.pressure);
+    var pwat = total_precipitable_water(mixing_ratio_profile,sounding.pressure);
+    var mean_mixing_ratio = mixed_layer_mean_mixing_ratio(mixing_ratio_profile,sounding.pressure);
+
     // Set some thresholds for coloring (must be length == 5)
     var cape_thresholds = [500.0, 1000.0, 2000.0, 3000.0, 4000.0];
     var cin_thresholds = [-250.0, -100.0, -75.0, -50.0, -10.0];
@@ -553,25 +715,24 @@ function add_sounding_text(sounding=null){
     var mxr_thresholds = [14.0,15.0,16.0,17.0,18.0];
     var scp_thresholds = [4.0,6.0,8.0,10.0,12.0];
     var stp_thresholds = [1.0,3.0,5.0,7.0,9.0];
-    console.log(`Adding text data from sounding ${sounding.id} ${sounding.datetime}.`);
     // start with the thermodynamic parameters:
-    document.getElementById("sbcape").innerHTML = `${Math.round(sounding.SBCAPE)} J/kg`;
-    document.getElementById("mlcape").innerHTML = `${Math.round(sounding.MLCAPE)} J/kg`;
-    document.getElementById("mucape").innerHTML = `${Math.round(sounding.MUCAPE)} J/kg`;
+    document.getElementById("sbcape").innerHTML = `${Math.round(Math.abs(sounding.SBCAPE))} J/kg`;
+    document.getElementById("mlcape").innerHTML = `${Math.round(Math.abs(sounding.MLCAPE))} J/kg`;
+    document.getElementById("mucape").innerHTML = `${Math.round(Math.abs(sounding.MUCAPE))} J/kg`;
     document.getElementById("sbcin").innerHTML = `${Math.round(sounding.SBCIN)} J/kg`;
     document.getElementById("mlcin").innerHTML = `${Math.round(sounding.MLCIN)} J/kg`;
     document.getElementById("mucin").innerHTML = `${Math.round(sounding.MUCIN)} J/kg`;
     // other thermo params
-    document.getElementById("lr03").innerHTML = `${roundTo(sounding.lr03km,1)} K/km`;
-    document.getElementById("lr75").innerHTML = `${roundTo(sounding.lr700_500,1)} K/km`;
-    document.getElementById("ddpres").innerHTML = `${roundTo(sounding.dewpoint_depression,1)} F`;
-    document.getElementById("meanmix").innerHTML = `${sounding.mean_mixing_ratio} g/kg`;
-    document.getElementById("pwat").innerHTML = `${roundTo(sounding.pwat,2)} in`;
+    document.getElementById("lr03").innerHTML = `${roundTo(lr3km,1)} K/km`;
+    document.getElementById("lr75").innerHTML = `${roundTo(lr75,1)} K/km`;
+    document.getElementById("ddpres").innerHTML = `${roundTo(dewp_depress,1)} F`;
+    document.getElementById("meanmix").innerHTML = `${roundTo(sounding.mean_mixing_ratio,2)} g/kg`;
+    document.getElementById("pwat").innerHTML = `${roundTo(pwat,2)} in`;
 
     // Kinematic parameters
-    document.getElementById("bs01").innerHTML = `${Math.round(sounding.bulk_shear_01km)} knots`;
-    document.getElementById("bs03").innerHTML = `${Math.round(sounding.bulk_shear_03km)} knots`;
-    document.getElementById("bs06").innerHTML = `${Math.round(sounding.bulk_shear_06km)} knots`;
+    document.getElementById("bs01").innerHTML = `${Math.round(bwd1km)} knots`;
+    document.getElementById("bs03").innerHTML = `${Math.round(bwd3km)} knots`;
+    document.getElementById("bs06").innerHTML = `${Math.round(bwd6km)} knots`;
     document.getElementById("bseff").innerHTML = `${Math.round(sounding.bulk_shear_eff)} knots`;
     document.getElementById("srh01").innerHTML = `${Math.round(sounding.srh_01km)} m2/s2`;
     document.getElementById("srh03").innerHTML = `${Math.round(sounding.srh_03km)} m2/s2`;
@@ -579,13 +740,24 @@ function add_sounding_text(sounding=null){
 
     // Son of SARS probabilities
     let values = sounding.tor_intensity_probs;
-    document.getElementById("sosnotor").innerHTML = `${Math.round(100.0*values[0])}%`
-    document.getElementById("sos0").innerHTML = `${Math.round(100.0*values[1])}%`
-    document.getElementById("sos1").innerHTML = `${Math.round(100.0*values[2])}%`
-    document.getElementById("sos2").innerHTML = `${Math.round(100.0*values[3])}%`
-    document.getElementById("sos3").innerHTML = `${Math.round(100.0*values[4])}%`
-    document.getElementById("sos4").innerHTML = `${Math.round(100.0*values[5])}%`
-    document.getElementById("sos5").innerHTML = `${Math.round(100.0*values[6])}%`
+    document.getElementById("sosnotor").innerHTML = `${Math.round(100.0*values[0])}`
+    document.getElementById("sos0").innerHTML = `${Math.round(100.0*values[1])}`
+    document.getElementById("sos1").innerHTML = `${Math.round(100.0*values[2])}`
+    document.getElementById("sos2").innerHTML = `${Math.round(100.0*values[3])}`
+    document.getElementById("sos3").innerHTML = `${Math.round(100.0*values[4])}`
+    document.getElementById("sos4").innerHTML = `${Math.round(100.0*values[5])}`
+    document.getElementById("sos5").innerHTML = `${Math.round(100.0*values[6])}`
+    // Son of SARS Hail probabilities
+    let hail_values = sounding.hail_probabilities;
+    document.getElementById("anyhail_nn").innerHTML = `${Math.round(100.0*hail_values[0])}%`;
+    document.getElementById("svrhail_nn").innerHTML = `${Math.round(100.0*hail_values[1])}%`;
+    document.getElementById("sighail_nn").innerHTML = `${Math.round(100.0*hail_values[2])}%`;
+    document.getElementById("anyhail_rf").innerHTML = `${binary_to_string(hail_values[3])}`;
+    document.getElementById("svrhail_rf").innerHTML = `${binary_to_string(hail_values[4])}`;
+    document.getElementById("sighail_rf").innerHTML = `${binary_to_string(hail_values[5])}`;
+    // Son of SARS Winter Ptype classification
+    document.getElementById("ptype_nn").innerHTML = `${sounding.nn_winter_type} (${roundTo((100.0*sounding.nn_winter_prob),0)}% match)`;
+    document.getElementById("ptype_rf").innerHTML = `${sounding.rf_winter_type}`;
 
     // derived parameters
     document.getElementById("scp").innerHTML = `${roundTo(sounding.SCP,1)}`
@@ -607,15 +779,15 @@ function add_sounding_text(sounding=null){
         document.getElementById("mucin").style.color = color_by_threshold(sounding.MUCIN,cin_thresholds);
     }
     // Color the other thermo parameters
-    document.getElementById("lr03").style.color = color_by_threshold(sounding.lr03km,lr_thresholds);
-    document.getElementById("lr75").style.color = color_by_threshold(sounding.lr700_500,lr_thresholds);
-    document.getElementById("ddpres").style.color = color_by_threshold(sounding.dewpoint_depression,dd_thresholds);
+    document.getElementById("lr03").style.color = color_by_threshold(lr3km,lr_thresholds);
+    document.getElementById("lr75").style.color = color_by_threshold(lr75,lr_thresholds);
+    document.getElementById("ddpres").style.color = color_by_threshold(dewp_depress,dd_thresholds);
     document.getElementById("meanmix").style.color = color_by_threshold(sounding.mean_mixing_ratio,mxr_thresholds);
-    document.getElementById("pwat").style.color = color_by_threshold(sounding.pwat,pwat_thresholds);
+    document.getElementById("pwat").style.color = color_by_threshold(pwat,pwat_thresholds);
 
-    document.getElementById("bs01").style.color = color_by_threshold(sounding.bulk_shear_01km, bs01_thresholds);
-    document.getElementById("bs03").style.color = color_by_threshold(sounding.bulk_shear_03km, bs03_thresholds);
-    document.getElementById("bs06").style.color = color_by_threshold(sounding.bulk_shear_06km, bs06_thresholds);
+    document.getElementById("bs01").style.color = color_by_threshold(bwd1km, bs01_thresholds);
+    document.getElementById("bs03").style.color = color_by_threshold(bwd3km, bs03_thresholds);
+    document.getElementById("bs06").style.color = color_by_threshold(bwd6km, bs06_thresholds);
     document.getElementById("bseff").style.color = color_by_threshold(sounding.bulk_shear_eff, bs06_thresholds);
 
     document.getElementById("srh01").style.color = color_by_threshold(sounding.srh_01km,srh_thresholds);
@@ -632,6 +804,17 @@ function add_sounding_text(sounding=null){
     document.getElementById("sos3").style.color = color_by_threshold(Math.round(100.0*values[4]),tor_prob_thresholds);
     document.getElementById("sos4").style.color = color_by_threshold(Math.round(100.0*values[5]),tor_prob_thresholds);
     document.getElementById("sos5").style.color = color_by_threshold(Math.round(100.0*values[6]),tor_prob_thresholds);
+
+    document.getElementById("anyhail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[0]),tor_prob_thresholds);
+    document.getElementById("svrhail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[1]),tor_prob_thresholds);
+    document.getElementById("sighail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[2]),tor_prob_thresholds);
+
+    document.getElementById("anyhail_rf").style.color = color_by_binary(hail_values[3]);
+    document.getElementById("svrhail_rf").style.color = color_by_binary(hail_values[4]);
+    document.getElementById("sighail_rf").style.color = color_by_binary(hail_values[5]);
+
+    document.getElementById("ptype_nn").style.color = color_by_type(sounding.nn_winter_type);
+    document.getElementById("ptype_rf").style.color = color_by_type(sounding.rf_winter_type);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -662,22 +845,22 @@ function wind_staff(sounding){
   // need to set the bottom of the div as pressure level 1050 and the top as pressure level 100.
   var top = document.getElementById("windstaff").offsetTop;
   var height = document.getElementById("windstaff").offsetHeight;
-  var barb_adjustment = 30.0
-  console.log(top,height,(top+height))
+  var barb_adjustment = 30.0; // set manually
+  //console.log(top,height,(top+height))
   for (i=0;i<sounding.pressure.length;i++){
     if (sounding.pressure[i] >= min_pressure){
       let wind_info = wind_speed_direction(sounding.u_wind[i],sounding.v_wind[i]);
       let location = wind_staff_location(top,height,max_pressure,min_pressure,sounding.pressure[i]) - barb_adjustment;
-      console.log(sounding.pressure[i],location);
+      //console.log(sounding.pressure[i],location);
       let barb_div = document.createElement("div");
       barb_div.style.position = "absolute";
       barb_div.style.top = `${location}px`;
       barb_div.style.left = `0px`;
       barb_div.style.width = "10px";
       barb_div.style.height = "10px";
-      barb_div.id = `${sounding.pressure[i]}_wind`;
+      barb_div.id = `${Math.round(sounding.pressure[i])}_wind`;
       document.getElementById("windstaff").appendChild(barb_div);
-      WindBarbArrowHandler.WindArrow(wind_info[0], wind_info[1], $(`#${sounding.pressure[i]}_wind`), 30);
+      WindBarbArrowHandler.WindArrow(Math.round(wind_info[0]), Math.round(wind_info[1]), $(`#${Math.round(sounding.pressure[i])}_wind`), 30);
     } // end if
   } // end for
 } // end function wind_staff
@@ -697,7 +880,6 @@ var WindBarbArrowHandler = {
     this.ten = 0;
     this.five = 0;
     this.fifty = 0;
-
 
     // Create the canvas
     $(container).append(
@@ -804,5 +986,4 @@ var WindBarbArrowHandler = {
     'use strict';
     this.path += "M" + index + " 0 L" + (index + 1) + " 2 L" + index + " 2 L" + index + " 0 ";
   },
-
 }; // end WindBarb object

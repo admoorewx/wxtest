@@ -5,17 +5,20 @@ body{
 #container{
   background-color: #333;
   position: absolute;
-  left: 20vw;
+  left: 50px;
   height: 100vh;
-  width: 80vw;
+  width: 90vw;
+  /* border-style: solid;
+  border-width: 2px;
+  border-color: black; */
 }
 
 #plotHolder{
   position: absolute;
   left: 0px;
-  top: 100px;
+  top: 60px;
   height: 775px;
-  width: 550px;
+  width: 600px;
   min-width: 400px;
   min-height: 500px;
   border-style: solid;
@@ -24,20 +27,20 @@ body{
 }
 #windstaff{
   position: absolute;
-  left: 480px;
-  top: 175px;
-  height: 600px;
+  left: 535px;
+  top: 128px;
+  height: 644px;
   width: 100px;
   /* border-style: solid;
-  border-width: 2px;
+  border-width: 1px;
   border-color: black; */
 }
 #hodograph{
   position: absolute;
-  left: 560px;
-  top: 100px;
-  height: 350px;
-  width: 350px;
+  left: 610px;
+  top: 60px;
+  height: 450px;
+  width: 450px;
   min-width: 150px;
   min-height: 150px;
   border-style: solid;
@@ -61,8 +64,8 @@ body{
 }
 #textarea{
   position: absolute;
-  left: 910px;
-  top: 100px;
+  left: 1070px;
+  top: 60px;
   height: 755px;
   width: 250px;
   min-width: 200px;
@@ -77,8 +80,19 @@ body{
   position: absolute;
   z-index: 10;
   left:0px;
-  top:50px;
-  height:50px;
+  top:30px;
+  height:30px;
+  width: 150px;
+  color: white;
+  background-color: rgba(80,78,78,0.9);
+}
+
+#select_forecast_button{
+  position: absolute;
+  z-index: 10;
+  left:150px;
+  top:30px;
+  height:30px;
   width: 150px;
   color: white;
   background-color: rgba(80,78,78,0.9);
@@ -86,23 +100,28 @@ body{
 
 #mapholder{
   position: absolute;
-  top: 100px;
-  left: 0px;
-  height: 600px;
-  width: 1000px;
+  top: 520px;
+  left: 610px;
+  height: 318px;
+  width: 450px;
   z-index: 10;
   border-style: solid;
-  border-width: 5px;
+  border-width: 2px;
   border-color: black;
-  display: none;
+  /* display: none; */
 }
 
 #title{
   position: absolute;
-  top: 65px;
-  left: 560px;
+  top: 30px;
+  left: 610px;
   color: white;
 }
+
+#disclaimer{
+  color: white;
+}
+
 .wind-arrow {
   stroke: black;
 }

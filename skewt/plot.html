@@ -24,6 +24,7 @@
   <script type="text/javascript" src="{% static 'Leaflet.windbarb-master/src/leaflet-windbarb.js' %}"></script>
   <script type="text/javascript" src="{% static 'plotly-2.4.2.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'skewt.js' %}"></script>
+  <script type="text/javascript" src="{% static 'sounding.js' %}"></script>
   <script type="text/javascript" src="{% static 'sounding_functions.js' %}"></script>
   <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'skewt.css' %}">
@@ -34,17 +35,16 @@
 
   <div id="container">
     <p id="disclaimer">Notice: This site is not supported 24/7 and remains under active development. Email wxwatchercontact@gmail.com for questions/bug reports.</p>
-    <button id="select_sounding_button" onclick="displayObservedMap()">Observed</button>
-    <button id="select_forecast_button" onclick="displayForecastMap()">RAP</button>
+    <button id="select_sounding_button" onclick="add_observed_markers()">Observed</button>
+    <button id="select_forecast_button" onclick="add_forecast_markers()">RAP</button>
     <h4 id="title">No Sounding Selected</h4>
     <div id="mapholder"></div>
-    <div id="forcmapholder"></div>
     <div id="plotHolder"></div>
     <div id="windstaff"></div>
     <div id="hodograph">
     </div>
-    <div id="plot2">
-    </div> <!-- End of plot2 div -->
+    <!-- <div id="plot2">
+    </div> -->
     <div id="textarea">
       <table style="width:100%">
         <tr>
@@ -214,9 +214,9 @@
     var map = L.map(
         "mapholder",
         {
-            center: [40.0, -100.0],
+            center: [37.0, -96.0],
             crs: L.CRS.EPSG3857,
-            zoom: 5,
+            zoom: 4,
             zoomControl: true,
             cursor: true,
             preferCanvas: true,
@@ -233,32 +233,10 @@
     var obs_location_markers = new L.featureGroup();
     var forc_location_markers = new L.featureGroup();
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Forecast selection map
-    var forcmap = L.map(
-        "forcmapholder",
-        {
-            center: [40.0, -100.0],
-            crs: L.CRS.EPSG3857,
-            zoom: 5,
-            zoomControl: true,
-            cursor: true,
-            preferCanvas: true,
-            renderer: L.canvas(),
-            keyboard: false,
-            updateWhenIdle: true,
-            updateWhenZooming: false,
-        }
-    );
-    var osm = L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
-    ).addTo(forcmap);
-    var location_markers = new L.featureGroup();
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     function add_observed_markers(){
-      var url = "{% static 'soundings/sounding_locations.json' %}";
-      obs_location_markers.clearLayers();
-      map.removeLayer(obs_location_markers);
+      var url = "{% static 'soundings/observed_locations.json' %}";
+      clearMarkers();
       $.ajax({
       dataType: "json",
       url: url,
@@ -269,7 +247,6 @@
             var marker = new L.circleMarker([lat, lon], { radius: 9, color: "black", weight: 2, opacity: 1.0, fillColor: "blue", fillOpacity: 0.4 }); //opacity may be set to zero
             marker.on('click',function(){
                 console.log(`Selected site: ${key} Observed`);
-                displayObservedMap();
                 updateStation(key);
                 updateSoundingType("Observed");
                 plot_sounding_from_json();
@@ -284,9 +261,8 @@
     } // end add_markers
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     function add_forecast_markers(){
-      var url = "{% static 'soundings/sounding_locations.json' %}";
-      forc_location_markers.clearLayers();
-      forcmap.removeLayer(forc_location_markers);
+      var url = "{% static 'soundings/forecast_locations.json' %}";
+      clearMarkers();
       $.ajax({
       dataType: "json",
       url: url,
@@ -297,7 +273,6 @@
             var marker = new L.circleMarker([lat, lon], { radius: 9, color: "black", weight: 2, opacity: 1.0, fillColor: "red", fillOpacity: 0.4 }); //opacity may be set to zero
             marker.on('click',function(){
                 console.log(`Selected site: ${key} Forecast`);
-                displayForecastMap();
                 updateStation(key);
                 updateSoundingType("Forecast");
                 globalThis.index = 0;
@@ -309,64 +284,45 @@
       }).fail(function() {
         console.log("Error updating locations.");
       });
-      forc_location_markers.addTo(forcmap);
+      forc_location_markers.addTo(map);
     } // end add_markers
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    function displayObservedMap(){
-      var mapcontainer = document.getElementById("mapholder");
-      if (mapcontainer.style.display == "flex"){
-        mapcontainer.style.display = "none";
-      } else {
-        // close the forecast map if needed.
-        document.getElementById("forcmapholder").style.display = "none";
-        // open the observed map
-        mapcontainer.style.display = "flex";
-        map.invalidateSize();
-      } // end else
-    } // end function
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    function displayForecastMap(){
-      var forcmapcontainer = document.getElementById("forcmapholder");
-      if (forcmapcontainer.style.display == "flex"){
-        forcmapcontainer.style.display = "none";
-      } else {
-        // close the observed map if needed.
-        document.getElementById("mapholder").style.display = "none";
-        // open the forecast map
-        forcmapcontainer.style.display = "flex";
-        forcmap.invalidateSize();
-      } // end else
-    } // end function
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-    function get_tor_events(tor_events_url){
-      // get the tornado event data
-      var capes = [];
-      var shears = [];
-      var ratings = [];
-      var colors = [];
-      $.getJSON(tor_events_url, function(data){
-        Object.entries(data).forEach(function(event){
-          ratings.push(`Rating: EF-${event[1][0]}, CAPE: ${roundTo(event[1][6],0)}, SRH: ${roundTo(event[1][5],0)}`);
-          shears.push(event[1][5]);
-          capes.push(event[1][6]);
-          if (event[1][0] == 5){
-            colors.push('rgba(250,26,254,0.75)');
-          } else if (event[1][0] == 4){
-            colors.push('rgba(254,36,26,0.75)');
-          } else if (event[1][0] == 3){
-            colors.push('rgba(254,50,26,0.5)');
-          } else if (event[1][0] == 2){
-            colors.push('rgba(26,43,254,0.5)');
-          } else if (event[1][0] == 1){
-            colors.push('rgba(104,249,209,0.5)');
-          } else {
-            colors.push('rgba(209,207,20,0.5)');
-          }
-        });
-      }) // end getJSON
-      var tor_events_data = [capes, shears, colors, ratings];
-      return tor_events_data;
+    function clearMarkers(){
+      forc_location_markers.clearLayers();
+      map.removeLayer(forc_location_markers);
+      obs_location_markers.clearLayers();
+      map.removeLayer(obs_location_markers);
     }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    // function get_tor_events(tor_events_url){
+    //   // get the tornado event data
+    //   var capes = [];
+    //   var shears = [];
+    //   var ratings = [];
+    //   var colors = [];
+    //   $.getJSON(tor_events_url, function(data){
+    //     Object.entries(data).forEach(function(event){
+    //       ratings.push(`Rating: EF-${event[1][0]}, CAPE: ${roundTo(event[1][6],0)}, SRH: ${roundTo(event[1][5],0)}`);
+    //       shears.push(event[1][5]);
+    //       capes.push(event[1][6]);
+    //       if (event[1][0] == 5){
+    //         colors.push('rgba(250,26,254,0.75)');
+    //       } else if (event[1][0] == 4){
+    //         colors.push('rgba(254,36,26,0.75)');
+    //       } else if (event[1][0] == 3){
+    //         colors.push('rgba(254,50,26,0.5)');
+    //       } else if (event[1][0] == 2){
+    //         colors.push('rgba(26,43,254,0.5)');
+    //       } else if (event[1][0] == 1){
+    //         colors.push('rgba(104,249,209,0.5)');
+    //       } else {
+    //         colors.push('rgba(209,207,20,0.5)');
+    //       }
+    //     });
+    //   }) // end getJSON
+    //   var tor_events_data = [capes, shears, colors, ratings];
+    //   return tor_events_data;
+    // }
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     function plot_sounding_from_json(){
       // I know this is bad practice, but this utlizes the global variables
@@ -374,18 +330,18 @@
       var station = plot_station;
       var type = plot_type;
       if (station == null){
-          plotSkewt(station,tor_events_data);
+          plotSkewt(station);
       } else {
         if (type == "Forecast"){
           //var url = `/static/data/soundings/forecast_soundings/${station}_${index}.json`;
-          var url = "{% static '/soundings/forecast_soundings/ktxk_0.json' %}";
+          var url = "{% static '/soundings/rap/ktxk_0.json' %}";
         } else {
           //var url = `/static/data/soundings/observed_soundings/${station}.json`;
-          var url = "{% static '/soundings/observed_soundings/OUN.json' %}";
+          var url = "{% static '/soundings/observed/OUNN.json' %}";
         }
         console.log(url);
         $.getJSON(url, function(data){
-          plotSkewt(data,tor_events_data);
+          plotSkewt(data);
           add_sounding_text(data);
           wind_staff(data);
           if (type == "Forecast"){
@@ -404,16 +360,12 @@
     } // end read sounding
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    var tor_events_url = "{% static 'tor_events.json' %}";
-    var tor_events_data = get_tor_events(tor_events_url);
+    // var tor_events_url = "{% static 'tor_events.json' %}";
+    // var tor_events_data = get_tor_events(tor_events_url);
     plot_sounding_from_json(null,"None");
+    console.log('here')
     add_observed_markers();
-    add_forecast_markers();
     initializeArrowKeys();
-    var obsmapcontainer = document.getElementById("mapholder");
-    var forcmapcontainer = document.getElementById("forcmapholder");
-    obsmapcontainer.style.display = "none";
-    forcmapcontainer.style.display = "none";
   </script>
   <!-- vendor/bootstrap/js/bootstrap.bundle.min.js -->
   <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>

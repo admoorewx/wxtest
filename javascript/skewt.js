@@ -105,20 +105,28 @@ function wind_speed_direction(u,v){
   return [wind_speed, wind_direction];
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function create_circle(radius){
-  var y_pos = [];
-  var y_neg = [];
-  var x = arange((-1*radius),radius,1.0);
-  for (i=0;x.length;i++){
-    let y = Math.sqrt((1.0-(x[i] * x[i])))
-    y_pos.push(y);
-    y_neg.push((-1.0*y));
+function center_hodograph(u,v){
+  let buffer = 5;
+  let umax = Math.max(...u);
+  let umin = Math.min(...u);
+  let vmax = Math.max(...v);
+  let vmin = Math.min(...v);
+  if ((umax-umin) > (vmax-vmin)){
+    midpoint =  (umax+umin)/2.0;
+    xmax = midpoint + ((umax-umin)/2.0) + buffer;
+    xmax = Math.round((xmax/10.0)) * 10.0
+    xmin = -1 * xmax;
+    return [xmin,xmax]
+  } else {
+    midpoint = (vmax+vmin)/2.0;
+    xmax = midpoint + ((vmax-vmin)/2.0) + buffer;
+    xmax = Math.round((xmax/10.0)) * 10.0
+    xmin = -1 * xmax;
+    return [xmin,xmax]
   }
-  return [x,y_pos,y_neg];
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function plotSkewt(sounding=null,tor_events_data){
-
+function plotSkewt(sounding=null){
   ////////////////// SKEW-T //////////////////
   // define the grid to plot on
   var max_pressure = 1050;
@@ -127,6 +135,33 @@ function plotSkewt(sounding=null,tor_events_data){
   var temp_grid = arange(-100,170,10);
   const standard_pressure = 1000.0; // hPa
   const slope = 30.0;
+
+  snd = new Sounding(sounding);
+  snd.print();
+  snd.derived_profiles();
+  snd.get_sb_parcel_trajectory();
+  snd.get_ml_parcel_trajectory();
+  snd.get_mu_parcel_trajectory();
+  snd.get_mlcape();
+  snd.get_sbcape();
+  snd.get_mucape();
+  snd.get_storm_motions();
+  snd.get_srh();
+  snd.get_effective_inflow_layer();
+  snd.get_effective_srh();
+  snd.get_effective_bwd();
+  console.log(`SB CAPE/CIN: ${snd.sb_cape}`);
+  console.log(`ML CAPE/CIN: ${snd.ml_cape}`);
+  console.log(`MU CAPE/CIN: ${snd.mu_cape}`);
+  console.log(`Mean motion: ${snd.mean_storm_motion}`);
+  console.log(`Right motion: ${snd.right_storm_motion}`);
+  console.log(`Left motion: ${snd.left_storm_motion}`);
+  console.log(`0-1 km SRH: ${snd.srh_01km}`);
+  console.log(`0-3 km SRH: ${snd.srh_03km}`);
+  console.log(`Eff. Inflow bottom/top: ${snd.eff_layer}`)
+  console.log(`Eff. SRH: ${snd.eff_srh}`)
+  console.log(`Eff. BWD: ${snd.eff_bwd}`)
+
 
   // Create the isotherms
   temp_lines = [];
@@ -189,7 +224,7 @@ function plotSkewt(sounding=null,tor_events_data){
     theta_e_profile = [];
     mixing_ratio_profile = [];
 
-    //console.log(sounding);
+
     for (i=0;i<sounding.pressure.length;i++){
       if (sounding.pressure[i] >= 100.0){
         // Base plotting parameters
@@ -200,7 +235,7 @@ function plotSkewt(sounding=null,tor_events_data){
         sounding_dewpoint.push(adjusted_dewp);
         layer_relh = relh_from_temp_dewp(sounding.temperature[i],sounding.dewpoint[i]);
         let height_agl = sounding.height[i] - sounding.height[0]; // adjust height to meters AGL
-        adjusted_sb_temp = temp_transform(K2C(sounding.sb_parcel_profile[i]),standard_pressure,sounding.pressure[i],slope);
+        adjusted_sb_temp = temp_transform(snd.sb_parcel_trace[i],standard_pressure,snd.pressure[i],slope);
         // adjusted_ml_temp = temp_transform(K2C(sounding.ml_parcel_profile[i]),standard_pressure,sounding.pressure[i],slope);
         // adjusted_mu_temp = temp_transform(K2C(sounding.mu_parcel_profile[i]),standard_pressure,sounding.pressure[i],slope);
         sb_parcel_profile.push(adjusted_sb_temp);
@@ -220,9 +255,13 @@ function plotSkewt(sounding=null,tor_events_data){
       } // end if
     } // end for loop
 
-    // check params
-    parcel_trace(sounding.temperature,sounding.dewpoint,sounding.pressure,sounding.height,theta_e_profile,"most_unstable")
+    for (i=0;i<snd.ml_parcel_info[0].length;i++){
+      ml_parcel_profile.push(temp_transform(snd.ml_parcel_info[0][i],standard_pressure,snd.ml_parcel_info[1][i],slope));
+    }
 
+    for (i=0;i<snd.mu_parcel_info[0].length;i++){
+      mu_parcel_profile.push(temp_transform(snd.mu_parcel_info[0][i],standard_pressure,snd.mu_parcel_info[1][i],slope));
+    }
 
     var temp_profile = {
       x: sounding_temperature,
@@ -254,46 +293,48 @@ function plotSkewt(sounding=null,tor_events_data){
         color: 'rgba(28,40,51,0.75)',
       }
     } // end sb parcel profile
-    // var ml_profile = {
-    //   x: ml_parcel_profile,
-    //   y: sounding_pressure,
-    //   mode: 'lines',
-    //   hoverinfo: 'skip',
-    //   line: {
-    //     dash: 'dashdot',
-    //     color: 'rgba(202,111,30,0.75)',
-    //   }
-    // } // end ml parcel profile
-    // var mu_profile = {
-    //   x: mu_parcel_profile,
-    //   y: sounding_pressure,
-    //   mode: 'lines',
-    //   hoverinfo: 'skip',
-    //   line: {
-    //     dash: 'dashdot',
-    //     color: 'rgba(186,74,0,0.75)',
-    //   }
-    // } // end mu parcel profile
-    var plotData = [].concat(temp_lines,dry_adiabats,temp_profile,dewp_profile,sb_profile);
+    var ml_profile = {
+      x: ml_parcel_profile,
+      y: snd.ml_parcel_info[1],
+      mode: 'lines',
+      hoverinfo: 'skip',
+      line: {
+        dash: 'dashdot',
+        color: 'rgba(202,111,30,0.75)',
+      }
+    } // end ml parcel profile
+    var mu_profile = {
+      x: mu_parcel_profile,
+      y: snd.mu_parcel_info[1],
+      mode: 'lines',
+      hoverinfo: 'skip',
+      line: {
+        dash: 'dashdot',
+        color: 'rgba(64,173,255,0.75)',
+      }
+    } // end mu parcel profile
+    var plotData = [].concat(temp_lines,dry_adiabats,temp_profile,dewp_profile,sb_profile,ml_profile,mu_profile);
   }
 
   var layout = {
     xaxis: {
-      range: [-40,50],
+      range: [-30,50],
       title: 'Temp (C)',
       // tickvals: dates,
       tick0: temp_grid,
       dtick: 10,
-      //tickangle: 10,
+      tickangle: -45,
+      fixedrange: true,
       showgrid: false,
       zeroline: false,
       showline: false,
       anchor: 'free',
-      position: 0.04,
+      position: 0.05,
     },
     yaxis: {
       type: 'log',
       autorange: 'reversed',
+      fixedrange: true,
       range: [Math.log(1050),Math.log(100)],
       tickvals: [1050].concat(arange(100,1000,100).reverse()),
       ticktext: [1050].concat(arange(100,1000,100).reverse()),
@@ -318,7 +359,8 @@ function plotSkewt(sounding=null,tor_events_data){
 
   // Create the hodograph
   var hodograph_ticks = [];
-  var locs = arange(-100,100,10);
+  var hodograph_circles = [];
+  var locs = arange(-100,150,10);
   locs.forEach(function(loc){
     var xtick = {
       x: [loc,loc],
@@ -335,12 +377,29 @@ function plotSkewt(sounding=null,tor_events_data){
       mode: 'lines',
       hoverinfo: 'skip',
       line: {
-        color: 'rgba(0,0,0,0.5)',
+        color: 'rgba(0,0,0,0.2)',
       }
     }
     hodograph_ticks.push(xtick);
     hodograph_ticks.push(ytick);
+    if (loc >= 10){
+      shape = {
+        type: 'circle',
+        xref: 'x',
+        yref: 'y',
+        x0: -1*loc,
+        y0: -1*loc,
+        x1: loc,
+        y1: loc,
+        line: {
+          color: 'rgba(0,0,0,0.1)',
+          dash: 'dot'
+        }
+      } // end circle
+      hodograph_circles.push(shape);
+    }
   });
+
 
 
   if (sounding == null){
@@ -397,53 +456,58 @@ function plotSkewt(sounding=null,tor_events_data){
     // add in the storm motion vectors
     var right_motion_info = wind_speed_direction(sounding.storm_u_rm,sounding.storm_v_rm);
     var right_mover = {
-      x: [sounding.storm_u_rm],
-      y: [sounding.storm_v_rm],
+      x: [snd.right_storm_motion[0]],
+      y: [snd.right_storm_motion[1]],
       mode: 'markers',
       type: 'scatter',
       hovertext: `Bunkers R.M.: ${Math.round(right_motion_info[0])} knots @ ${Math.round(right_motion_info[1])} deg`,
       hoverinfo: 'text',
       marker: {
-        size: 16,
+        size: 13,
         color: 'rgba(226,48,48,0.75)',
         symbol: "circle",
       } // end marker
     } // end right-mover
     var left_motion_info = wind_speed_direction(sounding.storm_u_lm,sounding.storm_v_lm);
     var left_mover = {
-      x: [sounding.storm_u_lm],
-      y: [sounding.storm_v_lm],
+      x: [snd.left_storm_motion[0]],
+      y: [snd.left_storm_motion[1]],
       mode: 'markers',
       type: 'scatter',
       hovertext: `Bunkers L.M.: ${Math.round(left_motion_info[0])} knots @ ${Math.round(left_motion_info[1])} deg`,
       hoverinfo: 'text',
       marker: {
-        size: 16,
+        size: 13,
         color: 'rgba(43,50,252,0.75)',
         symbol: "cirlce",
       } // end marker
     } // end left-mover
     var mean_motion_info = wind_speed_direction(sounding.storm_u_mean,sounding.storm_v_mean);
     var mean_mover = {
-      x: [sounding.storm_u_mean],
-      y: [sounding.storm_v_mean],
+      x: [snd.mean_storm_motion[0]],
+      y: [snd.mean_storm_motion[1]],
       mode: 'markers',
       type: 'scatter',
       hovertext: `Mean S.M.: ${Math.round(mean_motion_info[0])} knots @ ${Math.round(mean_motion_info[1])} deg`,
       hoverinfo: 'text',
       marker: {
-        size: 16,
+        size: 13,
         color: 'rgba(38,39,70,0.75)',
-        symbol: "cirlce",
+        symbol: "square",
       } // end marker
     } // end mean-mover
     var hodograph_data = [].concat(hodograph_ticks,right_mover,left_mover,mean_mover,sounding_hodograph);
   } // end else
   // hodograph layout
+  if (sounding == null){
+    bounds = [-60,60];
+  } else {
+    bounds = center_hodograph(sounding.u_wind,sounding.v_wind);
+  }
   var hodograph_layout = {
     xaxis: {
       autorange: false,
-      range: [-60,60],
+      range: bounds,
       dtick: 20,
       showgrid: false,
       zeroline: true,
@@ -453,7 +517,7 @@ function plotSkewt(sounding=null,tor_events_data){
     },
     yaxis: {
       autorange: false,
-      range: [-60,60],
+      range: bounds,
       dtick: 20,
       showgrid: false,
       zeroline: true,
@@ -467,7 +531,8 @@ function plotSkewt(sounding=null,tor_events_data){
       l: 20,
       r: 20,
     },
-    showlegend: false
+    showlegend: false,
+    shapes: hodograph_circles
   };
   Plotly.newPlot('hodograph',hodograph_data,hodograph_layout);
 
@@ -612,80 +677,80 @@ function plotSkewt(sounding=null,tor_events_data){
   //Plotly.newPlot('plot2',relh_data,relh_layout);
 
 
-  ////////////////// CAPE/Shear Tornado Events Plot //////////////////
-  var sounding_srh = 0.0;
-  var sounding_cape = 0.0;
-  var sounding_color = 'rgba(38,39,70,0.0)';
-  if (sounding != null){
-    sounding_srh = sounding.srh_01km;
-    sounding_cape = sounding.MLCAPE;
-    sounding_color = 'rgba(38,39,70,1.0)';
-  }
-  var capes = tor_events_data[0];
-  var shears = tor_events_data[1];
-  var colors = tor_events_data[2];
-  var ratings = tor_events_data[3];
-
-  var events = {
-    x: shears,
-    y: capes,
-    mode: 'markers',
-    type: 'scatter',
-    hoverinfo: 'text',
-    hovertext: ratings,
-    marker: {
-      size: 8,
-      color: colors,
-      symbol: "cirlce",
-    } // end marker
-  } // end mean-mover
-
-  sounding_env = {
-    x: [sounding_srh],
-    y: [sounding_cape],
-    mode: 'markers',
-    type: 'scatter',
-    hoverinfo: 'skip',
-    hovertext: 'Sounding CAPE/Shear',
-    marker: {
-      size: 14,
-      color: sounding_color,
-      symbol: 'circle',
-    }
-  } // end sounding_env marker
-  var tor_events_data = [].concat(events,sounding_env);
-
-  // layout
-  var tor_events_layout = {
-    xaxis: {
-      range: [0,700],
-      dtick: 100,
-      showgrid: false,
-      zeroline: false,
-      showline: false,
-      gridcolor: 'rgba(34,23,34,0.4)',
-      gridwidth: 1,
-      title: '0-1 km SRH (m2/s2)',
-    },
-    yaxis: {
-      range: [0,6000],
-      dtick: 1000,
-      showgrid: false,
-      zeroline: false,
-      showline: false,
-      gridcolor: 'rgba(34,23,34,0.4)',
-      gridwidth: 1,
-      title: 'MLCAPE (J/kg)',
-    },
-    margin: {
-      b: 50,
-      t: 10,
-      l: 50,
-      r: 10,
-    },
-    showlegend: false
-  };
-  Plotly.newPlot('plot2',tor_events_data,tor_events_layout);
+  // ////////////////// CAPE/Shear Tornado Events Plot //////////////////
+  // var sounding_srh = 0.0;
+  // var sounding_cape = 0.0;
+  // var sounding_color = 'rgba(38,39,70,0.0)';
+  // if (sounding != null){
+  //   sounding_srh = sounding.srh_01km;
+  //   sounding_cape = sounding.MLCAPE;
+  //   sounding_color = 'rgba(38,39,70,1.0)';
+  // }
+  // var capes = tor_events_data[0];
+  // var shears = tor_events_data[1];
+  // var colors = tor_events_data[2];
+  // var ratings = tor_events_data[3];
+  //
+  // var events = {
+  //   x: shears,
+  //   y: capes,
+  //   mode: 'markers',
+  //   type: 'scatter',
+  //   hoverinfo: 'text',
+  //   hovertext: ratings,
+  //   marker: {
+  //     size: 8,
+  //     color: colors,
+  //     symbol: "cirlce",
+  //   } // end marker
+  // } // end mean-mover
+  //
+  // sounding_env = {
+  //   x: [sounding_srh],
+  //   y: [sounding_cape],
+  //   mode: 'markers',
+  //   type: 'scatter',
+  //   hoverinfo: 'skip',
+  //   hovertext: 'Sounding CAPE/Shear',
+  //   marker: {
+  //     size: 14,
+  //     color: sounding_color,
+  //     symbol: 'circle',
+  //   }
+  // } // end sounding_env marker
+  // var tor_events_data = [].concat(events,sounding_env);
+  //
+  // // layout
+  // var tor_events_layout = {
+  //   xaxis: {
+  //     range: [0,700],
+  //     dtick: 100,
+  //     showgrid: false,
+  //     zeroline: false,
+  //     showline: false,
+  //     gridcolor: 'rgba(34,23,34,0.4)',
+  //     gridwidth: 1,
+  //     title: '0-1 km SRH (m2/s2)',
+  //   },
+  //   yaxis: {
+  //     range: [0,6000],
+  //     dtick: 1000,
+  //     showgrid: false,
+  //     zeroline: false,
+  //     showline: false,
+  //     gridcolor: 'rgba(34,23,34,0.4)',
+  //     gridwidth: 1,
+  //     title: 'MLCAPE (J/kg)',
+  //   },
+  //   margin: {
+  //     b: 50,
+  //     t: 10,
+  //     l: 50,
+  //     r: 10,
+  //   },
+  //   showlegend: false
+  // };
+  // Plotly.newPlot('plot2',tor_events_data,tor_events_layout);
 } // end plotSkewT function
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function add_sounding_text(sounding=null){
@@ -726,7 +791,7 @@ function add_sounding_text(sounding=null){
     document.getElementById("lr03").innerHTML = `${roundTo(lr3km,1)} K/km`;
     document.getElementById("lr75").innerHTML = `${roundTo(lr75,1)} K/km`;
     document.getElementById("ddpres").innerHTML = `${roundTo(dewp_depress,1)} F`;
-    document.getElementById("meanmix").innerHTML = `${roundTo(sounding.mean_mixing_ratio,2)} g/kg`;
+    document.getElementById("meanmix").innerHTML = `${roundTo(mean_mixing_ratio,2)} g/kg`;
     document.getElementById("pwat").innerHTML = `${roundTo(pwat,2)} in`;
 
     // Kinematic parameters
@@ -738,31 +803,31 @@ function add_sounding_text(sounding=null){
     document.getElementById("srh03").innerHTML = `${Math.round(sounding.srh_03km)} m2/s2`;
     document.getElementById("srheff").innerHTML = `${Math.round(sounding.srheff)} m2/s2`;
 
-    // Son of SARS probabilities
-    let values = sounding.tor_intensity_probs;
-    document.getElementById("sosnotor").innerHTML = `${Math.round(100.0*values[0])}`
-    document.getElementById("sos0").innerHTML = `${Math.round(100.0*values[1])}`
-    document.getElementById("sos1").innerHTML = `${Math.round(100.0*values[2])}`
-    document.getElementById("sos2").innerHTML = `${Math.round(100.0*values[3])}`
-    document.getElementById("sos3").innerHTML = `${Math.round(100.0*values[4])}`
-    document.getElementById("sos4").innerHTML = `${Math.round(100.0*values[5])}`
-    document.getElementById("sos5").innerHTML = `${Math.round(100.0*values[6])}`
-    // Son of SARS Hail probabilities
-    let hail_values = sounding.hail_probabilities;
-    document.getElementById("anyhail_nn").innerHTML = `${Math.round(100.0*hail_values[0])}%`;
-    document.getElementById("svrhail_nn").innerHTML = `${Math.round(100.0*hail_values[1])}%`;
-    document.getElementById("sighail_nn").innerHTML = `${Math.round(100.0*hail_values[2])}%`;
-    document.getElementById("anyhail_rf").innerHTML = `${binary_to_string(hail_values[3])}`;
-    document.getElementById("svrhail_rf").innerHTML = `${binary_to_string(hail_values[4])}`;
-    document.getElementById("sighail_rf").innerHTML = `${binary_to_string(hail_values[5])}`;
-    // Son of SARS Winter Ptype classification
-    document.getElementById("ptype_nn").innerHTML = `${sounding.nn_winter_type} (${roundTo((100.0*sounding.nn_winter_prob),0)}% match)`;
-    document.getElementById("ptype_rf").innerHTML = `${sounding.rf_winter_type}`;
-
-    // derived parameters
-    document.getElementById("scp").innerHTML = `${roundTo(sounding.SCP,1)}`
-    document.getElementById("stp").innerHTML = `${roundTo(sounding.STP,1)}`
-    document.getElementById("wmp").innerHTML = `${roundTo(sounding.WMP,1)}`
+    // // Son of SARS probabilities
+    // let values = sounding.tor_intensity_probs;
+    // document.getElementById("sosnotor").innerHTML = `${Math.round(100.0*values[0])}`
+    // document.getElementById("sos0").innerHTML = `${Math.round(100.0*values[1])}`
+    // document.getElementById("sos1").innerHTML = `${Math.round(100.0*values[2])}`
+    // document.getElementById("sos2").innerHTML = `${Math.round(100.0*values[3])}`
+    // document.getElementById("sos3").innerHTML = `${Math.round(100.0*values[4])}`
+    // document.getElementById("sos4").innerHTML = `${Math.round(100.0*values[5])}`
+    // document.getElementById("sos5").innerHTML = `${Math.round(100.0*values[6])}`
+    // // Son of SARS Hail probabilities
+    // let hail_values = sounding.hail_probabilities;
+    // document.getElementById("anyhail_nn").innerHTML = `${Math.round(100.0*hail_values[0])}%`;
+    // document.getElementById("svrhail_nn").innerHTML = `${Math.round(100.0*hail_values[1])}%`;
+    // document.getElementById("sighail_nn").innerHTML = `${Math.round(100.0*hail_values[2])}%`;
+    // document.getElementById("anyhail_rf").innerHTML = `${binary_to_string(hail_values[3])}`;
+    // document.getElementById("svrhail_rf").innerHTML = `${binary_to_string(hail_values[4])}`;
+    // document.getElementById("sighail_rf").innerHTML = `${binary_to_string(hail_values[5])}`;
+    // // Son of SARS Winter Ptype classification
+    // document.getElementById("ptype_nn").innerHTML = `${sounding.nn_winter_type} (${roundTo((100.0*sounding.nn_winter_prob),0)}% match)`;
+    // document.getElementById("ptype_rf").innerHTML = `${sounding.rf_winter_type}`;
+    //
+    // // derived parameters
+    // document.getElementById("scp").innerHTML = `${roundTo(sounding.SCP,1)}`
+    // document.getElementById("stp").innerHTML = `${roundTo(sounding.STP,1)}`
+    // document.getElementById("wmp").innerHTML = `${roundTo(sounding.WMP,1)}`
 
     // assign colors to all text values
     document.getElementById("sbcape").style.color = color_by_threshold(sounding.SBCAPE,cape_thresholds);
@@ -782,7 +847,7 @@ function add_sounding_text(sounding=null){
     document.getElementById("lr03").style.color = color_by_threshold(lr3km,lr_thresholds);
     document.getElementById("lr75").style.color = color_by_threshold(lr75,lr_thresholds);
     document.getElementById("ddpres").style.color = color_by_threshold(dewp_depress,dd_thresholds);
-    document.getElementById("meanmix").style.color = color_by_threshold(sounding.mean_mixing_ratio,mxr_thresholds);
+    document.getElementById("meanmix").style.color = color_by_threshold(mean_mixing_ratio,mxr_thresholds);
     document.getElementById("pwat").style.color = color_by_threshold(pwat,pwat_thresholds);
 
     document.getElementById("bs01").style.color = color_by_threshold(bwd1km, bs01_thresholds);
@@ -794,27 +859,27 @@ function add_sounding_text(sounding=null){
     document.getElementById("srh03").style.color = color_by_threshold(sounding.srh_03km,srh_thresholds);
     document.getElementById("srheff").style.color = color_by_threshold(sounding.srheff,srh_thresholds);
 
-    document.getElementById("scp").style.color = color_by_threshold(sounding.SCP,scp_thresholds);
-    document.getElementById("stp").style.color = color_by_threshold(sounding.STP,stp_thresholds);
-    document.getElementById("wmp").style.color = color_by_threshold(sounding.WMP,stp_thresholds);
-
-    document.getElementById("sos0").style.color = color_by_threshold(Math.round(100.0*values[1]),tor_prob_thresholds);
-    document.getElementById("sos1").style.color = color_by_threshold(Math.round(100.0*values[2]),tor_prob_thresholds);
-    document.getElementById("sos2").style.color = color_by_threshold(Math.round(100.0*values[3]),tor_prob_thresholds);
-    document.getElementById("sos3").style.color = color_by_threshold(Math.round(100.0*values[4]),tor_prob_thresholds);
-    document.getElementById("sos4").style.color = color_by_threshold(Math.round(100.0*values[5]),tor_prob_thresholds);
-    document.getElementById("sos5").style.color = color_by_threshold(Math.round(100.0*values[6]),tor_prob_thresholds);
-
-    document.getElementById("anyhail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[0]),tor_prob_thresholds);
-    document.getElementById("svrhail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[1]),tor_prob_thresholds);
-    document.getElementById("sighail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[2]),tor_prob_thresholds);
-
-    document.getElementById("anyhail_rf").style.color = color_by_binary(hail_values[3]);
-    document.getElementById("svrhail_rf").style.color = color_by_binary(hail_values[4]);
-    document.getElementById("sighail_rf").style.color = color_by_binary(hail_values[5]);
-
-    document.getElementById("ptype_nn").style.color = color_by_type(sounding.nn_winter_type);
-    document.getElementById("ptype_rf").style.color = color_by_type(sounding.rf_winter_type);
+    // document.getElementById("scp").style.color = color_by_threshold(sounding.SCP,scp_thresholds);
+    // document.getElementById("stp").style.color = color_by_threshold(sounding.STP,stp_thresholds);
+    // document.getElementById("wmp").style.color = color_by_threshold(sounding.WMP,stp_thresholds);
+    //
+    // document.getElementById("sos0").style.color = color_by_threshold(Math.round(100.0*values[1]),tor_prob_thresholds);
+    // document.getElementById("sos1").style.color = color_by_threshold(Math.round(100.0*values[2]),tor_prob_thresholds);
+    // document.getElementById("sos2").style.color = color_by_threshold(Math.round(100.0*values[3]),tor_prob_thresholds);
+    // document.getElementById("sos3").style.color = color_by_threshold(Math.round(100.0*values[4]),tor_prob_thresholds);
+    // document.getElementById("sos4").style.color = color_by_threshold(Math.round(100.0*values[5]),tor_prob_thresholds);
+    // document.getElementById("sos5").style.color = color_by_threshold(Math.round(100.0*values[6]),tor_prob_thresholds);
+    //
+    // document.getElementById("anyhail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[0]),tor_prob_thresholds);
+    // document.getElementById("svrhail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[1]),tor_prob_thresholds);
+    // document.getElementById("sighail_nn").style.color = color_by_threshold(Math.round(100.0*hail_values[2]),tor_prob_thresholds);
+    //
+    // document.getElementById("anyhail_rf").style.color = color_by_binary(hail_values[3]);
+    // document.getElementById("svrhail_rf").style.color = color_by_binary(hail_values[4]);
+    // document.getElementById("sighail_rf").style.color = color_by_binary(hail_values[5]);
+    //
+    // document.getElementById("ptype_nn").style.color = color_by_type(sounding.nn_winter_type);
+    // document.getElementById("ptype_rf").style.color = color_by_type(sounding.rf_winter_type);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////

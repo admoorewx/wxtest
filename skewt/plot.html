@@ -35,8 +35,45 @@
 
   <div id="container">
     <p id="disclaimer">Notice: This site is not supported 24/7 and remains under active development. Email wxwatchercontact@gmail.com for questions/bug reports.</p>
-    <button id="select_sounding_button" onclick="add_observed_markers()">Observed</button>
-    <button id="select_forecast_button" onclick="add_forecast_markers()">RAP</button>
+    <!-- <button id="select_sounding_button" onclick="add_observed_markers()">Observed</button>
+    <button id="select_forecast_button" onclick="add_forecast_markers()">RAP</button> -->
+
+    <form>
+      <select id="select_dataset_button" onChange="setDataset(value)">
+        <option value="observed" selected>Observed</option>
+        <option value="rap">RAP</option>
+      </select>
+    </form>
+
+    <form>
+      <select id="select_hour_button" onChange="setHour(value)">
+        <option value="00">00 Z</option>
+        <option value="01">01 Z</option>
+        <option value="02">02 Z</option>
+        <option value="03">03 Z</option>
+        <option value="04">04 Z</option>
+        <option value="05">05 Z</option>
+        <option value="06">06 Z</option>
+        <option value="07">07 Z</option>
+        <option value="08">08 Z</option>
+        <option value="09">09 Z</option>
+        <option value="10">10 Z</option>
+        <option value="11">11 Z</option>
+        <option value="12"selected>12 Z</option>
+        <option value="13">13 Z</option>
+        <option value="14">14 Z</option>
+        <option value="15">15 Z</option>
+        <option value="16">16 Z</option>
+        <option value="17">17 Z</option>
+        <option value="18">18 Z</option>
+        <option value="19">19 Z</option>
+        <option value="20">20 Z</option>
+        <option value="21">21 Z</option>
+        <option value="22">22 Z</option>
+        <option value="23">23 Z</option>
+      </select>
+    </form>
+
     <h4 id="title">No Sounding Selected</h4>
     <div id="mapholder"></div>
     <div id="plotHolder"></div>
@@ -146,7 +183,7 @@
       <br />
       <table>
         <tr>
-          <th>Son of SARS</th>
+          <th>Son of SARS (currently unavailable)</th>
         </tr>
       </table>
       <table>
@@ -207,8 +244,26 @@
   <script>
     // Define the event listener array
     var plot_station = null;
-    var plot_type = "Observed";
+    var plot_type = "observed";
+    var model = "observed";
     var index = 0;
+    var hour = "12";
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    function setDataset(value){
+      if (value == "observed"){
+        globalThis.model = "observed";
+        globalThis.plot_type = "observed";
+        add_observed_markers();
+      } else {
+        globalThis.model = value;
+        globalThis.plot_type = "forecast";
+        add_forecast_markers();
+      }
+    }// end setDataset
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    function setHour(value){
+      globalThis.hour = value;
+    }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // sounding selection map
     var map = L.map(
@@ -244,13 +299,17 @@
           $.each(data, function(key,info){
             let lat = info[0];
             let lon = info[1];
-            var marker = new L.circleMarker([lat, lon], { radius: 9, color: "black", weight: 2, opacity: 1.0, fillColor: "blue", fillOpacity: 0.4 }); //opacity may be set to zero
+            var marker = new L.circleMarker([lat, lon], { radius: 7, color: "black", weight: 2, opacity: 1.0, fillColor: "blue", fillOpacity: 0.4 }); //opacity may be set to zero
             marker.on('click',function(){
                 console.log(`Selected site: ${key} Observed`);
+                map.panTo(new L.LatLng(lat, lon));
                 updateStation(key);
                 updateSoundingType("Observed");
                 plot_sounding_from_json();
             });
+            marker.bindTooltip(
+              key,{direction:'up',permanent:false,offset:[0,0]}
+            );
             marker.addTo(obs_location_markers);
           });
       }
@@ -268,16 +327,20 @@
       url: url,
       success: function(data) {
           $.each(data, function(key,info){
-            let lat = info[0];
-            let lon = info[1];
-            var marker = new L.circleMarker([lat, lon], { radius: 9, color: "black", weight: 2, opacity: 1.0, fillColor: "red", fillOpacity: 0.4 }); //opacity may be set to zero
+            let lat = info[1];
+            let lon = info[2];
+            var marker = new L.circleMarker([lat, lon], { radius: 7, color: "black", weight: 2, opacity: 1.0, fillColor: "red", fillOpacity: 0.6 }); //opacity may be set to zero
             marker.on('click',function(){
                 console.log(`Selected site: ${key} Forecast`);
+                map.panTo(new L.LatLng(lat, lon));
                 updateStation(key);
                 updateSoundingType("Forecast");
                 globalThis.index = 0;
                 plot_sounding_from_json();
             });
+            marker.bindTooltip(
+              info[0],{direction:'up',permanent:false,offset:[0,0]}
+            );
             marker.addTo(forc_location_markers);
           });
       }
@@ -316,7 +379,7 @@
     //       } else if (event[1][0] == 1){
     //         colors.push('rgba(104,249,209,0.5)');
     //       } else {
-    //         colors.push('rgba(209,207,20,0.5)');
+    //         colors.push('rgba(209,207,2f0,0.5)');
     //       }
     //     });
     //   }) // end getJSON
@@ -325,39 +388,68 @@
     // }
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     function plot_sounding_from_json(){
-      // I know this is bad practice, but this utlizes the global variables
-      // plot_station, plot_type, and index.
-      var station = plot_station;
-      var type = plot_type;
-      if (station == null){
-          plotSkewt(station);
+      let url = "";
+      if (plot_station == null){
+        plotSkewt(plot_station);
       } else {
-        if (type == "Forecast"){
-          //var url = `/static/data/soundings/forecast_soundings/${station}_${index}.json`;
-          var url = "{% static '/soundings/rap/ktxk_0.json' %}";
+        if (model == "observed"){
+          url = `/static/data/soundings/observed_soundings/${hour}/${plot_station}.json`;
+          url = "{% static '/soundings/observed_soundings/12/CRP_10.json' %}";
         } else {
-          //var url = `/static/data/soundings/observed_soundings/${station}.json`;
-          var url = "{% static '/soundings/observed/OUNN.json' %}";
+          url = `/static/data/soundings/forecast_soundings/${model}/${hour}/${plot_station}_${index}.json`;
         }
-        console.log(url);
         $.getJSON(url, function(data){
           plotSkewt(data);
           add_sounding_text(data);
           wind_staff(data);
-          if (type == "Forecast"){
-            var name = data.stid;
-            var date = data.forecast_time;
-            var display_type = `${data.model_run_hour}Z RAP f${data.forecast_hour}`;
-          } else {
+          if (model == "observed"){
             var name = data.id;
             var date = data.datetime;
             var display_type = "Observed";
+          } else {
+            var name = data.stid;
+            var date = data.forecast_time;
+            var display_type = `${data.model_run_hour}Z RAP f${data.forecast_hour}`;
           }
           update_title(name,date,display_type);
         }) // end getJSON
-        .fail(function(){ alert(`Sounding not available for ${station}.`)});
+        .fail(function(){ alert(`Sounding not available for ${plot_station}.`)});
       } // end else
-    } // end read sounding
+    } // end function
+
+
+      // // I know this is bad practice, but this utlizes the global variables
+      // // plot_station, plot_type, and index.
+      // var station = plot_station;
+      // if (station == null){
+      //     plotSkewt(station);
+      // } else if (plot_type == "forecast"){
+      //     var url = `/static/data/soundings/forecast_soundings/${model}/${hour}/${station}_${index}.json`;
+      //     console.log(url);
+      //     //var url = "{% static '/soundings/rap/ktxk_0.json' %}";
+      //   } else {
+      //     var url = `/static/data/soundings/observed_soundings/${hour}/${station}.json`;
+      //     console.log(url);
+      //     var url = "{% static '/soundings/observed_soundings/SGF.json' %}";
+      //   }
+      //   console.log(url);
+        // $.getJSON(url, function(data){
+        //   plotSkewt(data);
+        //   add_sounding_text(data);
+        //   wind_staff(data);
+        //   if (type == "Forecast"){
+        //     var name = data.stid;
+        //     var date = data.forecast_time;
+        //     var display_type = `${data.model_run_hour}Z RAP f${data.forecast_hour}`;
+        //   } else {
+        //     var name = data.id;
+        //     var date = data.datetime;
+        //     var display_type = "Observed";
+        //   }
+        //   update_title(name,date,display_type);
+        // }) // end getJSON
+        // .fail(function(){ alert(`Sounding not available for ${station}.`)});
+      // } // end else
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // var tor_events_url = "{% static 'tor_events.json' %}";

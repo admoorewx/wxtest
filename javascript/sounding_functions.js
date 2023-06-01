@@ -15,6 +15,16 @@ const Lv = 2260.0 * 1000.0; // J/kg
 const epsilon = 0.622;
 const P0 = 1000.0; // hPa
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function arange(start,end,inc){
+  array = [];
+  val = start;
+  while (val <= end){
+    array.push(val);
+    val = val + inc;
+  }
+  return array;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function create_dry_adiabat(start_temp,pres_grid){
   // find initial pot temp at 1000 hPa
   var theta = C2K(start_temp);
@@ -60,6 +70,16 @@ function equivalent_potential_temperature(temp,dewp,pres){
   // find theta
   let theta = poisson_equation(temp,pres);
   let theta_e = (1.0 + (lvapor*w)/(cp*C2K(temp))) * theta;
+  return theta_e;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function equivalent_potential_temperature_2(temp,dewp,pres){
+  // from: djburnette.com/waether/wxcalc/thetae.html
+  // find mixing ratio
+  var w = mixing_ratio_from_dewpoint(dewp,pres);
+  // find theta
+  let theta = poisson_equation(temp,pres);
+  let theta_e = theta + 3*w;
   return theta_e;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -221,8 +241,8 @@ function lapse_rate(temperatures,heights,lower_level,upper_level,pressures=null)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function mixing_ratio_from_dewpoint(dewpoint,pressure){
   // using equation 7.22 from G. Petty "A First Course in Atmospheric Thermodynamics" p. 185
-  let vapor_pres = vapor_pressure(dewpoint) / 100.0; // convert from Pa to hPa
-  return epsilon * (vapor_pres/(pressure-vapor_pres)) * 1000.0; // return value in g/kg
+  vapor_pres = vapor_pressure(dewpoint)
+  return epsilon * (vapor_pres/(hPa2Pa(pressure)-vapor_pres)) * 1000.0; // return value in g/kg
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function vapor_pressure(temp){
@@ -230,6 +250,11 @@ function vapor_pressure(temp){
   // Temperature must be in C. Returns e in Pa, not hPa
   let power = (17.67 * temp)/(temp + 243.5);
   return 611.2*Math.exp(power);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function vapor_pressure_2(temp){
+  let diff = (1.0/273.16) - (1.0/C2K(temp));
+  return 611.12 * Math.exp((Lv/Rd)*diff);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function specific_humidity_from_mixing_ratio(mixing_ratio){
@@ -284,27 +309,32 @@ function parcel_trace(temps,dewps,pressures,heights,theta_es,type="surface"){
   // parcel type is determined by the "type" variable.
   if (type == "surface"){
     // lift a surface-based parcel
-    parcel_temps = [temps[0]];
     let parcel_temp = temps[0];
     let parcel_dewp = dewps[0];
-    let e = sat_vapor_pres(parcel_dewp);
-    let es = sat_vapor_pres(parcel_temp);
+    let e = vapor_pressure(parcel_dewp);
+    let es = vapor_pressure(parcel_temp);
+    parcel_temps = [virtual_temperature_from_vapor_pressure(parcel_temp,pressures[0],e)];
     // find the starting theta.
     parcel_theta = poisson_equation(parcel_temp,pressures[0]);
     // we know for dry adiabatic ascent, theta is constant at each pressure level.
     // So, find temperature from each theta/pressure combo and check for saturation.
-    for (i=1;i<heights.length;i++){
-      if (e < es){
+    for (i=1;i<pressures.length;i++){
+      if (e <= es){
         // unsaturated, lift dry adiabatically
         parcel_temp = K2C(theta_to_temp(parcel_theta,pressures[i]));
+        //es = sat_vapor_pres(parcel_temp);
+        es = vapor_pressure(parcel_temp);
+        tv = virtual_temperature_from_vapor_pressure(parcel_temp,pressures[i],e);
       } else {
         // saturated, lift moist/psuedo adiabatically
-        lr = psuedo_adiabatic_lapse_rate(parcel_temp,es,pressures[i]);
-        parcel_temp = parcel_temp - (lr * ((heights[i] - heights[i-1])/1000.0));
+        //lr = psuedo_adiabatic_lapse_rate(parcel_temp,pressures[i]);
+        //parcel_temp = parcel_temp - (lr * ((heights[i] - heights[i-1])/1000.0));
+        parcel_temp = iterative_moist_ascent(parcel_temp,pressures[i-1],pressures[i]);
+        // update es and virtual temp
+        es = vapor_pressure(parcel_temp);
+        tv = virtual_temperature_from_vapor_pressure(parcel_temp,pressures[i],es);
       }
-      // update es and mixing ratio
-      es = sat_vapor_pres(parcel_temp);
-      parcel_temps.push(parcel_temp);
+      parcel_temps.push(tv);
     }
     return parcel_temps;
 
@@ -315,32 +345,41 @@ function parcel_trace(temps,dewps,pressures,heights,theta_es,type="surface"){
     let ml_top_pres = pressures[0] - 100.0;
     // to cut down on search time, only search through the lowest 10 pressures.
     let ml_top_ind = find_closest(pressures.slice(0,10),ml_top_pres);
+    // Find the average theta and the average mixing ratio
+    // thetas = 0.0;
+    // mixrs = 0.0;
+    // for (j=0;j<ml_top_ind;j++){
+    //   thetas = thetas + poisson_equation(temps[j],pressures[j]);
+    //   mixrs = mixrs + mixing_ratio_from_dewpoint(temps[j],dewps[j]);
+    // }
     let parcel_temp = average(temps.slice(0,ml_top_ind));
     let parcel_dewp = average(dewps.slice(0,ml_top_ind));
     let parcel_pres = average(pressures.slice(0,ml_top_ind));
-    // find the middle pressure of the mixed layer. That's where we'll start
-    // lifting from
+    // find the middle pressure of the mixed layer.
+    // That's where we'll start lifting from
     let ml_middle_ind = find_closest(pressures.slice(0,ml_top_ind),parcel_pres);
-    parcel_temps = [parcel_temp];
-    parcel_press = [pressures[ml_middle_ind]];
-    let e = sat_vapor_pres(parcel_dewp);
-    let es = sat_vapor_pres(parcel_temp);
+    let e = vapor_pressure(parcel_dewp);
+    let es = vapor_pressure(parcel_temp);
     // find the starting theta.
     parcel_theta = poisson_equation(parcel_temp,parcel_pres);
+    parcel_vt = virtual_temperature_from_vapor_pressure(parcel_temp,parcel_pres,e);
+    parcel_temps = [parcel_vt];
+    parcel_press = [pressures[ml_middle_ind]];
     // start lifting!
     for (i=ml_middle_ind+1;i<pressures.length;i++){
       if (pressures[i] >= 100.0){
-        if (e < es){
+        if (e <= es){
           // unsaturated, lift dry adiabatically
           parcel_temp = K2C(theta_to_temp(parcel_theta,pressures[i]));
+          es = vapor_pressure(parcel_temp);
+          tv = virtual_temperature_from_vapor_pressure(parcel_temp,pressures[i],e);
         } else {
           // saturated, lift moist/psuedo adiabatically
-          lr = psuedo_adiabatic_lapse_rate(parcel_temp,es,pressures[i]);
-          parcel_temp = parcel_temp - (lr * ((heights[i] - heights[i-1])/1000.0));
+          parcel_temp = iterative_moist_ascent(parcel_temp,pressures[i-1],pressures[i]);
+          es = vapor_pressure(parcel_temp);
+          tv = virtual_temperature_from_vapor_pressure(parcel_temp,pressures[i],es);
         }
-        // update es and mixing ratio
-        es = sat_vapor_pres(parcel_temp);
-        parcel_temps.push(parcel_temp);
+        parcel_temps.push(tv);
         parcel_press.push(pressures[i]);
       } // end if pressure > 100 mb
     } // end for loop
@@ -349,30 +388,37 @@ function parcel_trace(temps,dewps,pressures,heights,theta_es,type="surface"){
   } else if (type == "most_unstable"){
     // Note that we need to return the pressure levels associated with each
     // temperature level since the MU parcel may or may not be at the surface.
-    // lift the layer with the max theta-e within the range 500-1000 mb
-    let ind_top = find_closest(pressures,500.0);
+    // lift the layer with the max theta-e within the lowest 300 mb (in line with SPC methodology)
+    let ind_top = find_closest(pressures,(pressures[0]-300.0));
     let max_ind = find_max(theta_es.slice(0,ind_top));
-    parcel_temps = [temps[max_ind]];
-    parcel_press = [pressures[max_ind]];
+    parcel_temps = [];
+    parcel_press = [];
     let parcel_temp = temps[max_ind];
     let parcel_dewp = dewps[max_ind];
-    let e = sat_vapor_pres(parcel_dewp);
-    let es = sat_vapor_pres(parcel_temp);
+    let e = vapor_pressure(parcel_dewp);
+    let es = vapor_pressure(parcel_temp);
     // find the starting theta.
     parcel_theta = poisson_equation(parcel_temp,pressures[max_ind]);
-    for (i=1;i<heights.length;i++){
+    // if (max_ind == 0){
+    //   i = 1;
+    // } else {
+    //   i = max_ind;
+    // }
+    for (i=max_ind;i<heights.length;i++){
       if (pressures[i] >= 100.0){
-        if (e < es){
+        //console.log(e,es,pressures[i],parcel_temp);
+        if (e <= es){
           // unsaturated, lift dry adiabatically
           parcel_temp = K2C(theta_to_temp(parcel_theta,pressures[i]));
+          es = vapor_pressure(parcel_temp);
+          tv = virtual_temperature_from_vapor_pressure(parcel_temp,pressures[i],e);
         } else {
           // saturated, lift moist/psuedo adiabatically
-          lr = psuedo_adiabatic_lapse_rate(parcel_temp,es,pressures[i]);
-          parcel_temp = parcel_temp - (lr * ((heights[i] - heights[i-1])/1000.0));
+          parcel_temp = iterative_moist_ascent(parcel_temp,pressures[i-1],pressures[i]);
+          es = vapor_pressure(parcel_temp);
+          tv = virtual_temperature_from_vapor_pressure(parcel_temp,pressures[i],es);
         }
-        // update es and mixing ratio
-        es = sat_vapor_pres(parcel_temp);
-        parcel_temps.push(parcel_temp);
+        parcel_temps.push(tv);
         parcel_press.push(pressures[i]);
       } // end if press > 100 mb
     } // end for loop
@@ -399,17 +445,19 @@ function lcl_temperature(temp,dewp,heights){
   return undefined;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function lcl_height(temp,dewp,pressures,heights){
-  let parcel_theta = poisson_equation(temp[0],pressures[0]);
-  let e = sat_vapor_pres(dewp);
-  let es = sat_vapor_pres(temp);
-  for (i=0;i<heights.length;i++){
+function lcl_height(start_temp,start_dewp,start_pres,pressures,heights){
+  let parcel_theta = poisson_equation(start_temp,start_pres);
+  let e = sat_vapor_pres(start_dewp);
+  let es = sat_vapor_pres(start_temp);
+  let start_ind = find_closest(pressures,start_pres);
+  for (i=start_ind;i<heights.length;i++){
     if (e >= es){
       return heights[i];
     } else {
       parcel_temp = K2C(theta_to_temp(parcel_theta,pressures[i]));
       es = sat_vapor_pres(parcel_temp);
     }
+  }
   console.log("Warning: Could not find LCL height!")
   return null;
 }
@@ -421,7 +469,7 @@ function lcl_pressure(temp,lcl_temp,pressure){
   return lcl_pres / 100.0; // convert from Pa to hPa
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function psuedo_adiabatic_lapse_rate(temperature,es,pressure){
+function psuedo_adiabatic_lapse_rate(temperature,pressure){
   // from G. Petty "A First Course in Atmospheric Thermodynamics" p. 201
   mixing_ratio = mixing_ratio_from_dewpoint(temperature,pressure); // mixing ratio in g/kg
   mixing_ratio = mixing_ratio / 1000.0; // convert to kg/kg
@@ -429,6 +477,51 @@ function psuedo_adiabatic_lapse_rate(temperature,es,pressure){
   numerator = 1.0 + ((Lv*mixing_ratio)/(Rd*C2K(temperature)));
   denominator = 1.0 + (Math.pow(Lv,2)*mixing_ratio)/(Rv*cp*Math.pow(C2K(temperature),2.0));
   return dry_adiabatic_lr * numerator/denominator;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function psuedo_adiabatic_lapse_rate_2(temperature,pressure){
+  // from glossary.ametsoc.org/wiki/Adiabatic_lapse_rate
+  // currently does not work properly
+  mixing_ratio = mixing_ratio_from_dewpoint(temperature,pressure); // mixing ratio in g/kg
+  mixing_ratio = mixing_ratio / 1000.0; // convert to kg/kg
+  numerator = Rd*C2K(temperature) + Lv*mixing_ratio;
+  denominator = cp + (Math.pow(Lv,2)*mixing_ratio*epsilon)/(Rd*Math.pow(C2K(temperature),2));
+  return numerator/denominator/hPa2Pa(pressure);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function wobus_function(temperature){
+  // from sharppy.github.io/SHARPpy/_modules/sharppy/sharptab/thermo.html
+  temperature = temperature - 20.0;
+  if (temperature <= 0.0){
+    correction = 1.0 + temperature * (-8.41660499999*Math.pow(10,-3) + temperature * (1.4714143*Math.pow(10,-4) + temperature * (-9.671989000000001*Math.pow(10,-7) + temperature * (-3.2607217*Math.pow(10,-8) + temperature * -3.8598073*Math.pow(10,-10)))));
+    correction = 15.13/Math.pow(correction,4);
+    return correction;
+  } else {
+    correction = temperature * (4.9618922*Math.pow(10,-7) + temperature * (-6.1059365*Math.pow(10,-9) + temperature * (3.9401551*Math.pow(10,-11) + temperature * (-1.2588129*Math.pow(10,-13) + temperature * (1.6688280*Math.pow(10,-16))))));
+    correction = 1.0 + temperature * (3.6182989*Math.pow(10,-5) + temperature * (-1.3603273*Math.pow(10,-5) + correction));
+    correction = (29.93/Math.pow(correction,4)) + (0.96 * temperature) - 14.8;
+    return correction;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function iterative_moist_ascent(temperature,pressure1,pressure2){
+  // This routine is an iterative approach to moist parcel ascent by finding
+  // the theta-e using the initial temperature and pressure level 1, and then
+  // interatively testing until you match that same theta-e value with the 2nd
+  // pressure level and a new temperature
+  increment = 0.1 // Deg C or K
+  error = 100.0;
+  max_tries = 1000; // maximum number of tries before giving up!
+  total_tries = 0;
+  target_theta_e = equivalent_potential_temperature_2(temperature,temperature,pressure1);
+  while (error > 0.0 && total_tries < max_tries){
+    temperature = temperature - increment;
+    new_theta_e = equivalent_potential_temperature_2(temperature,temperature,pressure2);
+    error = new_theta_e - target_theta_e;
+    total_tries = total_tries + 1;
+    //console.log(target_theta_e,new_theta_e,error,total_tries)
+  }
+  return temperature;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function saturation_specific_humidity(es,p){
@@ -441,6 +534,14 @@ function virtual_temperature(temperature,mixing_ratio){
   // from G. Petty "A First Course in Atmospheric Thermodynamics" p. 76
   // will return virtual temp in C.
   return K2C(C2K(temperature) * (1.0 + (0.61*mixing_ratio/1000.0)));
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+function virtual_temperature_from_vapor_pressure(temperature,pressure,vapor_pressure){
+  // from G. Petty "A First Course in Atmospheric Thermodynamics" p. 76
+  // will return virtual temp in C.
+  let mixing_ratio = (621.97*vapor_pressure)/(hPa2Pa(pressure)-vapor_pressure)/1000.0;
+  return K2C(C2K(temperature) * (1.0 + (0.61*mixing_ratio)));
+  //return K2C(C2K(temperature)/(1.0-(vapor_pressure/hPa2Pa(pressure)*(1.0-epsilon))));
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function find_max(array){
@@ -479,26 +580,10 @@ function cape_cin(env_pres,env_height,env_temp,parcel_pres,parcel_temp){
   // using the formulation from here: https://www.inscc.utah.edu/~krueger/5300/CAPE.pdf
   // first, we'll want to find the EL so we can know when to stop (i.e. we dont' want
   // to include the area above the EL in our CIN calculation).
-  // To find the EL we'll see where the env temp and parcel temps are the same, then
-  // find the lowest pressure for each zero point.
   let start = find_closest(env_pres,parcel_pres[0]);
-  let el_ind = 0;
-  global_sign = true;
-  local_sign = true;
-  for (i=start;i<env_pres.length;i++){
-    diff = env_temp[i] - parcel_temp[i-start];
-    if (diff < 0){
-      local_sign = false;
-    } else {
-      local_sign = true;
-    }
-    if (local_sign != global_sign){
-      el_ind = i;
-      global_sign = local_sign;
-    }
-    //console.log(env_pres[i],parcel_pres[i-start]);
-    //console.log(i,env_temp[i],parcel_temp[i],diff,local_sign,global_sign,el_ind,env_pres[el_ind]); // for debugging
-  }
+  let el_ind = el_index(env_pres,env_temp,parcel_pres,parcel_temp)
+  //console.log(start,el_ind);
+  //console.log(env_temp[start],parcel_temp[start])
   // Now we can start to calculate cape/cin, starting from the start ind and
   // stopping at the el_ind.
   let cape = 0;
@@ -513,6 +598,34 @@ function cape_cin(env_pres,env_height,env_temp,parcel_pres,parcel_temp){
     }
   }
   return [cape,cin];
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+function el_index(env_pres,env_temp,parcel_pres,parcel_temp){
+  // To find the EL we'll see where the env temp and parcel temps are the same, then
+  // find the lowest pressure for each zero point.
+  let start = find_closest(env_pres,parcel_pres[0]);
+  let min_pressure = 100.0 // mb - pressure level at which to stop looking for EL
+  let el_ind = 0;
+  global_sign = true;
+  local_sign = true;
+  for (i=start;env_pres[i] >= min_pressure;i++){
+    diff = env_temp[i] - parcel_temp[i-start];
+    if (diff < 0){
+      local_sign = false;
+    } else {
+      local_sign = true;
+    }
+    if (local_sign != global_sign){
+      el_ind = i;
+      global_sign = local_sign;
+    }
+    //console.log(env_pres[i],parcel_pres[i-start]);
+    //console.log(i,env_temp[i],parcel_temp[i],diff,local_sign,global_sign,el_ind,env_pres[el_ind]); // for debugging
+  }
+  if (el_ind == 0){
+    el_ind = find_closest(env_pres,min_pressure);
+  }
+  return el_ind;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 function theta_to_temp(theta,pres){
@@ -533,6 +646,7 @@ function storm_motions(u,v,pressure,height){
   let mmr_v = [];
   // first, find the height level closest to 6 km
   ind_6k = find_closest(height,6000.0);
+  ind_12k = find_closest(height,12000.0);
   // find the mean pressure in this layer
   mean_pressure = average(pressure.slice(0,ind_6k));
   // Find the pressure weighted U and V wind profiles (be sure to convert to m/s).
@@ -568,7 +682,7 @@ function storm_motions(u,v,pressure,height){
   lmv = ms2knot(lmv + mean_v);
   mean_u = ms2knot(mean_u);
   mean_v = ms2knot(mean_v);
-  return [mean_u,mean_v,rmu,rmv,lmu,lmv];
+  return [average(u.slice(0,ind_12k)),average(v.slice(0,ind_12k)),rmu,rmv,lmu,lmv];
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 function storm_relative_helicity(u,v,storm_u,storm_v,height,layer_bottom,layer_top){
@@ -585,7 +699,7 @@ function storm_relative_helicity(u,v,storm_u,storm_v,height,layer_bottom,layer_t
   srh = 0;
   // loop through the layer and find SRH (don't forget to convert from knots to m/s!)
   for(i=ind_bottom;i<ind_top;i++){
-    layer_value = (knot2ms(u[i+1])-knot2ms(storm_v))*(knot2ms(v[i])-knot2ms(storm_v)) - (knot2ms(u[i])-knot2ms(storm_u))*(knot2ms(v[i+1])-knot2ms(storm_v));
+    layer_value = (knot2ms(u[i+1])-knot2ms(storm_u))*(knot2ms(v[i])-knot2ms(storm_v)) - (knot2ms(u[i])-knot2ms(storm_u))*(knot2ms(v[i+1])-knot2ms(storm_v));
     srh = srh + layer_value;
   }
   return srh;
@@ -623,4 +737,83 @@ function effective_inflow_layer(temp,dewp,pressure,height){
   return [start,end];
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+function effective_bulk_shear(eff_base_ind,u,v,heights,env_temp,env_pres,parcel_temp,parcel_pres){
+  // Following the formulation from here: https://www.spc.noaa.gov/exper/mesoanalysis/help/help_eshr.html
+  // find the EL
+  el_ind = el_index(env_pres,env_temp,parcel_pres,parcel_temp)
+  // Find 50% of the depth between the effective inflow base and the EL
+
+  halfway_height = (heights[el_ind] + heights[eff_base_ind])/2.0;
+  halfway_ind = find_closest(heights,halfway_height);
+  // Find the BWD between the effective inflow layer base and 50% of the eff. inf. layer base and the EL layer.
+  bwd = bulk_wind_difference(u,v,heights,heights[eff_base_ind],heights[halfway_ind]);
+  return bwd;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+function supercell_composite_parameter(eff_bwd,eff_srh,mu_cape,mu_cin){
+  // Following the methodology from here: https://www.spc.noaa.gov/exper/mesoanalysis/help/help_scp.html
+  // Note that I'm converting the scaling factors in the eff BWD term to knots to match units.
+  if (eff_bwd < 19.43){
+    return 0.0;
+  } else if (eff_bwd > 38.876){
+    if (mu_cin > -40.0){
+      return (mu_cape/1000.0) * (eff_srh/50.0);
+    } else {
+      return (mu_cape/1000.0) * (eff_srh/50.0) * (-40.0/mu_cin);
+    }
+  } else {
+    if (mu_cin > -40.0){
+      return (mu_cape/1000.0) * (eff_srh/50.0) * (eff_bwd/38.876);
+    } else {
+      return (mu_cape/1000.0) * (eff_srh/50.0) * (eff_bwd/38.876) * (-40.0/mu_cin);
+    }
+  }
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+function significant_tornado_parameter(lcl_height,eff_layer_base,eff_bwd,eff_srh,mlcape,mlcin){
+  // Effective layer STP. Using formulation from here: https://www.spc.noaa.gov/exper/mesoanalysis/help/help_stpc.html
+  // Note that I convert all of the eff bwd scaling factors from m/s to knots.
+  // Note that I also allow for eff. inflow layers to start up to 100 m off the ground.
+  // peform checks to make sure STP does not need to be set to zero.
+  if (lcl_height > 2000.0 || eff_layer_base > 100.0 || mlcin < -200.0 || eff_bwd < 24.298){
+    return 0.0;
+  } else {
+    // LCL Check
+    if (lcl_height < 1000.0){
+      lcl_term = 1.0;
+    } else {
+      lcl_term = (2000.0-lcl_height)/1000.0;
+    }
+    // Eff BWD Check
+    if (eff_bwd > 58.3153){
+      eff_bwd_term = 1.5;
+    } else {
+      eff_bwd_term = eff_bwd / 38.876;
+    }
+    // MLCIN Check
+    if (mlcin > -50.0){
+      mlcin_term = 1.0;
+    } else {
+      mlcin_term = (200.0+mlcin)/150.0;
+    }
+    return (mlcape/1500.0) * lcl_term * (eff_srh/150.0) * eff_bwd_term * mlcin_term;
+  }
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+function wet_microburst_parameter(env_temp,env_pres,parcel_temp,parcel_pres,mlcin,bwd_1km){
+  // Based on pesonal reseach, no current citation available (besides my own mind!).
+  // Find the ML EL Temp first, it's the only component we don't have.
+  let el_ind = el_index(env_pres,env_temp,parcel_pres,parcel_temp);
+  let ml_el_temp = env_temp[el_ind];
+  // get surface temperature
+  let sfc_temp  = env_temp[0];
+  // find product of terms
+  // note that the bwd_1km term is scaled by 2.0 m/s converted to knots (3.887 knots).
+  let wmp = (ml_el_temp/-60.0) * (sfc_temp/30.0) * ((50.0+mlcin)/25.0) * (bwd_1km/3.887);
+  if (wmp < 0.0){
+    return 0.0;
+  } else {
+    return wmp;
+  }
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

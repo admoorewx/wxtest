@@ -42,17 +42,17 @@ class Sounding{
     // be sure to check for the null sounding case.
     if (this.pressure.length > 0){
       for (i=0;i<this.pressure.length;i++){
-        this.theta_e.push(equivalent_potential_temperature(this.temperature[i],this.dewpoint[i],this.pressure[i]));
+        this.theta_e.push(equivalent_potential_temperature_2(this.temperature[i],this.dewpoint[i],this.pressure[i]));
         this.mixing_ratio.push(mixing_ratio_from_dewpoint(this.dewpoint[i],this.pressure[i]));
-        this.virtual_temp.push(virtual_temperature(this.temperature[i],this.mixing_ratio[i]));
+        this.virtual_temp.push(virtual_temperature_from_vapor_pressure(this.temperature[i],this.pressure[i],vapor_pressure(this.dewpoint[i])));
       } // end loop
     }
   } // end derived profiles
 
-  mean_mixing_ratio(){
+  get_mean_mixing_ratio(){
     // determine the mean mixing ratio. By deafult, this is the mean mixing ratio of the lowest 100 mb.
     try{
-      this.ml_mixing_ratio = mixed_layer_mean_mixing_ratio(this.mixing_ratio,this.pressure,layer_depth_mb=100.0);
+      this.ml_mixing_ratio = mixed_layer_mean_mixing_ratio(this.mixing_ratio,this.pressure,100.0);
     } catch {
       console.error("ERROR: A mixing ratio profile has not be created for this sounding! Run derived_profiles first.");
     }
@@ -89,16 +89,16 @@ class Sounding{
     // determine the surface-based parcel trajectory/temperature trace.
     // Note that the pressure levels that correspond to each temperature value
     // is the same as this.pressure.
-    try {
+    //try {
       // check for the null sounding case
-      if (this.pressure.length > 0){
-        this.sb_parcel_trace = parcel_trace(this.virtual_temp,this.dewpoint,this.pressure,this.height,this.theta_e,"surface");
-      } else {
-        this.sb_parcel_trace = [];
-      }
-    } catch {
-      console.error("ERROR: A theta-e profile has not be created for this sounding! Run derived_profiles first.");
+    if (this.pressure.length > 0){
+      this.sb_parcel_trace = parcel_trace(this.temperature,this.dewpoint,this.pressure,this.height,this.theta_e,"surface");
+    } else {
+      this.sb_parcel_trace = [];
     }
+    // } catch {
+    //   console.error("ERROR: A theta-e profile has not be created for this sounding! Run derived_profiles first.");
+    // }
   } // end get_sb_parcel_trajectory
   get_mu_parcel_trajectory(){
     // determine the most-unstable parcel trajectory/temperature trace.
@@ -107,7 +107,7 @@ class Sounding{
     try {
       // check for the null sounding case.
       if (this.pressure.length > 0){
-        this.mu_parcel_info = parcel_trace(this.virtual_temp,this.dewpoint,this.pressure,this.height,this.theta_e,"most_unstable");
+        this.mu_parcel_info = parcel_trace(this.temperature,this.dewpoint,this.pressure,this.height,this.theta_e,"most_unstable");
       } else {
         this.mu_parcel_info = [];
       }
@@ -122,7 +122,7 @@ class Sounding{
     // try {
       // check for the null sounding case.
     if (this.pressure.length > 0){
-      this.ml_parcel_info = parcel_trace(this.virtual_temp,this.dewpoint,this.pressure,this.height,this.theta_e,"mixed");
+      this.ml_parcel_info = parcel_trace(this.temperature,this.dewpoint,this.pressure,this.height,this.theta_e,"mixed");
     } else {
       this.ml_parcel_info = [];
     }
@@ -133,7 +133,7 @@ class Sounding{
   get_sbcape(){
     // check for the null case
     if (this.pressure.length > 0){
-      this.sb_cape = cape_cin(this.pressure,this.height,this.temperature,this.pressure,this.sb_parcel_trace);
+      this.sb_cape = cape_cin(this.pressure,this.height,this.virtual_temp,this.pressure,this.sb_parcel_trace);
     } else {
       this.sb_cape = [0.0,0.0];
     }
@@ -141,7 +141,7 @@ class Sounding{
   get_mlcape(){
     // check for the null case
     if (this.pressure.length > 0){
-      this.ml_cape = cape_cin(this.pressure,this.height,this.temperature,this.ml_parcel_info[1],this.ml_parcel_info[0]);
+      this.ml_cape = cape_cin(this.pressure,this.height,this.virtual_temp,this.ml_parcel_info[1],this.ml_parcel_info[0]);
     } else {
       this.ml_cape = [0.0,0.0];
     }
@@ -149,7 +149,7 @@ class Sounding{
   get_mucape(){
     // check for the null case
     if (this.pressure.length > 0){
-      this.mu_cape = cape_cin(this.pressure,this.height,this.temperature,this.mu_parcel_info[1],this.mu_parcel_info[0]);
+      this.mu_cape = cape_cin(this.pressure,this.height,this.virtual_temp,this.mu_parcel_info[1],this.mu_parcel_info[0]);
     } else {
       this.mu_cape = [0.0,0.0];
     }
@@ -164,8 +164,8 @@ class Sounding{
     if (this.mean_storm_motion[0] == undefined){
       get_storm_motions();
     }
-    this.srh_01km = storm_relative_helicity(this.u,this.v,this.right_storm_motion[0],this.right_storm_motion[1],this.height,0.0,1000.0);
-    this.srh_03km = storm_relative_helicity(this.u,this.v,this.right_storm_motion[0],this.right_storm_motion[1],this.height,0.0,3000.0);
+    this.srh_01 = storm_relative_helicity(this.u,this.v,this.right_storm_motion[0],this.right_storm_motion[1],this.height,0.0,1000.0);
+    this.srh_03 = storm_relative_helicity(this.u,this.v,this.right_storm_motion[0],this.right_storm_motion[1],this.height,0.0,3000.0);
   } // end get SRH
   get_effective_inflow_layer(){
     this.eff_layer = effective_inflow_layer(this.virtual_temp,this.dewpoint,this.pressure,this.height);
@@ -174,35 +174,62 @@ class Sounding{
     this.eff_srh = storm_relative_helicity(this.u,this.v,this.right_storm_motion[0],this.right_storm_motion[1],this.height,this.height[this.eff_layer[0]],this.height[this.eff_layer[1]]);
   }
   get_effective_bwd(){
-    this.eff_bwd = bulk_wind_difference(this.u,this.v,this.height,this.height[this.eff_layer[0]],this.height[this.eff_layer[1]]);
+    if (this.temperature.length > 0){
+      try {
+        this.eff_bwd = effective_bulk_shear(this.eff_layer[0],this.u,this.v,this.height,this.temperature,this.pressure,this.ml_parcel_info[0],this.ml_parcel_info[1]);
+      } catch {
+        console.error("Error: either the effective inflow layer or the mixed-layer parcel information has not been found for this sounding.");
+      }
+    }
   }
   get_scp(){
-    // Following the methodology from here: https://www.spc.noaa.gov/exper/mesoanalysis/help/help_scp.html
-    // Note that I'm converting the scaling factors in the eff BWD term to knots to match units.
-    if (this.eff_bwd < 19.43){
-      this.scp = 0.0;
-    } else if (this.eff_bwd > 38.876){
-      if (this.mu_cape[1] > -40.0){
-        this.scp = (this.mu_cape[0]/1000.0) * (this.eff_srh/50.0);
-      } else {
-        this.scp = (this.mu_cape[0]/1000.0) * (this.eff_srh/50.0) * (-40.0/this.mu_cape[1]);
+    if (this.temperature.length > 0){
+      try {
+        this.scp = supercell_composite_parameter(this.eff_bwd,this.eff_srh,this.mu_cape[0],this.mu_cape[1]);
+      } catch {
+        this.get_mu_parcel_trajectory();
+        this.get_mucape();
+        this.get_effective_inflow_layer();
+        this.get_effective_bwd();
+        this.get_effective_srh();
+        this.scp = supercell_composite_parameter(this.eff_bwd,this.eff_srh,this.mu_cape[0],this.mu_cape[1]);
       }
     } else {
-      if (this.mu_cape[1] > -40.0){
-        this.scp = (this.mu_cape[0]/1000.0) * (this.eff_srh/50.0) * (this.eff_bwd/38.876);
-      } else {
-        this.scp = (this.mu_cape[0]/1000.0) * (this.eff_srh/50.0) * (this.eff_bwd/38.876) * (-40.0/this.mu_cape[1]);
-      }
+      this.scp = 0.0;
     }
   } // end get_scp
   get_stp(){
-    // Effective layer STP. Using formulation from here: https://www.spc.noaa.gov/exper/mesoanalysis/help/help_stpc.html
-    // need to get the LCL height, it's the only piece that hasn't been found yet.
-    this.lcl_height = lcl_height(this.temperature[0],this.dewpoint[0],this.pressure,this.height);
-
-
+    if (this.temperature.length > 0){
+      try{
+        // need to get the LCL height, it's the only piece that hasn't been found yet.
+        this.lcl_height = lcl_height(this.temperature[0],this.dewpoint[0],this.pressure[0],this.pressure,this.height);
+        this.stp = significant_tornado_parameter(this.lcl_height,this.eff_layer[0],this.eff_bwd,this.eff_srh,this.ml_cape[0],this.ml_cape[1]);
+      } catch {
+        this.get_ml_parcel_trajectory();
+        this.get_mlcape();
+        this.get_effective_bwd();
+        this.get_effective_inflow_layer();
+        this.get_effective_srh();
+        // need to get the LCL height, it's the only piece that hasn't been found yet.
+        this.lcl_height = lcl_height(this.temperature[0],this.dewpoint[0],this.pressure,this.height);
+        this.stp = significant_tornado_parameter(this.lcl_height,this.eff_layer[0],this.eff_bwd,this.eff_srh,this.ml_cape[0],this.ml_cape[1]);
+      }
+    } else {
+      this.stp = 0.0;
+    }
   } // end get_stp
   get_wmp(){
-
+    if (this.temperature.length > 0){
+      try{
+        this.wmp = wet_microburst_parameter(this.temperature,this.pressure,this.ml_parcel_info[0],this.ml_parcel_info[1],this.ml_cape[1],this.bwd_01);
+      } catch {
+        this.get_ml_parcel_trajectory();
+        this.get_mlcape();
+        this.get_bulk_wind_differences();
+        this.wmp = wet_microburst_parameter(this.temperature,this.pressure,this.ml_parcel_info[0],this.ml_parcel_info[1],this.ml_cape[1],this.bwd_01);
+      }
+    } else {
+      this.wmp = 0.0;
+    }
   } // end get WMP
 }

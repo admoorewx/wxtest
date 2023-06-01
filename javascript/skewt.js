@@ -32,15 +32,6 @@ function initializeArrowKeys(){
   });
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-function arange(start,end,inc){
-  array = [];
-  val = start;
-  while (val <= end){
-    array.push(val);
-    val = val + inc;
-  }
-  return array;
-}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function temp_transform(temp,stnd_pres,pres,slope){
   return temp + (slope*Math.log(stnd_pres/pres));
@@ -134,11 +125,15 @@ function plotSkewt(sounding=null){
   var pres_grid = arange(min_pressure,max_pressure,50).reverse();
   var temp_grid = arange(-100,170,10);
   const standard_pressure = 1000.0; // hPa
-  const slope = 30.0;
+  const slope = 36.0;
 
   snd = new Sounding(sounding);
-  snd.print();
+  snd.get_dewpoint_depression();
+  snd.get_bulk_wind_differences();
+  snd.get_lapse_rates();
   snd.derived_profiles();
+  snd.get_mean_mixing_ratio();
+  snd.get_pwat();
   snd.get_sb_parcel_trajectory();
   snd.get_ml_parcel_trajectory();
   snd.get_mu_parcel_trajectory();
@@ -150,26 +145,17 @@ function plotSkewt(sounding=null){
   snd.get_effective_inflow_layer();
   snd.get_effective_srh();
   snd.get_effective_bwd();
-  console.log(`SB CAPE/CIN: ${snd.sb_cape}`);
-  console.log(`ML CAPE/CIN: ${snd.ml_cape}`);
-  console.log(`MU CAPE/CIN: ${snd.mu_cape}`);
-  console.log(`Mean motion: ${snd.mean_storm_motion}`);
-  console.log(`Right motion: ${snd.right_storm_motion}`);
-  console.log(`Left motion: ${snd.left_storm_motion}`);
-  console.log(`0-1 km SRH: ${snd.srh_01km}`);
-  console.log(`0-3 km SRH: ${snd.srh_03km}`);
-  console.log(`Eff. Inflow bottom/top: ${snd.eff_layer}`)
-  console.log(`Eff. SRH: ${snd.eff_srh}`)
-  console.log(`Eff. BWD: ${snd.eff_bwd}`)
-
+  snd.get_scp();
+  snd.get_stp();
+  snd.get_wmp();
 
   // Create the isotherms
   temp_lines = [];
   temp_grid.forEach(function(temp){
     if (temp == 0 || temp == -20){
-      line_color = 'rgba(13,32,229,0.45)';
+      line_color = 'rgba(13,32,229,0.35)';
     } else {
-      line_color = 'rgba(34,23,34,0.25)';
+      line_color = 'rgba(34,23,34,0.2)';
     }
     var tempTrace = {
       x: create_isotherm(temp,standard_pressure,pres_grid,slope),
@@ -198,8 +184,8 @@ function plotSkewt(sounding=null){
       mode: 'lines',
       hoverinfo: 'skip',
       line: {
-        dash: 'dot',
-        color: 'rgba(195,113,93,0.25)',
+        dash: 'solid',
+        color: 'rgba(195,113,93,0.2)',
       }
     }
     dry_adiabats.push(adiabatTrace);
@@ -217,6 +203,7 @@ function plotSkewt(sounding=null){
     sounding_temperature = [];
     sounding_dewpoint = [];
     sounding_pressure = [];
+    sounding_virt_temp = [];
     sb_parcel_profile = [];
     ml_parcel_profile = [];
     mu_parcel_profile = [];
@@ -225,16 +212,17 @@ function plotSkewt(sounding=null){
     mixing_ratio_profile = [];
 
 
-    for (i=0;i<sounding.pressure.length;i++){
-      if (sounding.pressure[i] >= 100.0){
+    for (i=0;i<snd.pressure.length;i++){
+      if (snd.pressure[i] >= 100.0){
         // Base plotting parameters
-        sounding_pressure.push(sounding.pressure[i]);
-        adjusted_temp = temp_transform(sounding.temperature[i],standard_pressure,sounding.pressure[i],slope);
-        adjusted_dewp = temp_transform(sounding.dewpoint[i],standard_pressure,sounding.pressure[i],slope);
+        sounding_pressure.push(snd.pressure[i]);
+        adjusted_temp = temp_transform(snd.temperature[i],standard_pressure,snd.pressure[i],slope);
+        adjusted_dewp = temp_transform(snd.dewpoint[i],standard_pressure,snd.pressure[i],slope);
+        sounding_virt_temp.push(temp_transform(snd.virtual_temp[i],standard_pressure,snd.pressure[i],slope));
         sounding_temperature.push(adjusted_temp);
         sounding_dewpoint.push(adjusted_dewp);
-        layer_relh = relh_from_temp_dewp(sounding.temperature[i],sounding.dewpoint[i]);
-        let height_agl = sounding.height[i] - sounding.height[0]; // adjust height to meters AGL
+        layer_relh = relh_from_temp_dewp(snd.temperature[i],snd.dewpoint[i]);
+        let height_agl = snd.height[i] - snd.height[0]; // adjust height to meters AGL
         adjusted_sb_temp = temp_transform(snd.sb_parcel_trace[i],standard_pressure,snd.pressure[i],slope);
         // adjusted_ml_temp = temp_transform(K2C(sounding.ml_parcel_profile[i]),standard_pressure,sounding.pressure[i],slope);
         // adjusted_mu_temp = temp_transform(K2C(sounding.mu_parcel_profile[i]),standard_pressure,sounding.pressure[i],slope);
@@ -246,10 +234,10 @@ function plotSkewt(sounding=null){
         theta_e_profile.push(equivalent_potential_temperature(sounding.temperature[i],sounding.dewpoint[i],sounding.pressure[i]));
         mixing_ratio_profile.push(mixing_ratio_from_dewpoint(sounding.dewpoint[i],sounding.pressure[i]));
 
-        let text = `Pres: ${sounding.pressure[i].toString()} hPa<br />Height: ${roundTo(height_agl,1)} m<br />Temp: ${roundTo(sounding.temperature[i],1).toString()} C<br />Dewp: ${roundTo(sounding.dewpoint[i],1).toString()} C<br />Relh: ${Math.round(layer_relh)}%`;
+        let text = `Pres: ${snd.pressure[i].toString()} hPa<br />Height: ${roundTo(height_agl,1)} m<br />Temp: ${roundTo(sounding.temperature[i],1).toString()} C<br />Dewp: ${roundTo(sounding.dewpoint[i],1).toString()} C<br />Relh: ${Math.round(layer_relh)}%`;
         if (i==0){
           // display the surface temp/dewp in F instead of C.
-          text = `Pres: ${sounding.pressure[i].toString()} hPa<br />Height: ${roundTo(height_agl,1)} m<br />Temp: ${roundTo(C2F(sounding.temperature[i]),1).toString()} F<br />Dewp: ${roundTo(C2F(sounding.dewpoint[i]),1).toString()} F<br />Relh: ${Math.round(layer_relh)}%`;
+          text = `Pres: ${snd.pressure[i].toString()} hPa<br />Height: ${roundTo(height_agl,1)} m<br />Temp: ${roundTo(C2F(sounding.temperature[i]),1).toString()} F<br />Dewp: ${roundTo(C2F(sounding.dewpoint[i]),1).toString()} F<br />Relh: ${Math.round(layer_relh)}%`;
         }
         display_strings.push(text);
       } // end if
@@ -270,7 +258,7 @@ function plotSkewt(sounding=null){
       hovertext: display_strings,
       hoverinfo: 'text',
       line: {
-        color: 'rgba(202,14,14,0.75)',
+        color: 'rgba(202,14,14,0.85)',
       }
     } // end temp_profile
     var dewp_profile = {
@@ -280,9 +268,19 @@ function plotSkewt(sounding=null){
       hovertext: display_strings,
       hoverinfo: 'text',
       line: {
-        color: 'rgba(41,147,38,0.75)',
+        color: 'rgba(41,147,38,0.85)',
       }
     } // end dewp_profile
+    var virtual_temp_profile = {
+      x: sounding_virt_temp,
+      y: sounding_pressure,
+      mode: 'lines',
+      hoverinfo: 'skip',
+      line: {
+        dash: 'dot',
+        color: 'rgba(131,0,0,0.5)',
+      }
+    } // end virtual_temp_profile
     var sb_profile = {
       x: sb_parcel_profile,
       y: sounding_pressure,
@@ -313,7 +311,31 @@ function plotSkewt(sounding=null){
         color: 'rgba(64,173,255,0.75)',
       }
     } // end mu parcel profile
-    var plotData = [].concat(temp_lines,dry_adiabats,temp_profile,dewp_profile,sb_profile,ml_profile,mu_profile);
+    var sfc_temp_text = {
+      x: [sounding_temperature[0]],
+      y: [sounding_pressure[0]],
+      mode: 'markers+text',
+      hoverinfo: 'skip',
+      text: [`${roundTo(C2F(snd.temperature[0]),1)}`],
+      textposition: 'bottom right',
+      type: 'scatter',
+      marker: {
+        color: 'rgba(202,14,14,0.95)',
+      }
+    }; // end temp text
+    var sfc_dewp_text = {
+      x: [sounding_dewpoint[0]],
+      y: [sounding_pressure[0]],
+      mode: 'markers+text',
+      hoverinfo: 'skip',
+      text: [`${roundTo(C2F(snd.dewpoint[0]),1)}`],
+      textposition: 'bottom left',
+      type: 'scatter',
+      marker: {
+        color: 'rgba(41,147,38,0.95)',
+      }
+    }; // end dewp text
+    var plotData = [].concat(sfc_dewp_text,sfc_temp_text,temp_lines,dry_adiabats,temp_profile,dewp_profile,virtual_temp_profile,sb_profile,ml_profile,mu_profile);
   }
 
   var layout = {
@@ -454,7 +476,7 @@ function plotSkewt(sounding=null){
       sounding_hodograph.push(segment);
     }); // end forEach function
     // add in the storm motion vectors
-    var right_motion_info = wind_speed_direction(sounding.storm_u_rm,sounding.storm_v_rm);
+    var right_motion_info = wind_speed_direction(snd.right_storm_motion[0],snd.right_storm_motion[1]);
     var right_mover = {
       x: [snd.right_storm_motion[0]],
       y: [snd.right_storm_motion[1]],
@@ -468,7 +490,7 @@ function plotSkewt(sounding=null){
         symbol: "circle",
       } // end marker
     } // end right-mover
-    var left_motion_info = wind_speed_direction(sounding.storm_u_lm,sounding.storm_v_lm);
+    var left_motion_info = wind_speed_direction(snd.left_storm_motion[0],snd.left_storm_motion[1]);
     var left_mover = {
       x: [snd.left_storm_motion[0]],
       y: [snd.left_storm_motion[1]],
@@ -482,7 +504,7 @@ function plotSkewt(sounding=null){
         symbol: "cirlce",
       } // end marker
     } // end left-mover
-    var mean_motion_info = wind_speed_direction(sounding.storm_u_mean,sounding.storm_v_mean);
+    var mean_motion_info = wind_speed_direction(snd.mean_storm_motion[0],snd.mean_storm_motion[1]);
     var mean_mover = {
       x: [snd.mean_storm_motion[0]],
       y: [snd.mean_storm_motion[1]],
@@ -503,6 +525,9 @@ function plotSkewt(sounding=null){
     bounds = [-60,60];
   } else {
     bounds = center_hodograph(sounding.u_wind,sounding.v_wind);
+    if (bounds[1] < 40.0){
+      bounds = [-40.0,40.0]
+    }
   }
   var hodograph_layout = {
     xaxis: {
@@ -511,6 +536,7 @@ function plotSkewt(sounding=null){
       dtick: 20,
       showgrid: false,
       zeroline: true,
+      zerolinewidth: 2,
       showline: false,
       gridcolor: 'rgba(34,23,34,0.5)',
       gridwidth: 2,
@@ -521,6 +547,7 @@ function plotSkewt(sounding=null){
       dtick: 20,
       showgrid: false,
       zeroline: true,
+      zerolinewidth: 2,
       showline: false,
       gridcolor: 'rgba(34,23,34,0.5)',
       gridwidth: 2,
@@ -757,15 +784,6 @@ function add_sounding_text(sounding=null){
   if (sounding == null){
     console.log("No data to fill in.");
   } else {
-    var dewp_depress = dewpoint_depression(sounding);
-    var bwd1km = bulk_wind_difference(sounding.u_wind,sounding.v_wind,sounding.height,0.0,1000.0);
-    var bwd3km = bulk_wind_difference(sounding.u_wind,sounding.v_wind,sounding.height,0.0,3000.0);
-    var bwd6km = bulk_wind_difference(sounding.u_wind,sounding.v_wind,sounding.height,0.0,6000.0);
-    var lr3km = lapse_rate(sounding.temperature,sounding.height,0.0,3000.0,pressures=null);
-    var lr75  = lapse_rate(sounding.temperature,sounding.height,700.0,500.0,pressures=sounding.pressure);
-    var pwat = total_precipitable_water(mixing_ratio_profile,sounding.pressure);
-    var mean_mixing_ratio = mixed_layer_mean_mixing_ratio(mixing_ratio_profile,sounding.pressure);
-
     // Set some thresholds for coloring (must be length == 5)
     var cape_thresholds = [500.0, 1000.0, 2000.0, 3000.0, 4000.0];
     var cin_thresholds = [-250.0, -100.0, -75.0, -50.0, -10.0];
@@ -781,27 +799,27 @@ function add_sounding_text(sounding=null){
     var scp_thresholds = [4.0,6.0,8.0,10.0,12.0];
     var stp_thresholds = [1.0,3.0,5.0,7.0,9.0];
     // start with the thermodynamic parameters:
-    document.getElementById("sbcape").innerHTML = `${Math.round(Math.abs(sounding.SBCAPE))} J/kg`;
-    document.getElementById("mlcape").innerHTML = `${Math.round(Math.abs(sounding.MLCAPE))} J/kg`;
-    document.getElementById("mucape").innerHTML = `${Math.round(Math.abs(sounding.MUCAPE))} J/kg`;
-    document.getElementById("sbcin").innerHTML = `${Math.round(sounding.SBCIN)} J/kg`;
-    document.getElementById("mlcin").innerHTML = `${Math.round(sounding.MLCIN)} J/kg`;
-    document.getElementById("mucin").innerHTML = `${Math.round(sounding.MUCIN)} J/kg`;
+    document.getElementById("sbcape").innerHTML = `${Math.round(Math.abs(snd.sb_cape[0]))} J/kg`;
+    document.getElementById("mlcape").innerHTML = `${Math.round(Math.abs(snd.ml_cape[0]))} J/kg`;
+    document.getElementById("mucape").innerHTML = `${Math.round(Math.abs(snd.mu_cape[0]))} J/kg`;
+    document.getElementById("sbcin").innerHTML = `${Math.round(snd.sb_cape[1])} J/kg`;
+    document.getElementById("mlcin").innerHTML = `${Math.round(snd.ml_cape[1])} J/kg`;
+    document.getElementById("mucin").innerHTML = `${Math.round(snd.mu_cape[1])} J/kg`;
     // other thermo params
-    document.getElementById("lr03").innerHTML = `${roundTo(lr3km,1)} K/km`;
-    document.getElementById("lr75").innerHTML = `${roundTo(lr75,1)} K/km`;
-    document.getElementById("ddpres").innerHTML = `${roundTo(dewp_depress,1)} F`;
-    document.getElementById("meanmix").innerHTML = `${roundTo(mean_mixing_ratio,2)} g/kg`;
-    document.getElementById("pwat").innerHTML = `${roundTo(pwat,2)} in`;
+    document.getElementById("lr03").innerHTML = `${roundTo(snd.lr_03,1)} K/km`;
+    document.getElementById("lr75").innerHTML = `${roundTo(snd.lr_700_500,1)} K/km`;
+    document.getElementById("ddpres").innerHTML = `${roundTo(snd.dewpoint_depression,1)} F`;
+    document.getElementById("meanmix").innerHTML = `${roundTo(snd.ml_mixing_ratio,2)} g/kg`;
+    document.getElementById("pwat").innerHTML = `${roundTo(snd.pwat,2)} in`;
 
     // Kinematic parameters
-    document.getElementById("bs01").innerHTML = `${Math.round(bwd1km)} knots`;
-    document.getElementById("bs03").innerHTML = `${Math.round(bwd3km)} knots`;
-    document.getElementById("bs06").innerHTML = `${Math.round(bwd6km)} knots`;
-    document.getElementById("bseff").innerHTML = `${Math.round(sounding.bulk_shear_eff)} knots`;
-    document.getElementById("srh01").innerHTML = `${Math.round(sounding.srh_01km)} m2/s2`;
-    document.getElementById("srh03").innerHTML = `${Math.round(sounding.srh_03km)} m2/s2`;
-    document.getElementById("srheff").innerHTML = `${Math.round(sounding.srheff)} m2/s2`;
+    document.getElementById("bs01").innerHTML = `${Math.round(snd.bwd_01)} knots`;
+    document.getElementById("bs03").innerHTML = `${Math.round(snd.bwd_03)} knots`;
+    document.getElementById("bs06").innerHTML = `${Math.round(snd.bwd_06)} knots`;
+    document.getElementById("bseff").innerHTML = `${Math.round(snd.eff_bwd)} knots`;
+    document.getElementById("srh01").innerHTML = `${Math.round(snd.srh_01)} m2/s2`;
+    document.getElementById("srh03").innerHTML = `${Math.round(snd.srh_03)} m2/s2`;
+    document.getElementById("srheff").innerHTML = `${Math.round(snd.eff_srh)} m2/s2`;
 
     // // Son of SARS probabilities
     // let values = sounding.tor_intensity_probs;
@@ -824,45 +842,45 @@ function add_sounding_text(sounding=null){
     // document.getElementById("ptype_nn").innerHTML = `${sounding.nn_winter_type} (${roundTo((100.0*sounding.nn_winter_prob),0)}% match)`;
     // document.getElementById("ptype_rf").innerHTML = `${sounding.rf_winter_type}`;
     //
-    // // derived parameters
-    // document.getElementById("scp").innerHTML = `${roundTo(sounding.SCP,1)}`
-    // document.getElementById("stp").innerHTML = `${roundTo(sounding.STP,1)}`
-    // document.getElementById("wmp").innerHTML = `${roundTo(sounding.WMP,1)}`
+    // derived parameters
+    document.getElementById("scp").innerHTML = `${roundTo(snd.scp,1)}`
+    document.getElementById("stp").innerHTML = `${roundTo(snd.stp,1)}`
+    document.getElementById("wmp").innerHTML = `${roundTo(snd.wmp,1)}`
 
     // assign colors to all text values
-    document.getElementById("sbcape").style.color = color_by_threshold(sounding.SBCAPE,cape_thresholds);
-    document.getElementById("mlcape").style.color = color_by_threshold(sounding.MLCAPE,cape_thresholds);
-    document.getElementById("mucape").style.color = color_by_threshold(sounding.MUCAPE,cape_thresholds);
+    document.getElementById("sbcape").style.color = color_by_threshold(snd.sb_cape[0],cape_thresholds);
+    document.getElementById("mlcape").style.color = color_by_threshold(snd.ml_cape[0],cape_thresholds);
+    document.getElementById("mucape").style.color = color_by_threshold(snd.mu_cape[0],cape_thresholds);
     // only color the CIN values IF there is positive CAPE
-    if (sounding.SBCAPE > 0.0){
-      document.getElementById("sbcin").style.color = color_by_threshold(sounding.SBCIN,cin_thresholds);
+    if (snd.sb_cape[0] > 0.0){
+      document.getElementById("sbcin").style.color = color_by_threshold(snd.sb_cape[1],cin_thresholds);
     }
-    if (sounding.MLCAPE > 0.0){
-      document.getElementById("mlcin").style.color = color_by_threshold(sounding.MLCIN,cin_thresholds);
+    if (snd.ml_cape[0] > 0.0){
+      document.getElementById("mlcin").style.color = color_by_threshold(snd.ml_cape[1],cin_thresholds);
     }
-    if (sounding.MUCAPE > 0.0){
-        document.getElementById("mucin").style.color = color_by_threshold(sounding.MUCIN,cin_thresholds);
+    if (snd.mu_cape[0] > 0.0){
+        document.getElementById("mucin").style.color = color_by_threshold(snd.mu_cape[1],cin_thresholds);
     }
     // Color the other thermo parameters
-    document.getElementById("lr03").style.color = color_by_threshold(lr3km,lr_thresholds);
-    document.getElementById("lr75").style.color = color_by_threshold(lr75,lr_thresholds);
-    document.getElementById("ddpres").style.color = color_by_threshold(dewp_depress,dd_thresholds);
-    document.getElementById("meanmix").style.color = color_by_threshold(mean_mixing_ratio,mxr_thresholds);
-    document.getElementById("pwat").style.color = color_by_threshold(pwat,pwat_thresholds);
+    document.getElementById("lr03").style.color = color_by_threshold(snd.lr_03,lr_thresholds);
+    document.getElementById("lr75").style.color = color_by_threshold(snd.lr_700_500,lr_thresholds);
+    document.getElementById("ddpres").style.color = color_by_threshold(snd.dewpoint_depression,dd_thresholds);
+    document.getElementById("meanmix").style.color = color_by_threshold(snd.ml_mixing_ratio,mxr_thresholds);
+    document.getElementById("pwat").style.color = color_by_threshold(snd.pwat,pwat_thresholds);
 
-    document.getElementById("bs01").style.color = color_by_threshold(bwd1km, bs01_thresholds);
-    document.getElementById("bs03").style.color = color_by_threshold(bwd3km, bs03_thresholds);
-    document.getElementById("bs06").style.color = color_by_threshold(bwd6km, bs06_thresholds);
-    document.getElementById("bseff").style.color = color_by_threshold(sounding.bulk_shear_eff, bs06_thresholds);
+    document.getElementById("bs01").style.color = color_by_threshold(snd.bwd_01, bs01_thresholds);
+    document.getElementById("bs03").style.color = color_by_threshold(snd.bwd_03, bs03_thresholds);
+    document.getElementById("bs06").style.color = color_by_threshold(snd.bwd_06, bs06_thresholds);
+    document.getElementById("bseff").style.color = color_by_threshold(snd.eff_bwd, bs06_thresholds);
 
-    document.getElementById("srh01").style.color = color_by_threshold(sounding.srh_01km,srh_thresholds);
-    document.getElementById("srh03").style.color = color_by_threshold(sounding.srh_03km,srh_thresholds);
-    document.getElementById("srheff").style.color = color_by_threshold(sounding.srheff,srh_thresholds);
+    document.getElementById("srh01").style.color = color_by_threshold(snd.srh_01,srh_thresholds);
+    document.getElementById("srh03").style.color = color_by_threshold(snd.srh_03,srh_thresholds);
+    document.getElementById("srheff").style.color = color_by_threshold(snd.eff_srh,srh_thresholds);
 
-    // document.getElementById("scp").style.color = color_by_threshold(sounding.SCP,scp_thresholds);
-    // document.getElementById("stp").style.color = color_by_threshold(sounding.STP,stp_thresholds);
-    // document.getElementById("wmp").style.color = color_by_threshold(sounding.WMP,stp_thresholds);
-    //
+    document.getElementById("scp").style.color = color_by_threshold(snd.scp,scp_thresholds);
+    document.getElementById("stp").style.color = color_by_threshold(snd.stp,stp_thresholds);
+    document.getElementById("wmp").style.color = color_by_threshold(snd.wmp,stp_thresholds);
+
     // document.getElementById("sos0").style.color = color_by_threshold(Math.round(100.0*values[1]),tor_prob_thresholds);
     // document.getElementById("sos1").style.color = color_by_threshold(Math.round(100.0*values[2]),tor_prob_thresholds);
     // document.getElementById("sos2").style.color = color_by_threshold(Math.round(100.0*values[3]),tor_prob_thresholds);

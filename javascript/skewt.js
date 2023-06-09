@@ -9,21 +9,26 @@ function updateSoundingType(type){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 function initializeArrowKeys(){
   // For now, I'm assuming that we're ONLY dealing with RAP soundings, in which
-  // case there will be 50 individual soundings per station. This function will
+  // case there will be either 20 or 51 individual soundings per station. This function will
   // create an evetn listener for the arrow keys and increment an index value
   // accordingly, then send a 'plot' signal to the plotting function
-  const FRCST_LENGTH = 20;
+  // The number of forecast soundings is determined by the forecast run hour (which is a global variable).
   document.addEventListener("keydown", function(e) {
+    if (parseInt(hour) == 3 || parseInt(hour) == 9 || parseInt(hour) == 15 || parseInt(hour) == 21){
+      forecast_length = 51;
+    } else {
+      forecast_length = 21;
+    }
     switch (e.keyCode) {
         case 37:
             globalThis.index = index - 1;
             if (index < 0){
-              globalThis.index = FRCST_LENGTH;
+              globalThis.index = forecast_length;
             }
             break;
         case 39:
             globalThis.index = index + 1;
-            if (index > FRCST_LENGTH){
+            if (index > forecast_length){
               globalThis.index = 0
             }
             break;
